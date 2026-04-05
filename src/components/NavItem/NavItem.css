@@ -1,0 +1,42 @@
+.zello-navitem {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-3) var(--space-4);
+    border-radius: var(--radius-md);
+    text-decoration: none;
+    color: var(--color-sidebar-foreground);
+    transition: background-color var(--transition-fast);
+    cursor: pointer;
+    margin-bottom: var(--space-1);
+    border-left: 3px solid transparent;
+
+    &:hover {
+        background-color: rgba(255, 255, 255, 0.05);
+    }
+
+    &[data-active="true"] {
+        background-color: rgba(255, 255, 255, 0.1);
+        border-left-color: var(--color-sidebar-foreground);
+        font-weight: var(--font-weight-semibold);
+    }
+
+    .zello-navitem-content {
+        display: flex;
+        align-items: center;
+        gap: var(--space-3);
+    }
+
+    .zello-navitem-icon {
+        opacity: 0.8;
+        display: flex;
+    }
+
+    .zello-navitem-badge {
+        background-color: rgba(255, 255, 255, 0.2);
+        font-size: var(--font-size-xs);
+        padding: 2px 8px;
+        border-radius: var(--radius-full);
+    }
+}
+

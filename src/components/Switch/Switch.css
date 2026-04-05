@@ -1,0 +1,59 @@
+.zello-switch-wrapper {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-3);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+
+    .zello-switch-input {
+        position: absolute;
+        opacity: 0;
+        width: 0;
+        height: 0;
+
+        &:checked + .zello-switch-track {
+            background-color: var(--color-primary);
+        }
+
+        &:checked + .zello-switch-track .zello-switch-thumb {
+            transform: translateX(20px);
+        }
+
+        &:focus-visible + .zello-switch-track {
+            outline: 2px solid var(--color-ring);
+            outline-offset: 2px;
+        }
+
+        &:disabled + .zello-switch-track {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+    }
+
+    .zello-switch-track {
+        width: 44px;
+        height: 24px;
+        background-color: var(--color-switch-background);
+        border-radius: var(--radius-full);
+        position: relative;
+        transition: background-color var(--transition-fast) ;
+    }
+
+    .zello-switch-thumb {
+        width: 20px;
+        height: 20px;
+        background-color: var(--color-card);
+        border-radius: var(--radius-full);
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        transition: transform var(--transition-fast);
+        box-shadow: var(--shadow-sm);
+    }
+
+    .zello-switch-label {
+        font-size: var(--font-size-sm);
+        color: var(--color-foreground);
+        font-weight: var(--font-weight-medium);
+    }
+}

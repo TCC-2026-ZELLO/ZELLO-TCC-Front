@@ -1,0 +1,29 @@
+.zello-badge {
+    display: inline-flex;
+    align-items: center;
+    border-radius: var(--radius-full);
+    padding: var(--space-0-5) var(--space-2-5);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-medium);
+    border: 1px solid transparent;
+
+    &[data-variant="default"] {
+        background-color: var(--color-secondary);
+        color: var(--color-secondary-foreground);
+    }
+    &[data-variant="success"] {
+        background-color: rgba(16, 185, 129, 0.1);
+        color: var(--color-success);
+        border-color: rgba(16, 185, 129, 0.2);
+    }
+    &[data-variant="warning"] {
+        background-color: rgba(217, 119, 6, 0.1);
+        color: var(--color-warning);
+        border-color: rgba(217, 119, 6, 0.2);
+    }
+    &[data-variant="error"] {
+        background-color: rgba(212, 24, 61, 0.1);
+        color: var(--color-error);
+        border-color: rgba(212, 24, 61, 0.2);
+    }
+}
