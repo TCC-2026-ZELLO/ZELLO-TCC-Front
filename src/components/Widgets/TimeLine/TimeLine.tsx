@@ -1,5 +1,5 @@
 import { Component, For, JSX } from "solid-js";
-import "./Timeline.css";
+import "./TimeLine.css";
 
 export interface TimelineItem {
     time: string;
