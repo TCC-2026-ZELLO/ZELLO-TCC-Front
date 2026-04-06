@@ -1,5 +1,5 @@
 import { JSX, Component } from "solid-js";
-import "./Dropzone.css";
+import "./DropZone.css";
 
 export function Dropzone(props: JSX.HTMLAttributes<HTMLDivElement>) {
     return (
