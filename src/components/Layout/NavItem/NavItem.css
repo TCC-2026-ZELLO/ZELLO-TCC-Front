@@ -1,0 +1,75 @@
+.zello-navitem {
+    display: flex;
+    position: relative;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-2-5) var(--space-4);
+    margin-bottom: var(--space-1);
+    border-radius: var(--radius-md);
+    text-decoration: none;
+    color: var(--color-muted-foreground);
+    transition: all var(--transition-normal);
+    cursor: pointer;
+
+    &:hover {
+        background-color: rgba(255, 255, 255, 0.05);
+        color: #FFFFFF;
+    }
+
+    &[data-active="true"] {
+        background-color: rgba(255, 255, 255, 0.1);
+        color: #FFFFFF;
+
+        &::before {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: 25%;
+            height: 50%;
+            width: 3px;
+            background-color: #FFFFFF;
+            border-radius: 0 4px 4px 0;
+        }
+
+        .zello-navitem-icon {
+            opacity: 1;
+        }
+
+        .zello-navitem-label {
+            font-weight: var(--font-weight-semibold);
+        }
+
+        .zello-navitem-badge {
+            background-color: var(--color-cliente, #7E22CE);
+        }
+    }
+
+    .zello-navitem-content {
+        display: flex;
+        align-items: center;
+        gap: var(--space-3);
+    }
+
+    .zello-navitem-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 20px;
+        opacity: 0.7;
+        transition: opacity var(--transition-fast);
+    }
+
+    .zello-navitem-label {
+        font-size: var(--font-size-sm);
+        font-weight: var(--font-weight-medium);
+    }
+
+    .zello-navitem-badge {
+        background-color: rgba(255, 255, 255, 0.1);
+        color: #FFFFFF;
+        font-size: 11px;
+        font-weight: var(--font-weight-bold);
+        padding: 2px 8px;
+        border-radius: 12px;
+    }
+}

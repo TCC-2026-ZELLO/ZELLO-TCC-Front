@@ -1,39 +1,200 @@
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+:root {
+    /* Base */
+    --color-background: #F8F9FB;
+    --color-foreground: #1A2B42;
+    --color-card: #FFFFFF;
+    --color-card-foreground: #1A2B42;
+    --color-popover: #FFFFFF;
+    --color-popover-foreground: #1A2B42;
+
+    /* Actions */
+    --color-primary: #1A2B42;
+    --color-primary-foreground: #FFFFFF;
+    --color-secondary: #E8EAED;
+    --color-secondary-foreground: #1A2B42;
+
+    /* Subtle */
+    --color-muted: #E8EAED;
+    --color-muted-foreground: #5F6C7B;
+
+    /* Accent */
+    --color-accent: #0F1B2E;
+    --color-accent-foreground: #FFFFFF;
+
+    /* Destructive */
+    --color-destructive: #D4183D;
+    --color-destructive-foreground: #FFFFFF;
+
+    /* Borders & Focus */
+    --color-border: rgba(26, 43, 66, 0.1);
+    --color-ring: #1A2B42;
+
+    /* Inputs */
+    --color-input-background: #FFFFFF;
+    --color-switch-background: #CBCED4;
+
+    /* Marca */
+    --color-mar-noturno: #1A2B42;
+    --color-vento-gelido: #E8EAED;
+
+    /* Status */
+    --color-success: #10B981;
+    --color-warning: #D97706;
+    --color-error: #D4183D;
+    --color-info: #3B82F6;
+
+    /* Personas (accent por role) */
+    --color-cliente: #7C3AED;
+    --color-profissional: #0D9488;
+    --color-gestor: #D97706;
+    --color-admin: #E11D48;
+
+    /* Charts */
+    --color-chart-1: #1A2B42;
+    --color-chart-2: #4A90E2;
+    --color-chart-3: #7B68EE;
+    --color-chart-4: #50C878;
+    --color-chart-5: #FF6B6B;
+
+    /* Sidebar */
+    --color-sidebar: #F8F9FB;
+    --color-sidebar-foreground: #1A2B42;
+    --color-sidebar-primary: #1A2B42;
+    --color-sidebar-accent: #E8EAED;
+    --color-sidebar-border: rgba(26, 43, 66, 0.1);
+
+    /* ─── Tipografia ───────────────────────────────────────────── */
+
+    --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
+    --font-size-xs: 0.75rem;   /* 12px */
+    --font-size-sm: 0.875rem;  /* 14px */
+    --font-size-base: 1rem;    /* 16px */
+    --font-size-lg: 1.125rem;  /* 18px */
+    --font-size-xl: 1.25rem;   /* 20px */
+    --font-size-2xl: 1.5rem;   /* 24px */
+    --font-size-3xl: 1.875rem; /* 30px */
+    --font-size-4xl: 2.25rem;  /* 36px */
+
+    --font-weight-light: 300;
+    --font-weight-normal: 400;
+    --font-weight-medium: 500;
+    --font-weight-semibold: 600;
+    --font-weight-bold: 700;
+
+    --line-height: 1.5;
+    --letter-spacing-wide: 0.05em;
+    --letter-spacing-widest: 0.1em;
+
+    /* ─── Espaçamento ──────────────────────────────────────────── */
+    --space-0: 0;
+    --space-px: 1px;
+    --space-0-5: 0.125rem;  /* 2px */
+    --space-1: 0.25rem;     /* 4px */
+    --space-1-5: 0.375rem;  /* 6px */
+    --space-2: 0.5rem;      /* 8px */
+    --space-2-5: 0.625rem;  /* 10px */
+    --space-3: 0.75rem;     /* 12px */
+    --space-3-5: 0.875rem;  /* 14px */
+    --space-4: 1rem;        /* 16px */
+    --space-5: 1.25rem;     /* 20px */
+    --space-6: 1.5rem;      /* 24px */
+    --space-8: 2rem;        /* 32px */
+    --space-10: 2.5rem;     /* 40px */
+    --space-12: 3rem;       /* 48px */
+    --space-16: 4rem;       /* 64px */
+    --space-24: 6rem;       /* 96px */
+
+    /* ─── Border Radius ────────────────────────────────────────── */
+
+    --radius: 0.75rem;                      /* 12px — base */
+    --radius-sm: calc(var(--radius) - 4px); /* 8px */
+    --radius-md: calc(var(--radius) - 2px); /* 10px */
+    --radius-lg: var(--radius);             /* 12px */
+    --radius-xl: calc(var(--radius) + 4px); /* 16px */
+    --radius-full: 9999px;
+    --radius-2: 2px;
+    --radius-4: 4px;
+
+    /* ─── Sombras ──────────────────────────────────────────────── */
+
+    --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+
+    /* ─── Sizing ───────────────────────────────────────────────── */
+
+    --sidebar-width: 18rem;         /* 256px */
+    --sidebar-width-mobile: 18rem;  /* 288px */
+    --sidebar-width-icon: 3rem;     /* 48px */
+
+    /* ─── Transitions ──────────────────────────────────────────── */
+
+    --transition-fast: 150ms ease;
+    --transition-normal: 200ms ease;
+    --transition-slow: 300ms ease;
+}
+
+/* ─── Cores — Dark Mode ────────────────────────────────────────── */
+
+[data-theme="dark"] {
+    --color-background: #0D1B2E;
+    --color-foreground: #F0F4F8;
+    --color-card: #132035;
+    --color-card-foreground: #F0F4F8;
+    --color-popover: #132035;
+    --color-popover-foreground: #F0F4F8;
+
+    --color-primary: #F0F4F8;
+    --color-primary-foreground: #0D1B2E;
+    --color-secondary: #1E3250;
+    --color-secondary-foreground: #F0F4F8;
+
+    --color-muted: #1E3250;
+    --color-muted-foreground: #8CA0BC;
+
+    --color-accent: #1E3250;
+    --color-accent-foreground: #F0F4F8;
+
+    --color-border: rgba(240, 244, 248, 0.1);
+    --color-ring: #8CA0BC;
+
+    --color-input-background: rgba(240, 244, 248, 0.05);
+    --color-switch-background: #1E3250;
+
+    --color-sidebar: #0A1628;
+    --color-sidebar-foreground: #F0F4F8;
+    --color-sidebar-primary: #7C3AED;
+    --color-sidebar-accent: #1E3250;
+    --color-sidebar-border: rgba(240, 244, 248, 0.1);
+
+    --color-chart-1: #7C3AED;
+    --color-chart-2: #0D9488;
+    --color-chart-3: #D97706;
+    --color-chart-4: #E11D48;
+    --color-chart-5: #3B82F6;
+}
+
+/* ─── Base ─────────────────────────────────────────────────────── */
+
+html {
+    font-family: var(--font-family);
+    font-size: 16px;
+    line-height: var(--line-height);
+    color: var(--color-foreground);
+    background-color: var(--color-background);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
 body {
-  font-family: Gordita, Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
-}
-
-a {
-  margin-right: 1rem;
-}
-
-main {
-  text-align: center;
-  padding: 1em;
-  margin: 0 auto;
-}
-
-h1 {
-  color: #335d92;
-  text-transform: uppercase;
-  font-size: 4rem;
-  font-weight: 100;
-  line-height: 1.1;
-  margin: 4rem auto;
-  max-width: 14rem;
-}
-
-p {
-  max-width: 14rem;
-  margin: 2rem auto;
-  line-height: 1.35;
-}
-
-@media (min-width: 480px) {
-  h1 {
-    max-width: none;
-  }
-
-  p {
-    max-width: none;
-  }
+    min-height: 100vh;
 }
