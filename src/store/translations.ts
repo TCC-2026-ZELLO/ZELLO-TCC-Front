@@ -52,7 +52,7 @@ export const translations = {
                     reminder24h: "Lembrete 24h antes",
                     offers: "Ofertas e promoções",
                     loyaltyUpdates: "Atualizações de fidelidade",
-                    appNews: "Novidades do app",
+                    appNews: "Novidades do (app)",
                     weeklySummary: "Resumo semanal por e-mail"
                 }
             },

@@ -1,8 +1,8 @@
+// App.tsx
 import { MetaProvider, Title } from "@solidjs/meta";
 import { Router } from "@solidjs/router";
 import { FileRoutes } from "@solidjs/start/router";
 import { Suspense } from "solid-js";
-import { MainLayout } from "~/components/Layout/MainLayout";
 import "./app.css";
 
 export default function App() {
@@ -11,9 +11,7 @@ export default function App() {
             root={props => (
                 <MetaProvider>
                     <Title>Zello</Title>
-                    <MainLayout>
-                        <Suspense>{props.children}</Suspense>
-                    </MainLayout>
+                    <Suspense>{props.children}</Suspense>
                 </MetaProvider>
             )}
         >
