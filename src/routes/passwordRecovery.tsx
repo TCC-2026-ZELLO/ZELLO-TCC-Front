@@ -11,7 +11,7 @@ import {
 } from "~/components/Icons/Icons";
 import { theme, toggleTheme } from "~/store/appState";
 
-export default function passwordRecovery() {
+export default function PasswordRecovery() {
   const [email, setEmail] = createSignal("");
   const [loading, setLoading] = createSignal(false);
   const [submitted, setSubmitted] = createSignal(false);
