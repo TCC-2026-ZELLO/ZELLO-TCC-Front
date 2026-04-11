@@ -1,33 +1,40 @@
-import { createSignal } from "solid-js";
+import { createSignal, onCleanup, Show } from "solid-js";
 import { A } from "@solidjs/router";
-
 import { Input } from "~/components/Widgets/Input";
 import { Button } from "~/components/Widgets/Button";
-
 import {
   ZelloIcon,
   GlobeIcon,
   MoonIcon,
   SunIcon,
-  GoogleIcon,
+  SuccessIcon,
 } from "~/components/Icons/Icons";
 import { theme, toggleTheme } from "~/store/appState";
 
-export default function Login() {
+export default function PasswordRecovery() {
   const [email, setEmail] = createSignal("");
-  const [password, setPassword] = createSignal("");
   const [loading, setLoading] = createSignal(false);
-  const [errorMessage, setErrorMessage] = createSignal("");
+  const [submitted, setSubmitted] = createSignal(false);
+
+  let timerId: ReturnType<typeof setTimeout> | undefined;
+
+  onCleanup(() => {
+    if (timerId !== undefined) clearTimeout(timerId);
+  });
 
   const handleSubmit = (e: Event) => {
     e.preventDefault();
+    if (loading()) return;
     setLoading(true);
-    setTimeout(() => setLoading(false), 1000);
+    timerId = setTimeout(() => {
+      setLoading(false);
+      setSubmitted(true);
+    }, 1500);
   };
 
   return (
     <main class="relative">
-      <div class="flex h-screen bg-background">
+      <div class="flex h-screen bg-background text-foreground">
         <div class="relative hidden flex-1 flex-col items-center justify-center overflow-hidden border-r border-white/10 bg-sidebar p-8 lg:flex">
           <div class="absolute inset-0 z-0 overflow-hidden">
             <div class="absolute -right-[20%] -top-[20%] h-100 w-100 rounded-full bg-white/5" />
@@ -40,36 +47,28 @@ export default function Login() {
             </div>
 
             <h1 class="mb-4 text-3xl font-bold text-sidebar-foreground">
-              Bem-vindo ao Zello
+              Sua beleza, nossa prioridade
             </h1>
             <p class="mb-12 text-base leading-relaxed text-sidebar-foreground/80">
-              A plataforma premium que conecta você aos melhores profissionais
-              de beleza e estética da sua cidade.
+              Não se preocupe! Acontece com os melhores. Vamos te ajudar a
+              recuperar seu acesso rapidamente.
             </p>
 
             <div class="flex w-full justify-center gap-4">
               <div class="flex-1 rounded-xl border border-white/10 bg-white/5 p-4 shadow-sm">
                 <div class="text-xl font-bold text-sidebar-foreground">
-                  2.400+
+                  Segurança
                 </div>
                 <div class="mt-1 text-xs text-sidebar-foreground/70">
-                  Profissionais
+                  Dados Protegidos
                 </div>
               </div>
               <div class="flex-1 rounded-xl border border-white/10 bg-white/5 p-4 shadow-sm">
                 <div class="text-xl font-bold text-sidebar-foreground">
-                  18k+
+                  Rápido
                 </div>
                 <div class="mt-1 text-xs text-sidebar-foreground/70">
-                  Clientes
-                </div>
-              </div>
-              <div class="flex-1 rounded-xl border border-white/10 bg-white/5 p-4 shadow-sm">
-                <div class="text-xl font-bold text-sidebar-foreground">
-                  4.9 ★
-                </div>
-                <div class="mt-1 text-xs text-sidebar-foreground/70">
-                  Avaliação
+                  Acesso Imediato
                 </div>
               </div>
             </div>
@@ -85,6 +84,11 @@ export default function Login() {
             <button
               class="flex cursor-pointer items-center justify-center rounded-full border border-border bg-card p-2 text-foreground transition-colors hover:bg-secondary"
               onClick={toggleTheme}
+              aria-label={
+                theme() === "dark"
+                  ? "Mudar para Light Mode"
+                  : "Mudar para Dark Mode"
+              }
               title={
                 theme() === "dark"
                   ? "Mudar para Light Mode"
@@ -96,65 +100,60 @@ export default function Login() {
           </div>
 
           <div class="flex w-full max-w-105 flex-col gap-6 rounded-xl border border-border bg-card p-6 shadow-md md:p-8">
-            <div class="text-left">
-              <h1 class="mb-2 text-2xl font-bold text-foreground">
-                Entrar na sua conta
-              </h1>
-              <p class="text-sm text-muted-foreground">
-                Acesse com suas credenciais para continuar
-              </p>
-            </div>
+            <Show
+              when={submitted()}
+              fallback={
+                <>
+                  <div class="text-left">
+                    <h1 class="mb-2 text-2xl font-bold text-foreground">
+                      Esqueceu a senha?
+                    </h1>
+                    <p class="text-sm text-muted-foreground">
+                      Informe seu e-mail e enviaremos um link seguro para você
+                      redefinir sua senha.
+                    </p>
+                  </div>
 
-            <form class="flex flex-col gap-4" onSubmit={handleSubmit}>
-              <Input
-                labelText="E-mail"
-                placeholder="seu@email.com"
-                type="email"
-                value={email()}
-                onInput={(e) => setEmail(e.currentTarget.value)}
-              />
+                  <form class="flex flex-col gap-4" onSubmit={handleSubmit}>
+                    <Input
+                      labelText="E-mail cadastrado"
+                      placeholder="seu@email.com"
+                      type="email"
+                      value={email()}
+                      onInput={(e) => setEmail(e.currentTarget.value)}
+                      required
+                    />
 
-              <div class="relative">
-                <A
-                  href="/passwordRecovery"
-                  class="absolute right-0 top-0 text-xs font-semibold text-primary hover:underline"
-                >
-                  Esqueceu a senha?
-                </A>
-                <Input
-                  labelText="Senha"
-                  placeholder="••••••••"
-                  type="password"
-                  value={password()}
-                  onInput={(e) => setPassword(e.currentTarget.value)}
-                />
+                    <Button type="submit" variant="primary" class="mt-2 w-full" disabled={loading()}>
+                      {loading() ? "Enviando..." : "Enviar link de recuperação"}
+                    </Button>
+                  </form>
+                </>
+              }
+            >
+              <div class="flex flex-col items-center gap-4 py-4 text-center">
+                <div class="flex size-12 items-center justify-center rounded-full bg-success/10 text-success">
+                  {SuccessIcon}
+                </div>
+                <div>
+                  <h2 class="text-xl font-bold text-foreground">
+                    Verifique seu e-mail
+                  </h2>
+                  <p class="mt-2 text-sm text-muted-foreground">
+                    Se este e-mail estiver cadastrado, um link foi enviado para
+                    que você possa redefinir sua senha.
+                  </p>
+                </div>
               </div>
+            </Show>
 
-              {errorMessage() && (
-                <p class="text-sm text-error">{errorMessage()}</p>
-              )}
-
-              <Button type="submit" variant="primary" class="mt-2 w-full">
-                {loading() ? "Carregando..." : "Entrar →"}
-              </Button>
-            </form>
-
-            <div class="flex items-center gap-3 text-xs text-muted-foreground">
-              <div class="h-px flex-1 bg-border" />
-              ou continue com
-              <div class="h-px flex-1 bg-border" />
-            </div>
-
-            <Button variant="outline" class="w-full">
-              {GoogleIcon}
-              Entrar com Google
-            </Button>
-
-            <div class="text-center text-sm text-muted-foreground">
-              Não tem uma conta?{" "}
-              <a href="#" class="font-bold text-primary hover:underline">
-                Cadastre-se grátis
-              </a>
+            <div class="text-center text-sm">
+              <A
+                href="/login"
+                class="font-semibold text-primary hover:underline"
+              >
+                ← Voltar para o login
+              </A>
             </div>
           </div>
         </div>
