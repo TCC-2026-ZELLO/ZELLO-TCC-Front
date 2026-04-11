@@ -267,7 +267,7 @@ export const HelpIcon = (
     <line x1="12" y1="17" x2="12.01" y2="17"></line>
   </svg>
 );
-export const SearchIcon = (
+export const SearchIcon = () => (
   <svg
     width="16"
     height="16"
@@ -282,7 +282,7 @@ export const SearchIcon = (
     <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
   </svg>
 );
-export const EyeIcon = (
+export const EyeIcon = () => (
   <svg
     width="16"
     height="16"
@@ -297,7 +297,7 @@ export const EyeIcon = (
     <circle cx="12" cy="12" r="3"></circle>
   </svg>
 );
-export const EyeOffIcon = (
+export const EyeOffIcon = () => (
   <svg
     width="16"
     height="16"
@@ -322,6 +322,7 @@ export const StarIcon = (props: JSX.SvgSVGAttributes<SVGSVGElement>) => (
     stroke-linejoin="round"
     {...props}
   >
+    {" "}
     <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
   </svg>
 );
@@ -343,20 +344,5 @@ export const GoogleIcon = (
       d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
       fill="#EA4335"
     />
-  </svg>
-);
-export const SuccessIcon = (
-  <svg
-    width="24"
-    height="24"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    stroke-width="2"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-  >
-    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-    <polyline points="22 4 12 14.01 9 11.01"></polyline>
   </svg>
 );
