@@ -77,6 +77,11 @@ export default function PasswordRecovery() {
             <button
               class="flex cursor-pointer items-center justify-center rounded-full border border-border bg-card p-2 text-foreground transition-colors hover:bg-secondary"
               onClick={toggleTheme}
+              aria-label={
+                theme() === "dark"
+                  ? "Mudar para Light Mode"
+                  : "Mudar para Dark Mode"
+              }
               title={
                 theme() === "dark"
                   ? "Mudar para Light Mode"
