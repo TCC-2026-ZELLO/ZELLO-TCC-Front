@@ -4546,7 +4546,7 @@ snapshots:
       youch: 4.1.0
       youch-core: 0.3.3
     transitivePeerDependencies:
-      - '@azure/app-configuration'
+      - '@azure/(app)-configuration'
       - '@azure/cosmos'
       - '@azure/data-tables'
       - '@azure/identity'
@@ -5275,7 +5275,7 @@ snapshots:
       vite: 6.4.1(jiti@2.6.1)(terser@5.46.0)
       zod: 4.3.6
     transitivePeerDependencies:
-      - '@azure/app-configuration'
+      - '@azure/(app)-configuration'
       - '@azure/cosmos'
       - '@azure/data-tables'
       - '@azure/identity'

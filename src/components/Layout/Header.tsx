@@ -1,33 +1,57 @@
-import { Badge } from "~/components/Widgets/Badge/Badge";
-import { Button } from "~/components/Widgets/Button/Button";
+import { Badge } from "~/components/Widgets/Badge";
+import { Button } from "~/components/Widgets/Button";
 import { accountRole, idioma, theme, toggleRole, toggleTheme, t } from "~/store/appState";
 import { MenuIcon, GlobeIcon, SunIcon, MoonIcon, ChevronDownIcon, BellIcon } from "~/components/Icons/Icons";
 
 export function Header() {
+
     return (
-        <header style={{ height: "72px", "background-color": "var(--color-card)", "border-bottom": "1px solid var(--color-border)", display: "flex", "align-items": "center", "justify-content": "space-between", padding: "0 var(--space-8)", transition: "all 0.2s ease" }}>
-            <div style={{ display: "flex", "align-items": "center", gap: "var(--space-4)" }}>
-                <button style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-muted-foreground)" }}>{MenuIcon}</button>
-                <span style={{ "font-weight": "var(--font-weight-semibold)", "font-size": "var(--font-size-base)", color: "var(--color-foreground)" }}>{t().header.home}</span>
-                <Badge variant="default" style={{ "background-color": "var(--color-muted)", color: "var(--color-cliente)" }}>
-                    {accountRole() === "cliente" ? `${t().header.badgeClient} • ${t().sidebar.clientName}` : `${t().header.badgeProf} • ${t().sidebar.profName}`}
-                </Badge>
+        <header class="h-18 bg-card border-b border-border flex items-center justify-between px-8 transition-all duration-200">
+            <div class="flex items-center gap-4">
+                <button class="bg-transparent border-none cursor-pointer text-foreground hover:opacity-70 transition-opacity">
+                    {MenuIcon}
+                </button>
+
+                <div class="flex flex-col justify-center">
+                    <span class="font-bold text-sm text-foreground leading-tight">
+                        {t().header.home}
+                    </span>
+                    <div class="mt-1">
+                        <Badge
+                            variant={"error"}
+                        >
+                            {accountRole() === "cliente"
+                                ? `${t().header.badgeClient} · ${t().sidebar.clientName}`
+                                : `${t().header.badgeProf} · ${t().sidebar.profName}`
+                            }
+                        </Badge>
+                    </div>
+                </div>
             </div>
 
-            <div style={{ display: "flex", "align-items": "center", gap: "var(--space-4)" }}>
-                <div style={{ display: "flex", "align-items": "center", gap: "var(--space-2)", padding: "6px 12px", border: "1px solid var(--color-border)", "border-radius": "20px", "font-size": "var(--font-size-sm)", color: "var(--color-foreground)" }}>
-                    {GlobeIcon} {idioma()}
+            <div class="flex items-center gap-4">
+                <div class="flex items-center gap-2 px-3 py-1.5 border border-border rounded-full text-sm font-medium text-foreground">
+                    <span class="opacity-70">{GlobeIcon}</span>
+                    {idioma()}
                 </div>
 
-                <button onClick={toggleTheme} style={{ background: "none", border: "1px solid var(--color-border)", "border-radius": "50%", width: "36px", height: "36px", display: "flex", "align-items": "center", "justify-content": "center", cursor: "pointer", color: "var(--color-foreground)", transition: "all 0.2s ease" }}>
+                <button
+                    onClick={toggleTheme}
+                    class="bg-transparent border border-border rounded-full w-9 h-9 flex items-center justify-center cursor-pointer text-foreground hover:bg-foreground/5 transition-colors"
+                >
                     {theme() === "dark" ? SunIcon : MoonIcon}
                 </button>
 
-                <Button variant="primary" onClick={toggleRole} style={{ "background-color": "var(--color-cliente)", color: "white", "border-radius": "20px", padding: "6px 16px", display: "flex", gap: "6px", "align-items": "center" }}>
-                    Demo: {accountRole() === "cliente" ? t().header.badgeClient : t().header.badgeProf} {ChevronDownIcon}
+                <Button
+                    variant="primary"
+                    onClick={toggleRole}
+                    class="bg-cliente text-foreground rounded-full px-5 py-2 flex gap-2 items-center text-sm font-semibold hover:opacity-90 transition-opacity border-none"
+                >
+                    Demo: {accountRole() === "cliente" ? t().header.badgeClient : t().header.badgeProf}
+                    <span class="ml-1">{ChevronDownIcon}</span>
                 </Button>
 
-                <button style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-muted-foreground)" }}>
+                <button class="bg-transparent border-none cursor-pointer text-muted-foreground hover:text-foreground transition-colors relative">
                     {BellIcon}
                 </button>
             </div>
