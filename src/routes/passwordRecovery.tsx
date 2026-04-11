@@ -1,4 +1,4 @@
-import { createSignal, Show } from "solid-js";
+import { createSignal, onCleanup, Show } from "solid-js";
 import { A } from "@solidjs/router";
 import { Input } from "~/components/Widgets/Input";
 import { Button } from "~/components/Widgets/Button";
@@ -16,10 +16,17 @@ export default function PasswordRecovery() {
   const [loading, setLoading] = createSignal(false);
   const [submitted, setSubmitted] = createSignal(false);
 
+  let timerId: ReturnType<typeof setTimeout> | undefined;
+
+  onCleanup(() => {
+    if (timerId !== undefined) clearTimeout(timerId);
+  });
+
   const handleSubmit = (e: Event) => {
     e.preventDefault();
+    if (loading()) return;
     setLoading(true);
-    setTimeout(() => {
+    timerId = setTimeout(() => {
       setLoading(false);
       setSubmitted(true);
     }, 1500);
@@ -117,7 +124,7 @@ export default function PasswordRecovery() {
                       required
                     />
 
-                    <Button type="submit" variant="primary" class="mt-2 w-full">
+                    <Button type="submit" variant="primary" class="mt-2 w-full" disabled={loading()}>
                       {loading() ? "Enviando..." : "Enviar link de recuperação"}
                     </Button>
                   </form>

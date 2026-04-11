@@ -1,4 +1,5 @@
 import { createSignal } from "solid-js";
+import { A } from "@solidjs/router";
 
 import { Input } from "~/components/Widgets/Input";
 import { Button } from "~/components/Widgets/Button";
@@ -114,12 +115,12 @@ export default function Login() {
               />
 
               <div class="relative">
-                <a
+                <A
                   href="/passwordRecovery"
                   class="absolute right-0 top-0 text-xs font-semibold text-primary hover:underline"
                 >
                   Esqueceu a senha?
-                </a>
+                </A>
                 <Input
                   labelText="Senha"
                   placeholder="••••••••"
