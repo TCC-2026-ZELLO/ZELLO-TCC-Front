@@ -1,9 +1,9 @@
-import { createSignal } from "solid-js";
-import { Card } from "~/components/Widgets/Card/Card";
-import { Button } from "~/components/Widgets/Button/Button";
-import { Input } from "~/components/Widgets/Input/Input";
-import { Switch } from "~/components/Widgets/Switch/Switch";
-import { Tabs } from "~/components/Widgets/Tabs/Tabs";
+import { createSignal, For } from "solid-js";
+import { Card } from "~/components/Widgets/Card";
+import { Button } from "~/components/Widgets/Button";
+import { Input } from "~/components/Widgets/Input";
+import { Switch } from "~/components/Widgets/Switch";
+import { Tabs } from "~/components/Widgets/Tabs";
 import { accountRole, idioma, setIdioma, theme, toggleTheme, t } from "~/store/appState";
 import { Language } from "~/store/translations";
 import { CameraIcon, SaveIcon, GlobeIcon, SunIcon, LockIcon } from "~/components/Icons/Icons";
@@ -19,97 +19,132 @@ export default function Settings() {
     const err = () => errors[idioma()];
 
     return (
-        <div style={{ "max-width": "800px", margin: "0 auto", "padding-bottom": "var(--space-10)" }}>
-            <div style={{ "margin-bottom": "var(--space-8)" }}>
-                <h1 style={{ "font-size": "var(--font-size-3xl)", "font-weight": "var(--font-weight-bold)", color: "var(--color-foreground)", margin: "0 0 8px 0" }}>
+        <div class="mx-auto flex max-w-3xl flex-col gap-12 px-4 py-8 pb-20 md:py-12">
+
+            <header class="flex flex-col gap-1">
+                <h1 class="text-3xl font-bold text-foreground">
                     {t().settings.title}
                 </h1>
-                <p style={{ color: "var(--color-muted-foreground)", margin: 0 }}>
+                <p class="text-muted-foreground">
                     {accountRole() === "cliente" ? t().sidebar.clientName : t().sidebar.profName}
                 </p>
-            </div>
+            </header>
 
-            <h2 style={{ "font-size": "var(--font-size-base)", "font-weight": "var(--font-weight-semibold)", "margin-bottom": "var(--space-4)", color: "var(--color-foreground)" }}>
-                {t().settings.profile.title}
-            </h2>
-            <Card style={{ "margin-bottom": "var(--space-10)", padding: "var(--space-8)" }}>
-                <div style={{ display: "flex", "align-items": "center", gap: "var(--space-6)", "margin-bottom": "var(--space-8)" }}>
-                    <div style={{ position: "relative" }}>
-                        <img src="https://i.pravatar.cc/150?img=47" alt="Profile" style={{ width: "80px", height: "80px", "border-radius": "var(--radius-xl)", "object-fit": "cover" }} />
-                        <div style={{ position: "absolute", bottom: "-8px", right: "-8px", "background-color": "var(--color-primary)", "border-radius": "50%", width: "28px", height: "28px", display: "flex", "align-items": "center", "justify-content": "center", border: "2px solid var(--color-card)", color: "var(--color-primary-foreground)", cursor: "pointer" }}>
-                            {CameraIcon}
+            <section class="flex flex-col gap-4">
+                <h2 class="text-lg font-semibold text-foreground">
+                    {t().settings.profile.title}
+                </h2>
+
+                <Card class="flex flex-col gap-8 p-6 md:p-8">
+                    <div class="flex items-center gap-6">
+                        <div class="relative">
+                            <img src="https://i.pravatar.cc/150?img=47" alt="Profile" class="size-20 rounded-xl object-cover" />
+                            <button type="button" class="absolute -bottom-2 -right-2 flex size-8 cursor-pointer items-center justify-center rounded-full border-2 border-card bg-primary text-primary-foreground transition-transform hover:scale-105">
+                                {CameraIcon}
+                            </button>
+                        </div>
+                        <div class="flex flex-col gap-1">
+                            <span class="text-sm font-semibold text-foreground">{t().settings.profile.photo}</span>
+                            <button type="button" class="text-left text-sm font-medium text-primary hover:underline">
+                                {t().settings.profile.changePhoto}
+                            </button>
                         </div>
                     </div>
+
+                    <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+                        <Input labelText={t().settings.profile.nameLabel} placeholder="Ana Clara Matos" type="text" onInput={(e) => e.currentTarget.value = e.currentTarget.value.replace(/[^a-zA-ZÀ-ÿ\s]/g, "")} validate={(val) => !val.trim() ? err().reqName : null} />
+                        <Input labelText={t().settings.profile.phoneLabel} placeholder="(41) 9 9812-2234" type="tel" onInput={(e) => { let v = e.currentTarget.value.replace(/\D/g, ""); if (v.length > 11) v = v.slice(0, 11); if (v.length > 7) e.currentTarget.value = `(${v.slice(0, 2)}) ${v.slice(2, 7)}-${v.slice(7)}`; else if (v.length > 2) e.currentTarget.value = `(${v.slice(0, 2)}) ${v.slice(2)}`; else e.currentTarget.value = v; }} validate={(val) => val.replace(/\D/g, "").length < 10 ? err().reqPhone : null} />
+                        <Input labelText={t().settings.profile.emailLabel} placeholder="ana@email.com" type="email" validate={(val) => { if (!val.trim()) return err().reqEmail; if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) return err().invalidEmail; return null; }} />
+                        <Input labelText={t().settings.profile.cityLabel} placeholder="Curitiba - PR" type="text" validate={(val) => !val.trim() ? err().reqCity : null} />
+                    </div>
+
+                    <div class="pt-2">
+                        <Button variant="primary">
+                            {SaveIcon} {t().settings.profile.saveBtn}
+                        </Button>
+                    </div>
+                </Card>
+            </section>
+
+            <section class="flex flex-col gap-4">
+                <h2 class="text-lg font-semibold text-foreground">
+                    {t().settings.appearance.title}
+                </h2>
+
+                <Card class="flex flex-col">
+                    <div class="flex items-center justify-between border-b border-border p-6">
+                        <div class="flex items-center gap-4">
+                            <div class="flex size-10 items-center justify-center rounded-full bg-secondary text-muted-foreground">
+                                {GlobeIcon}
+                            </div>
+                            <span class="font-medium text-foreground">{t().settings.appearance.language}</span>
+                        </div>
+                        <div class="origin-right scale-90">
+                            <Tabs activeValue={idioma()} onChange={(val) => setIdioma(val as Language)} items={[{ label: "PT", value: "PT" }, { label: "EN", value: "EN" }]} />
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between p-6">
+                        <div class="flex items-center gap-4">
+                            <div class="flex size-10 items-center justify-center rounded-full bg-secondary text-muted-foreground">
+                                {SunIcon}
+                            </div>
+                            <div class="flex flex-col">
+                                <span class="font-medium text-foreground">{t().settings.appearance.theme}</span>
+                                <span class="text-sm text-muted-foreground">{theme() === "dark" ? t().settings.appearance.darkMode : t().settings.appearance.lightMode}</span>
+                            </div>
+                        </div>
+                        <Switch checked={theme() === "dark"} onChange={toggleTheme} />
+                    </div>
+                </Card>
+            </section>
+
+            <section class="flex flex-col gap-4">
+                <h2 class="text-lg font-semibold text-foreground">
+                    {t().settings.notifications.title}
+                </h2>
+
+                <Card class="flex flex-col">
+                    <For each={[
+                        { label: t().settings.notifications.items.bookingConfirm, active: true },
+                        { label: t().settings.notifications.items.reminder24h, active: true },
+                        { label: t().settings.notifications.items.offers, active: false },
+                        { label: t().settings.notifications.items.loyaltyUpdates, active: true },
+                        { label: t().settings.notifications.items.appNews, active: false },
+                        { label: t().settings.notifications.items.weeklySummary, active: true }
+                    ]}>
+                        {(notif) => (
+                            <div class="flex items-center justify-between border-b border-border p-5 px-6 last:border-none">
+                                <span class="font-medium text-foreground">{notif.label}</span>
+                                <Switch checked={notif.active} />
+                            </div>
+                        )}
+                    </For>
+                </Card>
+            </section>
+
+            <section class="flex flex-col gap-4">
+                <h2 class="text-lg font-semibold text-foreground">
+                    {t().settings.security.title}
+                </h2>
+
+                <Card class="flex flex-col gap-8 p-6 md:p-8">
                     <div>
-                        <div style={{ "font-weight": "var(--font-weight-semibold)", "font-size": "var(--font-size-sm)", color: "var(--color-foreground)", "margin-bottom": "4px" }}>{t().settings.profile.photo}</div>
-                        <div style={{ "font-size": "13px", color: "var(--color-cliente)", "font-weight": "var(--font-weight-medium)", cursor: "pointer" }}>{t().settings.profile.changePhoto}</div>
+                        <Input labelText={t().settings.security.currentPassword} type="password" placeholder="••••••••" validate={(val) => !val ? err().reqCurrentPass : null} />
                     </div>
-                </div>
 
-                <div style={{ display: "grid", "grid-template-columns": "1fr 1fr", gap: "var(--space-6)", "margin-bottom": "var(--space-8)" }}>
-                    <Input labelText={t().settings.profile.nameLabel} placeholder="Ana Clara Matos" type="text" onInput={(e) => e.currentTarget.value = e.currentTarget.value.replace(/[^a-zA-ZÀ-ÿ\s]/g, "")} validate={(val) => !val.trim() ? err().reqName : null} />
-                    <Input labelText={t().settings.profile.phoneLabel} placeholder="(41) 9 9812-2234" type="tel" onInput={(e) => { let v = e.currentTarget.value.replace(/\D/g, ""); if (v.length > 11) v = v.slice(0, 11); if (v.length > 7) e.currentTarget.value = `(${v.slice(0, 2)}) ${v.slice(2, 7)}-${v.slice(7)}`; else if (v.length > 2) e.currentTarget.value = `(${v.slice(0, 2)}) ${v.slice(2)}`; else e.currentTarget.value = v; }} validate={(val) => val.replace(/\D/g, "").length < 10 ? err().reqPhone : null} />
-                    <Input labelText={t().settings.profile.emailLabel} placeholder="ana@email.com" type="email" validate={(val) => { if (!val.trim()) return err().reqEmail; if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) return err().invalidEmail; return null; }} />
-                    <Input labelText={t().settings.profile.cityLabel} placeholder="Curitiba - PR" type="text" validate={(val) => !val.trim() ? err().reqCity : null} />
-                </div>
-                <Button variant="primary" style={{ "background-color": "var(--color-primary)", color: "var(--color-primary-foreground)", display: "flex", gap: "8px", "align-items": "center" }}>
-                    {SaveIcon} {t().settings.profile.saveBtn}
-                </Button>
-            </Card>
-
-            <h2 style={{ "font-size": "var(--font-size-base)", "font-weight": "var(--font-weight-semibold)", "margin-bottom": "var(--space-4)", color: "var(--color-foreground)" }}>
-                {t().settings.appearance.title}
-            </h2>
-            <Card style={{ "margin-bottom": "var(--space-10)" }}>
-                <div style={{ display: "flex", "align-items": "center", "justify-content": "space-between", padding: "var(--space-6)", "border-bottom": "1px solid var(--color-border)" }}>
-                    <div style={{ display: "flex", "align-items": "center", gap: "var(--space-4)" }}>
-                        <div style={{ width: "40px", height: "40px", "border-radius": "50%", "background-color": "var(--color-muted)", color: "var(--color-muted-foreground)", display: "flex", "align-items": "center", "justify-content": "center" }}>{GlobeIcon}</div>
-                        <span style={{ "font-weight": "var(--font-weight-medium)", color: "var(--color-foreground)" }}>{t().settings.appearance.language}</span>
+                    <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+                        <Input labelText={t().settings.security.newPassword} type="password" onInput={(e) => setNovaSenha(e.currentTarget.value)} validate={(val) => val.length > 0 && val.length < 6 ? err().minPass : null} />
+                        <Input labelText={t().settings.security.confirmPassword} type="password" validate={(val) => (val || novaSenha()) && val !== novaSenha() ? err().passMismatch : null} />
                     </div>
-                    <div style={{ transform: "scale(0.85)", "transform-origin": "right center" }}>
-                        <Tabs activeValue={idioma()} onChange={(val) => setIdioma(val as Language)} items={[{ label: "PT", value: "PT" }, { label: "EN", value: "EN" }]} />
-                    </div>
-                </div>
 
-                <div style={{ display: "flex", "align-items": "center", "justify-content": "space-between", padding: "var(--space-6)" }}>
-                    <div style={{ display: "flex", "align-items": "center", gap: "var(--space-4)" }}>
-                        <div style={{ width: "40px", height: "40px", "border-radius": "50%", "background-color": "var(--color-muted)", display: "flex", "align-items": "center", "justify-content": "center" }}>{SunIcon}</div>
-                        <div>
-                            <div style={{ "font-weight": "var(--font-weight-medium)", color: "var(--color-foreground)" }}>{t().settings.appearance.theme}</div>
-                            <div style={{ "font-size": "13px", color: "var(--color-muted-foreground)" }}>{theme() === "dark" ? t().settings.appearance.darkMode : t().settings.appearance.lightMode}</div>
-                        </div>
+                    <div class="pt-2">
+                        <Button variant="primary">
+                            {LockIcon} {t().settings.security.changePasswordBtn}
+                        </Button>
                     </div>
-                    <div onClick={toggleTheme} style={{ cursor: "pointer" }}><Switch checked={theme() === "dark"} /></div>
-                </div>
-            </Card>
-
-            <h2 style={{ "font-size": "var(--font-size-base)", "font-weight": "var(--font-weight-semibold)", "margin-bottom": "var(--space-4)", color: "var(--color-foreground)" }}>
-                {t().settings.notifications.title}
-            </h2>
-            <Card style={{ "margin-bottom": "var(--space-10)" }}>
-                {[ { label: t().settings.notifications.items.bookingConfirm, active: true }, { label: t().settings.notifications.items.reminder24h, active: true }, { label: t().settings.notifications.items.offers, active: false }, { label: t().settings.notifications.items.loyaltyUpdates, active: true }, { label: t().settings.notifications.items.appNews, active: false }, { label: t().settings.notifications.items.weeklySummary, active: true } ].map((notif, index) => (
-                    <div style={{ display: "flex", "align-items": "center", "justify-content": "space-between", padding: "20px var(--space-6)", "border-bottom": index === 5 ? "none" : "1px solid var(--color-border)" }}>
-                        <span style={{ "font-weight": "var(--font-weight-medium)", color: "var(--color-foreground)" }}>{notif.label}</span>
-                        <Switch checked={notif.active} />
-                    </div>
-                ))}
-            </Card>
-
-            <h2 style={{ "font-size": "var(--font-size-base)", "font-weight": "var(--font-weight-semibold)", "margin-bottom": "var(--space-4)", color: "var(--color-foreground)" }}>
-                {t().settings.security.title}
-            </h2>
-            <Card style={{ "margin-bottom": "var(--space-10)", padding: "var(--space-8)" }}>
-                <div style={{ "margin-bottom": "var(--space-6)" }}>
-                    <Input labelText={t().settings.security.currentPassword} type="password" placeholder="••••••••" validate={(val) => !val ? err().reqCurrentPass : null} />
-                </div>
-                <div style={{ display: "grid", "grid-template-columns": "1fr 1fr", gap: "var(--space-6)", "margin-bottom": "var(--space-8)" }}>
-                    <Input labelText={t().settings.security.newPassword} type="password" onInput={(e) => setNovaSenha(e.currentTarget.value)} validate={(val) => val.length > 0 && val.length < 6 ? err().minPass : null} />
-                    <Input labelText={t().settings.security.confirmPassword} type="password" validate={(val) => (val || novaSenha()) && val !== novaSenha() ? err().passMismatch : null} />
-                </div>
-                <Button variant="primary" style={{ "background-color": "var(--color-primary)", color: "var(--color-primary-foreground)", display: "flex", gap: "8px", "align-items": "center" }}>
-                    {LockIcon} {t().settings.security.changePasswordBtn}
-                </Button>
-            </Card>
+                </Card>
+            </section>
         </div>
     );
 }

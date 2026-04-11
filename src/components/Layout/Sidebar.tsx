@@ -1,45 +1,42 @@
 import { Show } from "solid-js";
-import { Avatar } from "~/components/Widgets/Avatar/Avatar";
-import { NavItem } from "~/components/Layout/NavItem/NavItem";
+import { Avatar } from "~/components/Widgets/Avatar";
+import { NavItem } from "~/components/Layout/NavItem";
 import { accountRole, isDark, t, idioma } from "~/store/appState";
 import { ZelloIcon, HomeIcon, PlusIcon, CalendarIcon, HeartIcon, RibbonIcon, SettingsIcon, LogoutIcon, ChevronDownIcon } from "~/components/Icons/Icons";
 
+
 export function Sidebar() {
     return (
-        <aside style={{
-            width: "var(--sidebar-width)",
-            "background-color": isDark() ? "var(--color-sidebar)" : "var(--color-mar-noturno)",
-            color: isDark() ? "var(--color-sidebar-foreground)" : "#FFFFFF",
-            display: "flex",
-            "flex-direction": "column",
-            "border-right": isDark() ? "1px solid var(--color-sidebar-border)" : "none",
-            transition: "all 0.2s ease"
-        }}>
-            <div style={{ padding: "var(--space-6)", display: "flex", "align-items": "center", gap: "var(--space-3)" }}>
-                <div style={{ width: "32px", height: "32px", "border-radius": "50%", "background-color": isDark() ? "var(--color-primary)" : "rgba(255, 255, 255, 0.1)", display: "flex", "align-items": "center", "justify-content": "center", color: isDark() ? "var(--color-primary-foreground)" : "#FFFFFF" }}>
+        <aside
+            class="flex flex-col w-[--sidebar-width] transition-all duration-200 border-r"
+            classList={{
+                "bg-sidebar text-white border-white/10": isDark(),
+                "bg-[#1A2B42] text-white border-none": !isDark()
+            }}
+        >
+            <div class="p-6 flex items-center gap-3">
+                <div class="w-8 h-8 rounded-full flex items-center justify-center bg-white/10 text-white">
                     {ZelloIcon}
                 </div>
-                <span style={{ "font-weight": "var(--font-weight-semibold)", "font-size": "var(--font-size-xl)", color: isDark() ? "var(--color-sidebar-foreground)" : "#FFFFFF" }}>
-                    Zello
-                </span>
+                <span class="font-semibold text-xl">Zello</span>
             </div>
 
-            <div style={{ padding: "0 var(--space-4) var(--space-6) var(--space-4)" }}>
-                <div style={{ display: "flex", "align-items": "center", gap: "var(--space-3)", padding: "var(--space-3)", "background-color": isDark() ? "var(--color-sidebar-accent)" : "rgba(255, 255, 255, 0.05)", "border-radius": "var(--radius-sm)", cursor: "pointer" }}>
+            <div class="px-4 pb-6">
+                <div class="flex items-center gap-3 p-3 rounded-sm cursor-pointer bg-white/5 hover:bg-white/10 transition-colors">
                     <Avatar size="md" fallbackInitials="AC" />
-                    <div style={{ flex: 1 }}>
-                        <div style={{ "font-weight": "var(--font-weight-semibold)", "font-size": "var(--font-size-sm)", color: isDark() ? "var(--color-sidebar-foreground)" : "#FFFFFF" }}>
+                    <div class="flex-1">
+                        <div class="font-semibold text-sm">
                             {accountRole() === "cliente" ? t().sidebar.clientName : t().sidebar.profName}
                         </div>
-                        <div style={{ "font-size": "var(--font-size-xs)", color: isDark() ? "var(--color-muted-foreground)" : "#9CA3AF" }}>
+                        <div class="text-xs text-gray-400">
                             {accountRole() === "cliente" ? t().sidebar.clientTier : t().sidebar.profTier}
                         </div>
                     </div>
-                    <span style={{ color: isDark() ? "var(--color-muted-foreground)" : "#9CA3AF" }}>{ChevronDownIcon}</span>
+                    <span class="text-gray-400">{ChevronDownIcon}</span>
                 </div>
             </div>
 
-            <nav style={{ flex: 1, padding: "0 var(--space-4)", display: "flex", "flex-direction": "column", gap: "var(--space-1)", "overflow-y": "auto" }}>
+            <nav class="flex-1 px-4 flex flex-col gap-3 overflow-y-auto">
                 <Show when={accountRole() === "cliente"}>
                     <NavItem label={t().sidebar.nav.home} icon={HomeIcon} href="/" />
                     <NavItem label={t().sidebar.nav.newBooking} icon={PlusIcon} href="/nova-reserva" />

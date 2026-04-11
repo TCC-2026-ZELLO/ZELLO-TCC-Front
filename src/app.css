@@ -1,205 +1,124 @@
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
+@import "tailwindcss";
+
+@theme {
+    /* ─── Cores de Marca & Interface ────────────────────────────── */
+    --color-background: var(--bg);
+    --color-foreground: var(--fg);
+    --color-card: var(--card);
+    --color-card-foreground: var(--fg);
+
+    --color-primary: var(--primary);
+    --color-primary-foreground: var(--primary-fg);
+
+    --color-secondary: var(--secondary);
+    --color-secondary-foreground: var(--secondary-fg);
+
+    --color-muted-foreground: var(--muted-fg);
+    --color-border: var(--border);
+
+    /* ─── Cores de Roles (Personas) ────────────────────────────── */
+    --color-cliente: #7C3AED;      /* Roxo */
+    --color-profissional: #0D9488; /* Teal */
+    --color-gestor: #D97706;      /* Amber */
+
+    /* ─── Cores de Status (Feedback) ────────────────────────────── */
+    --color-success: #10B981;
+    --color-warning: #D97706;
+    --color-error: #D4183D;
+    --color-info: #3B82F6;
+
+    /* ─── Cores para Gráficos (Data Viz) ────────────────────────── */
+    --color-chart-1: var(--primary);
+    --color-chart-2: #4A90E2;
+    --color-chart-3: #7B68EE;
+    --color-chart-4: #50C878;
+    --color-chart-5: #FF6B6B;
+
+    /* ─── Sidebar ──────────────────────────────────────────────── */
+    --color-sidebar: var(--sidebar-bg);
+    --color-sidebar-foreground: #FFFFFF;
+
+    /* ─── Tipografia ───────────────────────────────────────────── */
+    --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+
+    --font-weight-medium: 500;
+    --font-weight-semibold: 600;
+    --font-weight-bold: 700;
+
+    --font-size-xs: 12px;
+    --font-size-sm: 14px;
+    --font-size-base: 16px;
+    --font-size-lg: 18px;
+    --font-size-xl: 20px;
+    --font-size-2xl: 24px;
+    --font-size-3xl: 30px;
+
+    /* ─── Bordas & Sombras ─────────────────────────────────────── */
+    --radius-md: 10px;
+    --radius-lg: 12px;
+    --radius-xl: 16px;
+    --radius-full: 9999px;
+
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1);
+
+    /* ─── Sizing Customizado ───────────────────────────────────── */
+    --spacing-sidebar: 18rem;
+    --spacing-header: 72px;
 }
+
+/* ─── Lógica de Variáveis (Light/Dark) ────────────────────────── */
 
 :root {
-  /* Base */
-  --color-background: #f8f9fb;
-  --color-foreground: #1a2b42;
-  --color-card: #ffffff;
-  --color-card-foreground: #1a2b42;
-  --color-popover: #ffffff;
-  --color-popover-foreground: #1a2b42;
-
-  /* Actions */
-  --color-primary: #1a2b42;
-  --color-primary-foreground: #ffffff;
-  --color-secondary: #e8eaed;
-  --color-secondary-foreground: #1a2b42;
-
-  /* Subtle */
-  --color-muted: #e8eaed;
-  --color-muted-foreground: #5f6c7b;
-
-  /* Accent */
-  --color-accent: #0f1b2e;
-  --color-accent-foreground: #ffffff;
-
-  /* Destructive */
-  --color-destructive: #d4183d;
-  --color-destructive-foreground: #ffffff;
-
-  /* Borders & Focus */
-  --color-border: rgba(26, 43, 66, 0.1);
-  --color-ring: #1a2b42;
-
-  /* Inputs */
-  --color-input-background: #ffffff;
-  --color-switch-background: #cbced4;
-
-  /* Marca */
-  --color-mar-noturno: #1a2b42;
-  --color-vento-gelido: #e8eaed;
-
-  /* Status */
-  --color-success: #10b981;
-  --color-warning: #d97706;
-  --color-error: #d4183d;
-  --color-info: #3b82f6;
-
-  /* Personas (accent por role) */
-  --color-cliente: #7c3aed;
-  --color-profissional: #0d9488;
-  --color-gestor: #d97706;
-  --color-admin: #e11d48;
-
-  /* Charts */
-  --color-chart-1: #1a2b42;
-  --color-chart-2: #4a90e2;
-  --color-chart-3: #7b68ee;
-  --color-chart-4: #50c878;
-  --color-chart-5: #ff6b6b;
-
-  /* Sidebar */
-  --color-sidebar: #1a2b42;
-  --color-sidebar-foreground: #ffffff;
-  --color-sidebar-primary: #7c3aed;
-  --color-sidebar-accent: rgba(255, 255, 255, 0.1);
-  --color-sidebar-border: rgba(255, 255, 255, 0.2);
-
-  /* ─── Tipografia ───────────────────────────────────────────── */
-
-  --font-family:
-    "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-
-  --font-size-xs: 0.75rem; /* 12px */
-  --font-size-sm: 0.875rem; /* 14px */
-  --font-size-base: 1rem; /* 16px */
-  --font-size-lg: 1.125rem; /* 18px */
-  --font-size-xl: 1.25rem; /* 20px */
-  --font-size-2xl: 1.5rem; /* 24px */
-  --font-size-3xl: 1.875rem; /* 30px */
-  --font-size-4xl: 2.25rem; /* 36px */
-
-  --font-weight-light: 300;
-  --font-weight-normal: 400;
-  --font-weight-medium: 500;
-  --font-weight-semibold: 600;
-  --font-weight-bold: 700;
-
-  --line-height: 1.5;
-  --letter-spacing-wide: 0.05em;
-  --letter-spacing-widest: 0.1em;
-
-  /* ─── Espaçamento ──────────────────────────────────────────── */
-  --space-0: 0;
-  --space-px: 1px;
-  --space-0-5: 0.125rem; /* 2px */
-  --space-1: 0.25rem; /* 4px */
-  --space-1-5: 0.375rem; /* 6px */
-  --space-2: 0.5rem; /* 8px */
-  --space-2-5: 0.625rem; /* 10px */
-  --space-3: 0.75rem; /* 12px */
-  --space-3-5: 0.875rem; /* 14px */
-  --space-4: 1rem; /* 16px */
-  --space-5: 1.25rem; /* 20px */
-  --space-6: 1.5rem; /* 24px */
-  --space-8: 2rem; /* 32px */
-  --space-10: 2.5rem; /* 40px */
-  --space-12: 3rem; /* 48px */
-  --space-16: 4rem; /* 64px */
-  --space-24: 6rem; /* 96px */
-
-  /* ─── Border Radius ────────────────────────────────────────── */
-
-  --radius: 0.75rem; /* 12px — base */
-  --radius-sm: calc(var(--radius) - 4px); /* 8px */
-  --radius-md: calc(var(--radius) - 2px); /* 10px */
-  --radius-lg: var(--radius); /* 12px */
-  --radius-xl: calc(var(--radius) + 4px); /* 16px */
-  --radius-full: 9999px;
-  --radius-2: 2px;
-  --radius-4: 4px;
-
-  /* ─── Sombras ──────────────────────────────────────────────── */
-
-  --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
-  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-  --shadow-lg:
-    0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-  --shadow-xl:
-    0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
-
-  /* ─── Sizing ───────────────────────────────────────────────── */
-
-  --sidebar-width: 18rem; /* 256px */
-  --sidebar-width-mobile: 18rem; /* 288px */
-  --sidebar-width-icon: 3rem; /* 48px */
-
-  /* ─── Transitions ──────────────────────────────────────────── */
-
-  --transition-fast: 150ms ease;
-  --transition-normal: 200ms ease;
-  --transition-slow: 300ms ease;
+    --bg: #F8F9FB;
+    --fg: #1A2B42;
+    --card: #FFFFFF;
+    --primary: #1A2B42;
+    --primary-fg: #FFFFFF;
+    --secondary: #E8EAED;
+    --secondary-fg: #1A2B42;
+    --muted-fg: #5F6C7B;
+    --border: rgba(26, 43, 66, 0.1);
+    --sidebar-bg: #1A2B42;
 }
-
-/* ─── Cores — Dark Mode ────────────────────────────────────────── */
 
 [data-theme="dark"] {
-  --color-background: #0d1b2e;
-  --color-foreground: #f0f4f8;
-  --color-card: #132035;
-  --color-card-foreground: #f0f4f8;
-  --color-popover: #132035;
-  --color-popover-foreground: #f0f4f8;
-
-  --color-primary: #f0f4f8;
-  --color-primary-foreground: #0d1b2e;
-  --color-secondary: #1e3250;
-  --color-secondary-foreground: #f0f4f8;
-
-  --color-muted: #1e3250;
-  --color-muted-foreground: #8ca0bc;
-
-  --color-accent: #1e3250;
-  --color-accent-foreground: #f0f4f8;
-
-  --color-border: rgba(240, 244, 248, 0.1);
-  --color-ring: #8ca0bc;
-
-  --color-input-background: rgba(240, 244, 248, 0.05);
-  --color-switch-background: #1e3250;
-
-  --color-sidebar: #0a1628;
-  --color-sidebar-foreground: #f0f4f8;
-  --color-sidebar-primary: #7c3aed;
-  --color-sidebar-accent: #1e3250;
-  --color-sidebar-border: rgba(240, 244, 248, 0.1);
-
-  --color-chart-1: #7c3aed;
-  --color-chart-2: #0d9488;
-  --color-chart-3: #d97706;
-  --color-chart-4: #e11d48;
-  --color-chart-5: #3b82f6;
+    --bg: #0D1B2E;
+    --fg: #F0F4F8;
+    --card: #132035;
+    --primary: #F0F4F8;
+    --primary-fg: #0D1B2E;
+    --secondary: #1E3250;
+    --secondary-fg: #F0F4F8;
+    --muted-fg: #8CA0BC;
+    --border: rgba(240, 244, 248, 0.1);
+    --sidebar-bg: #0A1628;
 }
 
-/* ─── Base ─────────────────────────────────────────────────────── */
+/* ─── Estilos Base ───────────────────────────────────────────── */
 
-html {
-  font-family: var(--font-family);
-  font-size: 16px;
-  line-height: var(--line-height);
-  color: var(--color-foreground);
-  background-color: var(--color-background);
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
+@layer base {
+    html {
+        @apply bg-background text-foreground antialiased font-sans;
+        /* Suaviza transições de cores ao trocar o tema */
+        transition: background-color 0.2s ease, color 0.2s ease;
+    }
 
-body {
-  min-height: 100vh;
+    body {
+        @apply min-h-screen;
+    }
+
+    /* Scrollbar customizada para combinar com o Zello */
+    ::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    ::-webkit-scrollbar-track {
+        @apply bg-transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+        @apply bg-muted-foreground/20 rounded-full hover:bg-muted-foreground/40 transition-colors;
+    }
 }
