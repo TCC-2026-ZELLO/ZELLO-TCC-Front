@@ -152,9 +152,9 @@ export default function Login() {
 
             <div class="text-center text-sm text-muted-foreground">
               Não tem uma conta?{" "}
-              <a href="#" class="font-bold text-primary hover:underline">
-                Cadastre-se grátis
-              </a>
+            <a href="/register" class="font-bold text-primary hover:underline">
+              Cadastre-se grátis
+            </a>
             </div>
           </div>
         </div>
