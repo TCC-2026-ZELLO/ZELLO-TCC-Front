@@ -43,7 +43,7 @@ export default function PasswordRecovery() {
 
           <div class="z-10 flex max-w-105 flex-col items-center text-center">
             <div class="mb-6 flex size-16 items-center justify-center rounded-xl bg-white/10 text-sidebar-foreground">
-              {ZelloIcon}
+              <ZelloIcon/>
             </div>
 
             <h1 class="mb-4 text-3xl font-bold text-sidebar-foreground">
@@ -78,7 +78,7 @@ export default function PasswordRecovery() {
         <div class="relative flex flex-1 items-center justify-center bg-background px-4">
           <div class="absolute right-6 top-6 flex gap-2">
             <button class="flex cursor-pointer items-center justify-center gap-1.5 rounded-full border border-border bg-card px-3 py-2 text-foreground transition-colors hover:bg-secondary">
-              {GlobeIcon}
+              <GlobeIcon/>
               <span class="text-xs font-semibold">PT</span>
             </button>
             <button
@@ -95,7 +95,7 @@ export default function PasswordRecovery() {
                   : "Mudar para Dark Mode"
               }
             >
-              {theme() === "dark" ? SunIcon : MoonIcon}
+              {theme() === "dark" ? <SunIcon/> : <MoonIcon/>}
             </button>
           </div>
 
@@ -133,7 +133,7 @@ export default function PasswordRecovery() {
             >
               <div class="flex flex-col items-center gap-4 py-4 text-center">
                 <div class="flex size-12 items-center justify-center rounded-full bg-success/10 text-success">
-                  {SuccessIcon}
+                  <SuccessIcon />
                 </div>
                 <div>
                   <h2 class="text-xl font-bold text-foreground">
