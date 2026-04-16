@@ -13,13 +13,16 @@
     --color-secondary: var(--secondary);
     --color-secondary-foreground: var(--secondary-fg);
 
+    --color-muted: var(--muted);
     --color-muted-foreground: var(--muted-fg);
+
     --color-border: var(--border);
+    --color-overlay: var(--overlay);
 
     /* ─── Cores de Roles (Personas) ────────────────────────────── */
     --color-cliente: #7C3AED;      /* Roxo */
     --color-profissional: #0D9488; /* Teal */
-    --color-gestor: #D97706;      /* Amber */
+    --color-gestor: #D97706;       /* Amber */
 
     /* ─── Cores de Status (Feedback) ────────────────────────────── */
     --color-success: #10B981;
@@ -78,9 +81,11 @@
     --primary-fg: #FFFFFF;
     --secondary: #E8EAED;
     --secondary-fg: #1A2B42;
+    --muted: #F3F4F6;
     --muted-fg: #5F6C7B;
     --border: rgba(26, 43, 66, 0.1);
     --sidebar-bg: #1A2B42;
+    --overlay: rgba(0, 0, 0, 0.5);
 }
 
 [data-theme="dark"] {
@@ -91,9 +96,11 @@
     --primary-fg: #0D1B2E;
     --secondary: #1E3250;
     --secondary-fg: #F0F4F8;
+    --muted: #0A1628;
     --muted-fg: #8CA0BC;
     --border: rgba(240, 244, 248, 0.1);
     --sidebar-bg: #0A1628;
+    --overlay: rgba(0, 0, 0, 0.7);
 }
 
 /* ─── Estilos Base ───────────────────────────────────────────── */

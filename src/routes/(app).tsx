@@ -17,7 +17,7 @@ export default function AppLayout(props: RouteSectionProps) {
             </div>
 
             <div style={{ position: "fixed", bottom: "var(--space-8)", right: "var(--space-8)", width: "48px", height: "48px", "background-color": "#4338CA", color: "white", "border-radius": "50%", display: "flex", "align-items": "center", "justify-content": "center", cursor: "pointer", "box-shadow": "var(--shadow-lg)" }}>
-                {HelpIcon}
+                <HelpIcon/>
             </div>
         </div>
     );

@@ -1,5 +1,7 @@
-import {JSX, Show} from "solid-js";
-import {A, useLocation} from "@solidjs/router";
+import { JSX, Show } from "solid-js";
+import { A, useLocation } from "@solidjs/router";
+
+import { isSidebarCollapsed } from "~/store/appState";
 
 interface NavItemProps {
     label: string;
@@ -16,40 +18,45 @@ export function NavItem(props: NavItemProps) {
     return (
         <A
             href={props.href || "#"}
-            class="group relative flex items-center justify-between px-3 py-3 no-underline transition-all duration-200 rounded-full"
+            class="group relative flex items-center no-underline transition-all duration-200 rounded-full"
             classList={{
-                "bg-white/15 text-white rounded-radius-full": isActive(),
+                "justify-between px-3 py-3 w-full": !isSidebarCollapsed(),
+                "justify-center w-11 h-11 shrink-0": isSidebarCollapsed(), // Formato bolinha quando colapsado
+                "bg-white/15 text-white": isActive(),
                 "bg-transparent text-muted-foreground hover:bg-white/10 hover:text-white": !isActive(),
             }}
         >
             <Show when={isActive()}>
-                <div class="absolute left-0 top-1/4 h-1/2 w-[3px] rounded-r bg-white"/>
+                <div class="absolute left-0 top-1/4 h-1/2 w-[3px] rounded-r bg-white" />
             </Show>
 
             <div class="flex items-center gap-3">
                 <span
-                    class="flex w-5 items-center justify-center transition-opacity"
-                    classList={{"opacity-100": isActive(), "opacity-70 group-hover:opacity-100": !isActive()}}
+                    class="flex w-5 items-center justify-center transition-opacity shrink-0"
+                    classList={{ "opacity-100": isActive(), "opacity-70 group-hover:opacity-100": !isActive() }}
                 >
-                  {props.icon}
+                    {props.icon}
                 </span>
-                <span
-                    class="text-sm"
-                    classList={{"font-semibold": isActive(), "font-medium": !isActive()}}
-                >
-                    {props.label}
-                </span>
+
+                <Show when={!isSidebarCollapsed()}>
+                    <span
+                        class="text-sm whitespace-nowrap"
+                        classList={{ "font-semibold": isActive(), "font-medium": !isActive() }}
+                    >
+                        {props.label}
+                    </span>
+                </Show>
             </div>
 
-            <Show when={props.badge}>
+            <Show when={props.badge && !isSidebarCollapsed()}>
                 <span
-                    class="rounded-full px-2 py-[2px] text-[11px] font-bold text-white"
+                    class="rounded-full px-2 py-[2px] text-[11px] font-bold text-white shrink-0"
                     classList={{
                         "bg-cliente": isActive(),
                         "bg-white/10": !isActive()
                     }}
                 >
-                  {props.badge}
+                    {props.badge}
                 </span>
             </Show>
         </A>

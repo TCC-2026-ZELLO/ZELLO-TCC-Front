@@ -119,7 +119,7 @@ export default function ZelloComponentsExample() {
                     <div class="flex flex-wrap items-center gap-4">
                         <div class="flex flex-col gap-2">
                             <span class="text-xs">Icon Button (Favorito)</span>
-                            <IconButton>{HeartIcon}</IconButton>
+                            <IconButton> <HeartIcon/> </IconButton>
                         </div>
 
                         <div class="mx-4 hidden h-10 w-px bg-border md:block"></div>
@@ -174,9 +174,9 @@ export default function ZelloComponentsExample() {
                 <section class="flex flex-col gap-4">
                     <h2 class="border-b border-border pb-2 text-xl font-semibold">10. NavItem (Sidebar Menu)</h2>
                     <div class="flex flex-col gap-1 rounded-lg bg-sidebar p-4">
-                        <NavItem label="Início" icon={HomeIcon} href="/" />
-                        <NavItem label="Meus Agendamentos" icon={CalendarIcon} badge={2} href="/example-active" />
-                        <NavItem label="Favoritos" icon={HeartIcon} href="/favoritos" />
+                        <NavItem label="Início" icon=<HomeIcon/> href="/" />
+                        <NavItem label="Meus Agendamentos" icon=<CalendarIcon/> badge={2} href="/example-active" />
+                        <NavItem label="Favoritos" icon=<HeartIcon/> href="/favoritos" />
                     </div>
                 </section>
 
