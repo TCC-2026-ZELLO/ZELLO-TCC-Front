@@ -29,7 +29,10 @@ const ACCOUNT_OPTIONS: {
 const validate = {
   nome:      (v: string) => v.trim().length < 3 ? "Informe seu nome completo" : null,
   email:     (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) ? null : "E-mail inválido",
-  senha:     (v: string) => v.length < 8 ? "A senha deve ter no mínimo 8 caracteres e conter letras/números." : null,
+  senha:     (v: string) =>
+    v.length < 8 || !/[A-Za-z]/.test(v) || !/\d/.test(v)
+      ? "A senha deve ter no mínimo 8 caracteres e conter letras/números."
+      : null,
   confirmar: (senha: string) => (v: string) => v !== senha ? "As senhas não coincidem" : null,
 };
 
