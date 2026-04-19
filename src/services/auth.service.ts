@@ -1,6 +1,5 @@
-import {accessToken, API, setAccessToken, setAccountRole, setCurrentUser} from "~/store/appState";
+import {API, setAccessToken, setAccountRole, setCurrentUser} from "~/store/appState";
 import { isServer } from "solid-js/web";
-import { jwtDecode } from "jwt-decode";
 
 export type AccountType = "CLIENTE" | "PROFISSIONAL" | "ESTABELECIMENTO";
 
