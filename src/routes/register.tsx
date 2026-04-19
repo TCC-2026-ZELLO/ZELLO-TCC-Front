@@ -373,6 +373,21 @@ export default function Register() {
                   </div>
                 </Show>
 
+                <div class="rounded-xl bg-sidebar p-4 shadow-sm">
+                  <p class="text-xs text-sidebar-foreground/80 leading-relaxed text-left">
+                    <strong class="text-sidebar-foreground">
+                      Dica de Vinculação:
+                    </strong>{" "}
+                    Se você já possui uma conta no Zello e quer habilitar este
+                    novo perfil, preencha os dados usando{" "}
+                    <strong class="text-sidebar-foreground">
+                      exatamente a sua Senha e E-mail atuais
+                    </strong>
+                    . O novo perfil será automaticamente integrado na sua mesma
+                    conta!
+                  </p>
+                </div>
+
                 <form class="flex flex-col gap-4" onSubmit={handleSubmit}>
                   <Input
                     labelText="Nome completo"
@@ -463,7 +478,7 @@ export default function Register() {
                   class="w-full"
                   disabled={loading()}
                   onClick={() => {
-                    window.location.href = `${API}/auth/google`;
+                    window.location.href = `${API}/auth/google?role=${accountType()}`;
                   }}
                 >
                   <GoogleIcon />

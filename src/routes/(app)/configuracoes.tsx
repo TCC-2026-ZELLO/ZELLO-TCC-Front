@@ -29,7 +29,12 @@ import {
 
 export default function Settings() {
   // Sinais de estado dos formulários
+  const [senhaAtual, setSenhaAtual] = createSignal("");
   const [novaSenha, setNovaSenha] = createSignal("");
+  const [confirmarSenha, setConfirmarSenha] = createSignal("");
+
+  const [loadingSecurity, setLoadingSecurity] = createSignal(false);
+  const [feedbackSecurity, setFeedbackSecurity] = createSignal({ type: "", message: "" });
   const [bio, setBio] = createSignal("");
   const [visibilityStatus, setVisibilityStatus] = createSignal(false); // Adicionado para bater com seu DTO
 
@@ -53,7 +58,7 @@ export default function Settings() {
       invalidEmail: "E-mail inválido.",
       reqCity: "A cidade é obrigatória.",
       reqCurrentPass: "A senha atual é obrigatória.",
-      minPass: "Mínimo de 6 caracteres.",
+      strongPass: "Requer 8+ caracteres, maiúsculas, minúsculas, números e especiais.",
       passMismatch: "As senhas não coincidem.",
       reqBio: "A biografia é obrigatória para profissionais.",
     },
@@ -64,12 +69,19 @@ export default function Settings() {
       invalidEmail: "Invalid email.",
       reqCity: "City is required.",
       reqCurrentPass: "Current password is required.",
-      minPass: "Minimum of 6 characters.",
+      strongPass: "Requires 8+ chars, uppercase, lowercase, numbers and special chars.",
       passMismatch: "Passwords do not match.",
       reqBio: "Biography is required for professionals.",
     },
   };
   const err = () => errors[idioma()];
+
+  const isStrongPassword = (v: string) => {
+    return (
+      v.length >= 8 &&
+      /(?=.*\d)(?=.*\W+)(?![.\n])(?=.*[A-Z])(?=.*[a-z]).*$/.test(v)
+    );
+  };
 
   const handleSaveBasicData = async () => {
     const user = currentUser();
@@ -84,6 +96,7 @@ export default function Settings() {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken()}`,
         },
         credentials: "include",
         body: JSON.stringify({
@@ -101,7 +114,7 @@ export default function Settings() {
       setCurrentUser(updatedUser);
       localStorage.setItem("user", JSON.stringify(updatedUser));
       setFeedbackBasic({ type: "success", message: "Dados atualizados!" });
-      setTimeout(() => setFeedbackBasic({ type: "", message: "" }), 3000);
+      setTimeout(() => window.location.reload(), 1200);
     } catch (error: any) {
       setFeedbackBasic({ type: "error", message: error.message });
     } finally {
@@ -138,12 +151,53 @@ export default function Settings() {
         message: "Vitrine atualizada com sucesso!",
       });
 
-      // Remove a mensagem de sucesso após 3 segundos
-      setTimeout(() => setFeedbackPro({ type: "", message: "" }), 3000);
+      setTimeout(() => window.location.reload(), 1200);
     } catch (error: any) {
       setFeedbackPro({ type: "error", message: error.message });
     } finally {
       setLoadingPro(false);
+    }
+  };
+
+  const handleSavePassword = async () => {
+    const user = currentUser();
+    if (!user || user.provider === "google") return;
+    
+    if (!senhaAtual()) return;
+    if (novaSenha() !== confirmarSenha()) return;
+    if (!isStrongPassword(novaSenha())) return;
+
+    setLoadingSecurity(true);
+    setFeedbackSecurity({ type: "", message: "" });
+
+    try {
+      const res = await fetch(`${API}/users/${user.id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken()}`,
+        },
+        credentials: "include",
+        body: JSON.stringify({
+          currentPassword: senhaAtual(),
+          password: novaSenha(),
+        }),
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || "Erro ao alterar a senha.");
+      }
+
+      setFeedbackSecurity({ type: "success", message: "Senha alterada com sucesso!" });
+      setSenhaAtual("");
+      setNovaSenha("");
+      setConfirmarSenha("");
+      setTimeout(() => window.location.reload(), 1200);
+    } catch (error: any) {
+      setFeedbackSecurity({ type: "error", message: error.message });
+    } finally {
+      setLoadingSecurity(false);
     }
   };
 
@@ -322,48 +376,72 @@ export default function Settings() {
         </section>
       </Show>
 
-      <section class="flex flex-col gap-4">
-        <h2 class="text-lg font-semibold text-foreground">
-          {t().settings.security.title}
-        </h2>
+      <Show when={currentUser()?.provider !== "google"}>
+        <section class="flex flex-col gap-4">
+          <h2 class="text-lg font-semibold text-foreground">
+            {t().settings.security.title}
+          </h2>
 
-        <Card class="flex flex-col gap-8 p-6 md:p-8">
-          <div>
-            <Input
-              labelText={t().settings.security.currentPassword}
-              type="password"
-              placeholder="••••••••"
-              validate={(val) => (!val ? err().reqCurrentPass : null)}
-            />
-          </div>
+          <Card class="flex flex-col gap-8 p-6 md:p-8">
+            <div>
+              <Input
+                labelText={t().settings.security.currentPassword}
+                type="password"
+                placeholder="••••••••"
+                value={senhaAtual()}
+                onInput={(e) => setSenhaAtual(e.currentTarget.value)}
+                validate={(val) => (!val ? err().reqCurrentPass : null)}
+                disabled={loadingSecurity()}
+              />
+            </div>
 
-          <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
-            <Input
-              labelText={t().settings.security.newPassword}
-              type="password"
-              onInput={(e) => setNovaSenha(e.currentTarget.value)}
-              validate={(val) =>
-                val.length > 0 && val.length < 6 ? err().minPass : null
-              }
-            />
-            <Input
-              labelText={t().settings.security.confirmPassword}
-              type="password"
-              validate={(val) =>
-                (val || novaSenha()) && val !== novaSenha()
-                  ? err().passMismatch
-                  : null
-              }
-            />
-          </div>
+            <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+              <Input
+                labelText={t().settings.security.newPassword}
+                type="password"
+                value={novaSenha()}
+                onInput={(e) => setNovaSenha(e.currentTarget.value)}
+                validate={(val) =>
+                  val.length > 0 && !isStrongPassword(val)
+                    ? err().strongPass
+                    : null
+                }
+                disabled={loadingSecurity()}
+              />
+              <Input
+                labelText={t().settings.security.confirmPassword}
+                type="password"
+                value={confirmarSenha()}
+                onInput={(e) => setConfirmarSenha(e.currentTarget.value)}
+                validate={(val) =>
+                  (val || novaSenha()) && val !== novaSenha()
+                    ? err().passMismatch
+                    : null
+                }
+                disabled={loadingSecurity()}
+              />
+            </div>
 
-          <div class="pt-2">
-            <Button variant="primary">
-              <LockIcon /> {t().settings.security.changePasswordBtn}
-            </Button>
-          </div>
-        </Card>
-      </section>
+            <Show when={feedbackSecurity().message}>
+              <div
+                class={`rounded-lg px-4 py-3 text-sm font-medium ${feedbackSecurity().type === "success" ? "bg-green-50 text-green-700 border border-green-200" : "bg-red-50 text-red-700 border border-red-200"}`}
+              >
+                {feedbackSecurity().message}
+              </div>
+            </Show>
+
+            <div class="pt-2">
+              <Button 
+                variant="primary" 
+                onClick={handleSavePassword}
+                disabled={loadingSecurity()}
+              >
+                <LockIcon /> {loadingSecurity() ? "Salvando..." : t().settings.security.changePasswordBtn}
+              </Button>
+            </div>
+          </Card>
+        </section>
+      </Show>
     </div>
   );
 }
