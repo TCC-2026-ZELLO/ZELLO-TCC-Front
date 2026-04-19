@@ -91,6 +91,22 @@ export async function login(payload: LoginPayload) {
   }
 }
 
+function resolveAccountRole(roles: string[]) {
+  if (roles.includes("manager")) {
+    return "estabelecimento";
+  }
+
+  if (roles.includes("professional")) {
+    return "profissional";
+  }
+
+  if (roles.includes("client")) {
+    return "cliente";
+  }
+
+  return "cliente";
+}
+
 export function loginAuth(user: User) {
   setCurrentUser(user);
   
@@ -101,11 +117,7 @@ export function loginAuth(user: User) {
     localStorage.setItem("user", JSON.stringify(user));
   }
 
-  if (user.roles.includes("professional")) {
-    setAccountRole("profissional");
-  } else {
-    setAccountRole("cliente");
-  }
+  setAccountRole(resolveAccountRole(user.roles));
 }
 
 // Logout
