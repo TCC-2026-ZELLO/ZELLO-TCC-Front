@@ -6,7 +6,7 @@ import { Switch } from "~/components/Widgets/Switch";
 import { Tabs } from "~/components/Widgets/Tabs";
 import {
     accountRole, idioma, setIdioma, theme, toggleTheme, t,
-    API, accessToken, currentUser // <-- Importados do AppState
+    API, accessToken, currentUser, setCurrentUser
 } from "~/store/appState";
 import { Language } from "~/store/translations";
 import { CameraIcon, SaveIcon, GlobeIcon, SunIcon, LockIcon, BriefcaseIcon, ImageIcon } from "~/components/Icons/Icons";
@@ -21,11 +21,50 @@ export default function Settings() {
     const [loadingPro, setLoadingPro] = createSignal(false);
     const [feedbackPro, setFeedbackPro] = createSignal({ type: "", message: "" });
 
+    // Sinais para atualizar Dados Básicos
+    const [nomeBase, setNomeBase] = createSignal("");
+    const [loadingBasic, setLoadingBasic] = createSignal(false);
+    const [feedbackBasic, setFeedbackBasic] = createSignal({ type: "", message: "" });
+
     const errors = {
         PT: { reqName: "O nome é obrigatório.", reqPhone: "Telefone incompleto.", reqEmail: "O e-mail é obrigatório.", invalidEmail: "E-mail inválido.", reqCity: "A cidade é obrigatória.", reqCurrentPass: "A senha atual é obrigatória.", minPass: "Mínimo de 6 caracteres.", passMismatch: "As senhas não coincidem.", reqBio: "A biografia é obrigatória para profissionais." },
         EN: { reqName: "Name is required.", reqPhone: "Incomplete phone.", reqEmail: "Email is required.", invalidEmail: "Invalid email.", reqCity: "City is required.", reqCurrentPass: "Current password is required.", minPass: "Minimum of 6 characters.", passMismatch: "Passwords do not match.", reqBio: "Biography is required for professionals." }
     };
     const err = () => errors[idioma()];
+
+    const handleSaveBasicData = async () => {
+        const user = currentUser();
+        if (!user || (!nomeBase() && nomeBase().trim() === "")) return;
+        
+        setLoadingBasic(true);
+        setFeedbackBasic({ type: "", message: "" });
+        
+        try {
+            const res = await fetch(`${API}/users/${user.id}`, {
+                method: "PATCH",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                credentials: "include",
+                body: JSON.stringify({
+                    nome: nomeBase() || user.name
+                })
+            });
+            if (!res.ok) {
+                const errorData = await res.json();
+                throw new Error(errorData.message || "Erro ao salvar perfil.");
+            }
+            const updatedUser = await res.json();
+            setCurrentUser(updatedUser);
+            localStorage.setItem("user", JSON.stringify(updatedUser));
+            setFeedbackBasic({ type: "success", message: "Dados atualizados!" });
+            setTimeout(() => setFeedbackBasic({ type: "", message: "" }), 3000);
+        } catch (error: any) {
+            setFeedbackBasic({ type: "error", message: error.message });
+        } finally {
+            setLoadingBasic(false);
+        }
+    };
 
     // ─── CONEXÃO COM O BACKEND (RF7: Atualizar Perfil Profissional) ─────────
     const handleSaveProfessionalProfile = async () => {
@@ -97,17 +136,22 @@ export default function Settings() {
                     </div>
 
                     <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
-                        {/* Como pegamos o currentUser, já podemos popular o nome e email! */}
-                        <Input labelText={t().settings.profile.nameLabel} value={currentUser()?.name || ""} placeholder="Ana Clara Matos" type="text" />
+                        <Input labelText={t().settings.profile.nameLabel} value={nomeBase() || currentUser()?.name || ""} onInput={(e) => setNomeBase(e.currentTarget.value)} placeholder="Ana Clara Matos" type="text" />
                         <Input labelText={t().settings.profile.phoneLabel} placeholder="(41) 9 9812-2234" type="tel" />
                         <Input labelText={t().settings.profile.emailLabel} value={currentUser()?.email || ""} placeholder="ana@email.com" type="email" disabled />
                         <Input labelText={t().settings.profile.cityLabel} placeholder="Curitiba - PR" type="text" />
                     </div>
 
+                    <Show when={feedbackBasic().message}>
+                        <div class={`rounded-lg px-4 py-3 text-sm font-medium ${feedbackBasic().type === 'success' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'}`}>
+                            {feedbackBasic().message}
+                        </div>
+                    </Show>
+
                     <Show when={accountRole() === "cliente"}>
                         <div class="pt-2">
-                            <Button variant="primary">
-                                <SaveIcon/> {t().settings.profile.saveBtn}
+                            <Button variant="primary" onClick={handleSaveBasicData} disabled={loadingBasic()}>
+                                <SaveIcon/> {loadingBasic() ? "Salvando..." : t().settings.profile.saveBtn}
                             </Button>
                         </div>
                     </Show>
@@ -127,7 +171,7 @@ export default function Settings() {
                                 <span class="font-medium text-foreground">Perfil Público</span>
                                 <span class="text-sm text-muted-foreground">Permitir que clientes encontrem sua vitrine nas buscas.</span>
                             </div>
-                            <Switch checked={visibilityStatus()} onChange={(val) => setVisibilityStatus(val)} />
+                            <Switch checked={visibilityStatus()} onChange={(e) => setVisibilityStatus(e.currentTarget.checked)} />
                         </div>
 
                         <div class="flex flex-col gap-2">

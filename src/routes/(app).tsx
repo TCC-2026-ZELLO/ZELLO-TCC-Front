@@ -3,6 +3,7 @@ import { Sidebar } from "~/components/Layout/Sidebar";
 import { Header } from "~/components/Layout/Header";
 import { HelpIcon } from "~/components/Icons/Icons";
 import {RouteSectionProps} from "@solidjs/router";
+import { ProtectedRoute } from "~/components/Layout/ProtectedRoute";
 
 export default function AppLayout(props: RouteSectionProps) {
     return (
@@ -12,7 +13,9 @@ export default function AppLayout(props: RouteSectionProps) {
             <div style={{ flex: 1, display: "flex", "flex-direction": "column" }}>
                 <Header />
                 <main style={{ flex: 1, "overflow-y": "auto", padding: "var(--space-10)", "background-color": "var(--color-background)", transition: "all 0.2s ease" }}>
-                    {props.children}
+                    <ProtectedRoute>
+                        {props.children}
+                    </ProtectedRoute>
                 </main>
             </div>
 

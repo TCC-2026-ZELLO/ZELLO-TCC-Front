@@ -157,7 +157,14 @@ export default function Login() {
                             <div class="h-px flex-1 bg-border"/>
                         </div>
 
-                        <Button variant="outline" class="w-full" disabled={loading()}>
+                        <Button 
+                            variant="outline" 
+                            class="w-full" 
+                            disabled={loading()}
+                            onClick={() => {
+                                window.location.href = "http://localhost:3001/auth/google";
+                            }}
+                        >
                             <GoogleIcon/>
                             Entrar com Google
                         </Button>

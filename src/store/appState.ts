@@ -6,7 +6,7 @@ import {User} from "~/services/auth.service";
 export const API = "http://localhost:3001";
 
 // -------------------------------------------------------------
-export const [accountRole, setAccountRole] = createSignal<"cliente" | "profissional">("cliente");
+export const [accountRole, setAccountRole] = createSignal<"cliente" | "profissional" | "estabelecimento">("cliente");
 export const [idioma, setIdioma] = createSignal<Language>("PT");
 export const [theme, setTheme] = createSignal<"light" | "dark">("light");
 export const [isSidebarCollapsed, setIsSidebarCollapsed] = createSignal(false);
@@ -42,7 +42,19 @@ if (!isServer) {
 
 // -------------------------------------------------------------
 
-export const toggleRole = () => setAccountRole(prev => prev === "cliente" ? "profissional" : "cliente");
+export const toggleRole = () => setAccountRole(prev => {
+    const roles = currentUser()?.roles || [];
+    const available = [];
+    if (roles.includes("client")) available.push("cliente");
+    if (roles.includes("professional")) available.push("profissional");
+    if (roles.includes("manager")) available.push("estabelecimento");
+    
+    if (available.length <= 1) return prev;
+    
+    const currentIndex = available.indexOf(prev);
+    const nextIndex = (currentIndex + 1) % available.length;
+    return available[nextIndex] as any;
+});
 
 export const toggleTheme = () => {
     setTheme(prev => {

@@ -9,7 +9,7 @@ import {
   SunIcon,
   LockIcon,
 } from "~/components/Icons/Icons";
-import { theme, toggleTheme } from "~/store/appState";
+import { theme, toggleTheme, API } from "~/store/appState";
 
 export default function RedefinirSenha() {
   const [searchParams] = useSearchParams();
@@ -43,17 +43,29 @@ export default function RedefinirSenha() {
       return setError("As senhas não coincidem.");
     }
 
-    /*if (!token()) {
+    if (!token()) {
       return setError("Token de recuperação inválido ou ausente.");
     }
-    */
 
     setLoading(true);
-    // Simulação da chamada de API
-    setTimeout(() => {
-      setLoading(false);
+    try {
+      const res = await fetch(`${API}/auth/reset-password`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token: token(), newPassword: password() })
+      });
+      
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || "Erro ao redefinir senha.");
+      }
+      
       setSuccess(true);
-    }, 2000);
+    } catch (e: any) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

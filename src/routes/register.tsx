@@ -29,7 +29,7 @@ const ACCOUNT_OPTIONS: {
 const validate = {
   nome:      (v: string) => v.trim().length < 3 ? "Informe seu nome completo" : null,
   email:     (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) ? null : "E-mail inválido",
-  senha:     (v: string) => v.length < 6 ? "A senha deve ter no mínimo 6 caracteres" : null,
+  senha:     (v: string) => v.length < 8 ? "A senha deve ter no mínimo 8 caracteres e conter letras/números." : null,
   confirmar: (senha: string) => (v: string) => v !== senha ? "As senhas não coincidem" : null,
 };
 
@@ -80,6 +80,7 @@ export default function Register() {
           email: email(),
           password: senha(),
           termosAceitos: termos(),
+          accountType: accountType(),
         }),
       });
 
@@ -90,41 +91,7 @@ export default function Register() {
         throw new Error(msg || "Erro ao criar conta de usuário.");
       }
 
-      const newUser = await userResponse.json();
-      const userId = newUser.id;
-
-      // 2. CRIAR O PERFIL ESPECÍFICO
-      let profileEndpoint = "";
-      let profilePayload = {};
-
-      switch (accountType()) {
-        case "PROFISSIONAL":
-          profileEndpoint = "/professionals";
-          profilePayload = { userId: userId, bio: "", visibilityStatus: false };
-          break;
-        case "CLIENTE":
-          profileEndpoint = "/clients";
-          profilePayload = { userId: userId }; // Ajuste conforme o DTO do seu backend
-          break;
-        case "ESTABELECIMENTO":
-          profileEndpoint = "/businesses";
-          profilePayload = { userId: userId, tradeName: nome() }; // Ajuste conforme o DTO do seu backend
-          break;
-      }
-
-      const profileResponse = await fetch(`${API}${profileEndpoint}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(profilePayload),
-      });
-
-      if (!profileResponse.ok) {
-        const errorData = await profileResponse.json();
-        const msg = Array.isArray(errorData.message) ? errorData.message[0] : errorData.message;
-        throw new Error(msg || `Erro ao configurar perfil de ${accountType()}`);
-      }
-
-      // 3. SUCESSO E REDIRECIONAMENTO
+      // SUCESSO E REDIRECIONAMENTO
       setSuccess(true);
       setTimeout(() => navigate("/login"), 2000);
 
@@ -364,7 +331,7 @@ export default function Register() {
                       <Input
                           labelText="Senha"
                           type="password"
-                          placeholder="Mín. 6 caracteres"
+                          placeholder="Mín. 8 caracteres"
                           value={senha()}
                           onInput={(e) => setSenha(e.currentTarget.value)}
                           validate={validate.senha}
@@ -421,6 +388,9 @@ export default function Register() {
                       variant="outline"
                       class="w-full"
                       disabled={loading()}
+                      onClick={() => {
+                          window.location.href = "http://localhost:3001/auth/google";
+                      }}
                   >
                     <GoogleIcon/>
                     Cadastrar com Google
