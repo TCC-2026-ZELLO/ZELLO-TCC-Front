@@ -1,4 +1,4 @@
-import { createSignal, onCleanup, Show } from "solid-js";
+import { createSignal, Show } from "solid-js";
 import { A } from "@solidjs/router";
 import { Input } from "~/components/Widgets/Input";
 import { Button } from "~/components/Widgets/Button";
@@ -9,27 +9,40 @@ import {
   SunIcon,
   SuccessIcon,
 } from "~/components/Icons/Icons";
-import { theme, toggleTheme } from "~/store/appState";
+import { theme, toggleTheme, API } from "~/store/appState";
 
 export default function PasswordRecovery() {
   const [email, setEmail] = createSignal("");
   const [loading, setLoading] = createSignal(false);
   const [submitted, setSubmitted] = createSignal(false);
 
-  let timerId: ReturnType<typeof setTimeout> | undefined;
+  const [errorMsg, setErrorMsg] = createSignal("");
 
-  onCleanup(() => {
-    if (timerId !== undefined) clearTimeout(timerId);
-  });
-
-  const handleSubmit = (e: Event) => {
+  const handleSubmit = async (e: Event) => {
     e.preventDefault();
     if (loading()) return;
+    
     setLoading(true);
-    timerId = setTimeout(() => {
-      setLoading(false);
+    setErrorMsg("");
+    
+    try {
+      const res = await fetch(`${API}/auth/forgot-password`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email() })
+      });
+      
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || "Erro ao recuperar senha.");
+      }
+      
       setSubmitted(true);
-    }, 1500);
+    } catch (e: any) {
+      setErrorMsg(e.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -123,6 +136,12 @@ export default function PasswordRecovery() {
                       onInput={(e) => setEmail(e.currentTarget.value)}
                       required
                     />
+
+                    <Show when={errorMsg()}>
+                      <div class="rounded-lg bg-red-50 px-4 py-3 text-sm font-medium text-red-700 border border-red-200 mt-2">
+                        {errorMsg()}
+                      </div>
+                    </Show>
 
                     <Button type="submit" variant="primary" class="mt-2 w-full" disabled={loading()}>
                       {loading() ? "Enviando..." : "Enviar link de recuperação"}

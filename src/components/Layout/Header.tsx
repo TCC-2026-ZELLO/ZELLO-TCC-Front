@@ -41,10 +41,12 @@ export function Header() {
                     {theme() === "dark" ? <SunIcon/> : <MoonIcon/>}
                 </button>
 
-                <Button variant="primary" onClick={toggleRole} class="bg-cliente text-foreground rounded-full px-5 py-2 flex gap-2 items-center text-sm font-semibold hover:opacity-90 transition-opacity border-none">
-                    Demo: {accountRole() === "cliente" ? t().header.badgeClient : t().header.badgeProf}
-                    <span class="ml-1"><ChevronDownIcon/></span>
-                </Button>
+                { (currentUser()?.roles?.length || 0) > 1 && (
+                    <Button variant="primary" onClick={toggleRole} class="bg-cliente text-foreground rounded-full px-5 py-2 flex gap-2 items-center text-sm font-semibold hover:opacity-90 transition-opacity border-none">
+                        Perfil Atual: <span class="capitalize">{accountRole()}</span>
+                        <span class="ml-1"><ChevronDownIcon/></span>
+                    </Button>
+                )}
 
                 <button class="bg-transparent border-none cursor-pointer text-muted-foreground hover:text-foreground transition-colors relative">
                     <BellIcon/>
