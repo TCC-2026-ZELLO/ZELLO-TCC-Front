@@ -41,7 +41,10 @@ export function ProtectedRoute(props: ProtectedRouteProps) {
 
   return (
     <Show when={!isCheckingSession()} fallback={<div class="p-8 text-center text-muted-foreground">Carregando sessão...</div>}>
-      <Show when={sessionValid()} fallback={<Navigate href={`/login?redirect=${location.pathname}`} />}>
+      <Show
+        when={sessionValid()}
+        fallback={<Navigate href={`/login?redirect=${encodeURIComponent(`${location.pathname}${location.search}`)}`} />}
+      >
         <Show 
             when={!props.allowedRoles || props.allowedRoles.includes(accountRole())} 
             fallback={<Navigate href="/explore" />}
