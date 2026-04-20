@@ -36,6 +36,7 @@ export interface User {
   name: string;
   email: string;
   roles: string[];
+  provider?: string;
 }
 
 // 1. Função de Registro Implementada
