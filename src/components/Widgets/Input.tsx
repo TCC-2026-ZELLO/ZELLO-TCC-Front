@@ -5,7 +5,7 @@ export interface InputProps extends Omit<
   JSX.InputHTMLAttributes<HTMLInputElement>,
   "type"
 > {
-  type?: "text" | "email" | "password" | "number" | "search" | "tel";
+  type?: "text" | "email" | "password" | "number" | "search" | "tel" | "time";
   labelText?: string;
   searchIcon?: boolean;
   error?: string;

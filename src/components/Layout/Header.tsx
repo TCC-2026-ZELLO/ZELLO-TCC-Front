@@ -1,9 +1,9 @@
+import { Show } from "solid-js";
 import { Badge } from "~/components/Widgets/Badge";
-import { Button } from "~/components/Widgets/Button";
+import { ProfileSwitcher } from "~/components/Layout/ProfileSwitcher";
 
-// Adicionei o currentUser aqui
-import { accountRole, idioma, theme, toggleRole, toggleTheme, t, toggleSidebar, currentUser } from "~/store/appState";
-import { MenuIcon, GlobeIcon, SunIcon, MoonIcon, ChevronDownIcon, BellIcon } from "~/components/Icons/Icons";
+import { accountRole, idioma, theme, toggleTheme, t, toggleSidebar, currentUser } from "~/store/appState";
+import { MenuIcon, GlobeIcon, SunIcon, MoonIcon, BellIcon } from "~/components/Icons/Icons";
 
 export function Header() {
     return (
@@ -21,7 +21,7 @@ export function Header() {
                         {t().header.home}
                     </span>
                     <div class="mt-1">
-                        <Badge variant={"error"}>
+                        <Badge variant={"success"}>
                             {accountRole() === "cliente"
                                 ? `${t().header.badgeClient} · ${currentUser()?.name?.split(' ')[0] || "Visitante"}`
                                 : `${t().header.badgeProf} · ${currentUser()?.name?.split(' ')[0] || "Visitante"}`
@@ -41,12 +41,12 @@ export function Header() {
                     {theme() === "dark" ? <SunIcon/> : <MoonIcon/>}
                 </button>
 
-                { (currentUser()?.roles?.length || 0) > 1 && (
-                    <Button variant="primary" onClick={toggleRole} class="bg-cliente text-foreground rounded-full px-5 py-2 flex gap-2 items-center text-sm font-semibold hover:opacity-90 transition-opacity border-none">
-                        Perfil Atual: <span class="capitalize">{accountRole()}</span>
-                        <span class="ml-1"><ChevronDownIcon/></span>
-                    </Button>
-                )}
+                {/* Dropdown de Perfil do Header (Substituiu o antigo botão de toggleRole) */}
+                <Show when={(currentUser()?.roles?.length || 0) > 0}>
+                    <div class="hidden sm:block min-w-[200px]"> {/* Container para evitar quebra em telas menores */}
+                        <ProfileSwitcher variant="header" />
+                    </div>
+                </Show>
 
                 <button class="bg-transparent border-none cursor-pointer text-muted-foreground hover:text-foreground transition-colors relative">
                     <BellIcon/>
