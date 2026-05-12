@@ -11,8 +11,8 @@ import {
   SunIcon,
   GoogleIcon,
 } from "~/components/Icons/Icons";
-import { API, theme, toggleTheme } from "~/store/appState"; // Ajuste o caminho se necessário
-import { type AccountType } from "~/services/auth.service"; // Ajuste o caminho se necessário
+import { API, theme, toggleTheme } from "~/store/appState";
+import { type AccountType } from "~/services/auth.service";
 
 const ACCOUNT_OPTIONS: {
   type: AccountType;
@@ -40,7 +40,6 @@ const ACCOUNT_OPTIONS: {
   },
 ];
 
-// ── Validações ────────────────────────────────────────────────────────────────
 const validate = {
   nome: (v: string) =>
     v.trim().length < 3 ? "Informe seu nome completo" : null,
@@ -58,25 +57,19 @@ const validate = {
 export default function Register() {
   const navigate = useNavigate();
 
-  // Controle de passos
   const [step, setStep] = createSignal<1 | 2>(1);
-
-  // Passo 1
   const [accountType, setAccountType] = createSignal<AccountType>("CLIENTE");
 
-  // Passo 2
   const [nome, setNome] = createSignal("");
   const [email, setEmail] = createSignal("");
   const [senha, setSenha] = createSignal("");
   const [confirmar, setConfirmar] = createSignal("");
   const [termos, setTermos] = createSignal(false);
 
-  // Submissão
   const [loading, setLoading] = createSignal(false);
   const [errorMessage, setErrorMessage] = createSignal("");
   const [success, setSuccess] = createSignal(false);
 
-  // Computa se o botão pode ser clicado
   const canSubmit = () => {
     return (
       nome().length >= 3 &&
@@ -87,7 +80,6 @@ export default function Register() {
     );
   };
 
-  // Função Principal de Registro
   const handleSubmit = async (e: Event) => {
     e.preventDefault();
     setErrorMessage("");
@@ -108,14 +100,12 @@ export default function Register() {
 
       if (!userResponse.ok) {
         const errorData = await userResponse.json();
-        // O NestJS costuma mandar mensagens de erro num array quando falha validação do DTO
         const msg = Array.isArray(errorData.message)
           ? errorData.message[0]
           : errorData.message;
         throw new Error(msg || "Erro ao criar conta de usuário.");
       }
 
-      // SUCESSO E REDIRECIONAMENTO
       setSuccess(true);
       setTimeout(() => navigate("/login"), 2000);
     } catch (error: any) {

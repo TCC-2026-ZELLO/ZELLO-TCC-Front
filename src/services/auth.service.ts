@@ -1,7 +1,33 @@
-import {API, setAccessToken, setAccountRole, setCurrentUser} from "~/store/appState";
 import { isServer } from "solid-js/web";
+import { http } from "./api";
+
+import {
+  setCurrentUser,
+  setAccessToken,
+  setAccountRole,
+  setManagedBusinesses,
+  setActiveBusiness,
+} from "~/store/appState";
 
 export type AccountType = "CLIENTE" | "PROFISSIONAL" | "ESTABELECIMENTO";
+
+
+export interface BusinessContext {
+  linkId: string;
+  businessId: string;
+  name: string;
+}
+
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  roles: string[];
+  client?: { id: string };
+  professional?: { id: string };
+  manager?: { id: string };
+  provider?: string;
+}
 
 export interface RegisterPayload {
   nome: string;
@@ -10,18 +36,15 @@ export interface RegisterPayload {
   termos_aceitos: boolean;
   papel: AccountType;
 }
-
 export interface RegisterResponse {
   id: string;
   nome: string;
   email: string;
 }
-
 export interface LoginPayload {
   email: string;
   password: string;
 }
-
 export interface LoginResponse {
   user: {
     id: string;
@@ -29,67 +52,6 @@ export interface LoginResponse {
     email: string;
     roles: string[];
   };
-}
-
-export interface User {
-  id: string;
-  name: string;
-  email: string;
-  roles: string[];
-  provider?: string;
-}
-
-// 1. Função de Registro Implementada
-export async function register(payload: RegisterPayload) {
-  try {
-    const response = await fetch(`${API}/users`, { // Ajuste a rota se necessário
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || "Erro ao registrar usuário");
-    }
-
-    return await response.json();
-  } catch (error) {
-    console.error('Erro no registro:', error);
-    throw error; // Repassa o erro para o formulário exibir um alerta
-  }
-}
-
-// 2. Função de Login Refatorada com Async/Await
-export async function login(payload: LoginPayload) {
-  try {
-    const response = await fetch(`${API}/auth/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-      credentials: "include",
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || "Email ou senha incorretos");
-    }
-
-    const data: LoginResponse = await response.json();
-
-    // Montando o usuário completo assumindo que a API já retornou roles
-    const userWithRoles: User = {
-      ...data.user,
-    };
-
-    loginAuth(userWithRoles);
-
-    return data;
-
-  } catch (error) {
-    console.error('Erro no login:', error);
-    throw error;
-  }
 }
 
 function resolveAccountRole(roles: string[]) {
@@ -108,10 +70,47 @@ function resolveAccountRole(roles: string[]) {
   return "cliente";
 }
 
+export async function loadUserContext(user: User) {
+  if (user.roles.includes("manager")) {
+    try {
+      const data = await http.get<any[]>('/businesses/me');
+      const mapped = data.map((item) => ({
+        linkId: item.id,
+        businessId: item.business?.id || item.id,
+        name: item.business?.tradeName || item.tradeName || "Empresa"
+      }));
+      setManagedBusinesses(mapped);
+      if (mapped.length > 0) setActiveBusiness(mapped[0]);
+    } catch (e) {
+      console.error("Erro ao carregar contexto");
+    }
+  }
+}
+
+export async function login(payload: any) {
+  const data = await http.post<{ user: User }>('/auth/login', payload);
+  setCurrentUser(data.user);
+  setAccessToken("session-cookie-active");
+  if (!isServer) localStorage.setItem("user", JSON.stringify(data.user));
+
+  const role = data.user.roles.includes("manager") ? "estabelecimento" :
+      data.user.roles.includes("professional") ? "profissional" : "cliente";
+  setAccountRole(role);
+  await loadUserContext(data.user);
+  return data;
+}
+
+export async function logout() {
+  try { await http.post('/auth/logout', {}); } catch (e) {}
+  if (!isServer) {
+    localStorage.clear();
+    window.location.href = "/login";
+  }
+}
+
 export function loginAuth(user: User) {
   setCurrentUser(user);
-  
-  // Set flag para persistir sessão logada
+
   setAccessToken("session-cookie-active");
 
   if (!isServer) {
@@ -121,26 +120,10 @@ export function loginAuth(user: User) {
   setAccountRole(resolveAccountRole(user.roles));
 }
 
-// Logout
-export async function logout() {
-  try {
-    await fetch(`${API}/auth/logout`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-    });
-  } catch (error) {
-    console.error('Erro ao comunicar logout ao servidor:', error);
-  }
-
-  logoutAuth();
-}
-
-// 4. Função de limpar o estado local
 export const logoutAuth = () => {
   setAccessToken(null);
   setCurrentUser(null);
-  setAccountRole("cliente"); // Reseta para o padrão
+  setAccountRole("cliente");
 
   if (!isServer) {
     localStorage.removeItem("user");

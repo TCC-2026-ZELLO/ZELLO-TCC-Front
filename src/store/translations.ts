@@ -11,10 +11,20 @@ export const translations = {
                 myBookings: "Meus Agendamentos",
                 favorites: "Favoritos",
                 loyalty: "Fidelidade",
+                //
                 dashboard: "Dashboard",
                 mySchedule: "Minha Agenda",
-                clients: "Clientes",
-                servicesPortfolio: "Serviços & Portfólio",
+                portfolio: "Portifolio",
+                ratings: "Avaliações",
+                performance: "Performance",
+                //
+                business: "Negócio",
+                team_schedule: "Agenda do Time",
+                catalog: "Catálogo",
+                financial: "Financeiro",
+                professionals: "Profissionais",
+                reports: "Relatórios",
+                //
                 account: "CONTA",
                 settings: "Configurações",
                 logout: "Sair"
@@ -77,11 +87,21 @@ export const translations = {
                 myBookings: "My Bookings",
                 favorites: "Favorites",
                 loyalty: "Loyalty",
+                //
                 dashboard: "Dashboard",
                 mySchedule: "My Schedule",
-                clients: "Clients",
-                servicesPortfolio: "Services & Portfolio",
+                portfolio: "Portifolio",
+                ratings: "Avaliações",
+                performance: "Performance",
                 account: "ACCOUNT",
+                //
+                business: "Business",
+                team_schedule: "Team Schedule",
+                catalog: "Catalog",
+                financial: "Financial",
+                professionals: "Professionals",
+                reports: "Reports",
+                //
                 settings: "Settings",
                 logout: "Log out"
             },

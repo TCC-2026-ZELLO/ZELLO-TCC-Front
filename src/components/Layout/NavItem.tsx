@@ -21,7 +21,7 @@ export function NavItem(props: NavItemProps) {
             class="group relative flex items-center no-underline transition-all duration-200 rounded-full"
             classList={{
                 "justify-between px-3 py-3 w-full": !isSidebarCollapsed(),
-                "justify-center w-11 h-11 shrink-0": isSidebarCollapsed(), // Formato bolinha quando colapsado
+                "justify-center w-11 h-11 shrink-0": isSidebarCollapsed(),
                 "bg-white/15 text-white": isActive(),
                 "bg-transparent text-muted-foreground hover:bg-white/10 hover:text-white": !isActive(),
             }}
