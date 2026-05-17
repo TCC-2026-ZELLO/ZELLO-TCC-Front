@@ -118,7 +118,7 @@ export default function Settings() {
             <h2 class="text-lg font-semibold text-foreground">Informações Pessoais</h2>
             <Card class="flex flex-col gap-8 p-6 md:p-8 border-border">
               <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
-                <Input labelText="Nome Completo" value={nomeBase() || currentUser()?.name || ""} onInput={(e) => setNomeBase(e.currentTarget.value)} />
+                <Input labelText="Nome Completo" value={nomeBase() || currentUser()?.name || ""} onInput={(e) => setNomeBase(e.currentTarget.value)} required />
                 <Input labelText="E-mail" value={currentUser()?.email || ""} disabled />
               </div>
 
@@ -227,10 +227,10 @@ export default function Settings() {
             <section class="flex flex-col gap-4">
               <h2 class="text-lg font-semibold text-foreground">Segurança</h2>
               <Card class="flex flex-col gap-8 p-6 md:p-8 border-border">
-                <Input labelText="Senha Atual" type="password" value={senhaAtual()} onInput={e => setSenhaAtual(e.currentTarget.value)} />
+                <Input labelText="Senha Atual" type="password" value={senhaAtual()} onInput={e => setSenhaAtual(e.currentTarget.value)} required />
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <Input labelText="Nova Senha" type="password" value={novaSenha()} onInput={e => setNovaSenha(e.currentTarget.value)} />
-                  <Input labelText="Confirmar Nova Senha" type="password" value={confirmarSenha()} onInput={e => setConfirmarSenha(e.currentTarget.value)} />
+                  <Input labelText="Nova Senha" type="password" value={novaSenha()} onInput={e => setNovaSenha(e.currentTarget.value)} required />
+                  <Input labelText="Confirmar Nova Senha" type="password" value={confirmarSenha()} onInput={e => setConfirmarSenha(e.currentTarget.value)} required />
                 </div>
 
                 <Show when={feedbackSecurity().message}>

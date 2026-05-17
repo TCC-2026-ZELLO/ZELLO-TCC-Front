@@ -149,7 +149,7 @@ export default function BusinessSettings() {
                                     <input type="file" hidden ref={photoInput} accept="image/*" onChange={(e) => handleImageUpload('photo', e)} />
                                 </div>
 
-                                <Input labelText="Nome Fantasia" value={tradeName()} onInput={(e) => setTradeName(e.currentTarget.value)} />
+                                <Input labelText="Nome Fantasia" value={tradeName()} onInput={(e) => setTradeName(e.currentTarget.value)} required />
 
                                 <div class="flex flex-col gap-2">
                                     <label class="text-sm font-semibold">Descrição do Estabelecimento</label>

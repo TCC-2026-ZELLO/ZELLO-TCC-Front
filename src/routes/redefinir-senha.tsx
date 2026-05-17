@@ -133,6 +133,7 @@ export default function RedefinirSenha() {
                       value={password()}
                       onInput={(e) => setPassword(e.currentTarget.value)}
                       validate={getPasswordStrength}
+                      required
                     />
 
                     <Input
@@ -148,6 +149,7 @@ export default function RedefinirSenha() {
                           ? "As senhas não coincidem"
                           : undefined
                       }
+                      required
                     />
 
                     {error() && <p class="text-xs text-error">{error()}</p>}
