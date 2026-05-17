@@ -386,6 +386,7 @@ export default function Register() {
                     onInput={(e) => setNome(e.currentTarget.value)}
                     validate={validate.nome}
                     disabled={loading()}
+                    required
                   />
 
                   <Input
@@ -396,6 +397,7 @@ export default function Register() {
                     onInput={(e) => setEmail(e.currentTarget.value)}
                     validate={validate.email}
                     disabled={loading()}
+                    required
                   />
 
                   <div class="grid grid-cols-2 gap-3">
@@ -407,6 +409,7 @@ export default function Register() {
                       onInput={(e) => setSenha(e.currentTarget.value)}
                       validate={validate.senha}
                       disabled={loading()}
+                      required
                     />
                     <Input
                       labelText="Confirmar"
@@ -416,6 +419,7 @@ export default function Register() {
                       onInput={(e) => setConfirmar(e.currentTarget.value)}
                       validate={validate.confirmar(senha())}
                       disabled={loading()}
+                      required
                     />
                   </div>
 

@@ -169,6 +169,7 @@ export default function ProfessionalSettings() {
                                     value={especialidade()}
                                     placeholder="Ex: Barbeiro, Designer, etc."
                                     onInput={(e) => setEspecialidade(e.currentTarget.value)}
+                                    required
                                 />
                             </div>
 

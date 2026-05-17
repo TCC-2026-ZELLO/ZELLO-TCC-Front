@@ -132,6 +132,7 @@ export default function Login() {
                 value={email()}
                 onInput={(e) => setEmail(e.currentTarget.value)}
                 disabled={loading()}
+                required
               />
 
               <div class="relative">
@@ -148,6 +149,7 @@ export default function Login() {
                   value={password()}
                   onInput={(e) => setPassword(e.currentTarget.value)}
                   disabled={loading()}
+                  required
                 />
               </div>
 

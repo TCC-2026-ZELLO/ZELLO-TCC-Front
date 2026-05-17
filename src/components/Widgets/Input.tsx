@@ -60,8 +60,11 @@ export function Input(props: InputProps) {
       class={`flex w-full cursor-text flex-col gap-2 ${local.class || ""}`}
     >
       <Show when={local.labelText}>
-        <span class="text-xs font-semibold uppercase text-muted-foreground">
+        <span class="text-xs font-semibold uppercase text-muted-foreground flex items-center gap-1">
           {local.labelText}
+          <Show when={rest.required}>
+            <span class="text-error" title="Campo obrigatório">*</span>
+          </Show>
         </span>
       </Show>
 
@@ -73,7 +76,7 @@ export function Input(props: InputProps) {
         </Show>
 
         <input
-          class="h-12 w-full rounded-lg border border-border bg-[var(--color-input-background,transparent)] px-4 py-2 font-sans text-sm text-foreground outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary data-[has-icon=true]:pl-10 data-[invalid=true]:border-error data-[invalid=true]:focus:border-error data-[invalid=true]:focus:ring-error"
+          class="h-12 w-full rounded-lg border border-border bg-(--color-input-background,transparent) px-4 py-2 font-sans text-sm text-foreground outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary data-[has-icon=true]:pl-10 data-[invalid=true]:border-error data-[invalid=true]:focus:border-error data-[invalid=true]:focus:ring-error"
           classList={{ "pr-10": local.type === "password" }}
           type={inputType()}
           data-has-icon={!!local.searchIcon}
