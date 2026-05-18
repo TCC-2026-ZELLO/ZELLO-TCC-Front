@@ -17,4 +17,15 @@ export const availabilityService = {
 
     saveShift: (data: { businessProfessionalId: string; dayOfWeek: number; startTime: string; endTime: string }) =>
         http.post("/availability/shifts", data),
+
+    createException: (data: { businessId?: string; professionalId?: string; date?: string; dates?: string[]; startTime: string; endTime: string; reason: string; forceOverwritePending?: boolean; skipConflicts?: boolean }) =>
+        http.post("/availability/exceptions", data),
+        
+    getExceptions: (params?: { professionalId?: string; businessId?: string }) => {
+        const query = params ? new URLSearchParams(params as any).toString() : "";
+        return http.get<any[]>(`/availability/exceptions${query ? `?${query}` : ''}`);
+    },
+
+    deleteException: (id: string) => 
+        http.delete(`/availability/exceptions/${id}`),
 };
