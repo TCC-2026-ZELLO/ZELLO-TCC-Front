@@ -40,5 +40,31 @@ export const professionalService = {
 
     deletePortfolioImage: async (id: string) => {
         return await http.delete(`/professionals/me/portfolio/${id}`);
-    }
+    },
+
+
+    getQualifications: async (id: string) => {
+        const res = await http.get<any>(`/professionals/${id}/qualifications`);
+        return res.data || res;
+    },
+
+    addQualification: async (data: {
+        file: File;
+        title: string;
+        institution?: string;
+        type?: string;
+        year?: number;
+    }) => {
+        const formData = new FormData();
+        formData.append('file', data.file);
+        formData.append('title', data.title);
+        if (data.institution) formData.append('institution', data.institution);
+        if (data.type)        formData.append('type', data.type);
+        if (data.year)        formData.append('year', String(data.year));
+        return await http.post('/professionals/me/qualifications', formData);
+    },
+
+    deleteQualification: async (id: string) => {
+        return await http.delete(`/professionals/me/qualifications/${id}`);
+    },
 };
