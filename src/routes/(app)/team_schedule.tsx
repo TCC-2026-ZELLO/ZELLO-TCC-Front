@@ -1,4 +1,4 @@
-import { createSignal, createMemo, Show, For } from "solid-js";
+import { createSignal, createMemo, Show, For, createResource } from "solid-js";
 import { Badge } from "~/components/Widgets/Badge";
 import { Tabs } from "~/components/Widgets/Tabs";
 import { Avatar } from "~/components/Widgets/Avatar";
@@ -8,9 +8,11 @@ import { Modal } from "~/components/Widgets/Modal";
 import { Card } from "~/components/Widgets/Card";
 import { Input } from "~/components/Widgets/Input";
 import { IconButton } from "~/components/Widgets/IconButton";
+import { availabilityService } from "~/services/availability.service";
+import { ApiError } from "~/services/api";
 
 const PROFESSIONALS: Professional[] = [
-    { id: "1", name: "Isabella F.", initials: "IF" },
+    { id: "11111111-1111-1111-1111-111111111111", name: "Rafael (Você)", initials: "RF" },
     { id: "2", name: "Mariana C.", initials: "MC" },
     { id: "3", name: "Juliana S.", initials: "JS" },
     { id: "4", name: "Camila O.", initials: "CO" },
@@ -40,6 +42,70 @@ const SCHEDULES: Appointment[] = [
 export default function TeamSchedules() {
     const [ActiveTab, setActiveTab] = createSignal("grade");
     const [ProfessionalIdFilter, setProfessionalIdFilter] = createSignal<string | null>(null);
+
+    const [isCreateBlockOpen, setIsCreateBlockOpen] = createSignal(false);
+    const [blockDate, setBlockDate] = createSignal("");
+    const [blockStart, setBlockStart] = createSignal("");
+    const [blockEnd, setBlockEnd] = createSignal("");
+    const [blockReason, setBlockReason] = createSignal("");
+    const [blockProfId, setBlockProfId] = createSignal("");
+    const [createError, setCreateError] = createSignal("");
+    const [pendingConflictData, setPendingConflictData] = createSignal<any>(null);
+
+    const [exceptions, { refetch: refetchExceptions }] = createResource(async () => {
+        try {
+           return await availabilityService.getExceptions();
+        } catch(e) { return []; }
+    });
+
+    const handleSaveBlock = async (forceOverwrite = false) => {
+        setCreateError("");
+        if (!blockDate() || !blockStart() || !blockEnd() || !blockReason()) {
+            setCreateError("Preencha todos os campos obrigatórios.");
+            return;
+        }
+        try {
+            const finalStart = blockStart().length === 5 ? `${blockStart()}:00` : blockStart();
+            const finalEnd = blockEnd().length === 5 ? `${blockEnd()}:00` : blockEnd();
+            
+            const res = await availabilityService.createException({
+                date: blockDate(),
+                startTime: finalStart,
+                endTime: finalEnd,
+                reason: blockReason(),
+                professionalId: blockProfId() || undefined,
+                forceOverwritePending: forceOverwrite
+            });
+            
+            refetchExceptions();
+            setIsCreateBlockOpen(false);
+            setPendingConflictData(null);
+            
+            setBlockDate(""); setBlockStart(""); setBlockEnd(""); setBlockReason(""); setBlockProfId("");
+        } catch(e: any) {
+            if (e instanceof ApiError) {
+                if (e.status === 412) {
+                    setPendingConflictData(e.data);
+                } else if (e.status === 409) {
+                    setCreateError("Conflito: Já existem horários confirmados neste intervalo.");
+                } else {
+                    setCreateError(e.message || "Erro ao criar bloqueio.");
+                }
+            } else {
+                setCreateError("Erro ao criar bloqueio.");
+            }
+        }
+    };
+
+    const handleDeleteException = async (id: string) => {
+        if (!confirm("Deseja realmente apagar este bloqueio?")) return;
+        try {
+            await availabilityService.deleteException(id);
+            refetchExceptions();
+        } catch(e) {
+            alert("Erro ao apagar bloqueio.");
+        }
+    };
 
     const [isModalOpen, setIsModalOpen] = createSignal(false);
     const [selectedAppointment, setSelectedAppointment] = createSignal<Appointment | null>(null);
@@ -207,38 +273,40 @@ export default function TeamSchedules() {
             <Show when={ActiveTab() === "bloqueios"}>
                 <div class="flex flex-col gap-4">
                     <div>
-                        <Button class="bg-primary hover:opacity-90 text-primary-foreground rounded-xl px-6">
+                        <Button class="bg-primary hover:opacity-90 text-primary-foreground rounded-xl px-6" onClick={() => setIsCreateBlockOpen(true)}>
                             + Adicionar Bloqueio
                         </Button>
                     </div>
 
                     <div class="flex flex-col gap-3 mt-2">
-                        <For each={[
-                            { tipo: "Folga", titulo: "Feriado Municipal", subtitulo: "Dia 27 do mês", corFundo: "bg-error/10 text-error border-error/20" },
-                            { tipo: "Pausa", titulo: "Manutenção do espaço", subtitulo: "Dia 2 do mês", corFundo: "bg-warning/10 text-warning border-warning/20" }
-                        ]}>
-                            {(item) => (
-                                <div class="flex items-center justify-between rounded-2xl border border-border bg-card p-5 shadow-sm">
-                                    <div class="flex items-center gap-6">
-                                        <div class={`flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold border ${item.corFundo}`}>
-                                            {item.tipo}
+                        <Show when={exceptions() && exceptions().length > 0} fallback={<p class="text-muted-foreground text-sm">Nenhum bloqueio registrado.</p>}>
+                            <For each={exceptions()}>
+                                {(item: any) => (
+                                    <div class="flex items-center justify-between rounded-2xl border border-border bg-card p-5 shadow-sm">
+                                        <div class="flex items-center gap-6">
+                                            <div class="flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold border bg-error/10 text-error border-error/20">
+                                                Bloqueio
+                                            </div>
+                                            <div>
+                                                <p class="font-bold text-foreground">{item.reason}</p>
+                                                <p class="text-sm text-muted-foreground">
+                                                    {item.date} • {item.startTime} - {item.endTime} 
+                                                    {item.professional ? ` • ${item.professional.name || 'Profissional ' + item.professional.id.substring(0,4)}` : ' • Todo o Estabelecimento'}
+                                                </p>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <p class="font-bold text-foreground">{item.titulo}</p>
-                                            <p class="text-sm text-muted-foreground">{item.subtitulo}</p>
-                                        </div>
+                                        <IconButton class="text-error hover:bg-error/10" onClick={() => handleDeleteException(item.id)}>
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                <polyline points="3 6 5 6 21 6"></polyline>
+                                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                                <line x1="10" y1="11" x2="10" y2="17"></line>
+                                                <line x1="14" y1="11" x2="14" y2="17"></line>
+                                            </svg>
+                                        </IconButton>
                                     </div>
-                                    <IconButton class="text-error hover:bg-error/10">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                            <polyline points="3 6 5 6 21 6"></polyline>
-                                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                                            <line x1="10" y1="11" x2="10" y2="17"></line>
-                                            <line x1="14" y1="11" x2="14" y2="17"></line>
-                                        </svg>
-                                    </IconButton>
-                                </div>
-                            )}
-                        </For>
+                                )}
+                            </For>
+                        </Show>
                     </div>
                 </div>
             </Show>
@@ -252,19 +320,19 @@ export default function TeamSchedules() {
                     {(appt) => (
                         <div class="flex flex-col gap-4">
                             <div class="flex items-center gap-3">
-                                <Avatar size="lg" fallbackInitials={appt().clientName.substring(0, 2).toUpperCase()} />
+                                <Avatar size="lg" fallbackInitials={appt()!.clientName.substring(0, 2).toUpperCase()} />
                                 <div>
-                                    <h4 class="text-lg font-bold text-foreground">{appt().clientName}</h4>
-                                    <Badge variant={appt().status === "confirmed" ? "success" : appt().status === "pending" ? "warning" : "default"}>
-                                        {appt().status.toUpperCase()}
+                                    <h4 class="text-lg font-bold text-foreground">{appt()!.clientName}</h4>
+                                    <Badge variant={appt()!.status === "confirmed" ? "success" : appt()!.status === "pending" ? "warning" : "default"}>
+                                        {appt()!.status.toUpperCase()}
                                     </Badge>
                                 </div>
                             </div>
 
                             <div class="bg-muted rounded-md p-4 flex flex-col gap-2 border border-border text-foreground">
-                                <p class="text-sm"><strong>Serviço:</strong> {appt().service}</p>
-                                <p class="text-sm"><strong>Horário:</strong> {appt().startTime} ({appt().durationMins} min)</p>
-                                <p class="text-sm"><strong>Profissional:</strong> {PROFESSIONALS.find(p => p.id === appt().professionalId)?.name}</p>
+                                <p class="text-sm"><strong>Serviço:</strong> {appt()!.service}</p>
+                                <p class="text-sm"><strong>Horário:</strong> {appt()!.startTime} ({appt()!.durationMins} min)</p>
+                                <p class="text-sm"><strong>Profissional:</strong> {PROFESSIONALS.find(p => p.id === appt()!.professionalId)?.name}</p>
                             </div>
 
                             <div class="flex gap-2 mt-2">
@@ -274,6 +342,61 @@ export default function TeamSchedules() {
                         </div>
                     )}
                 </Show>
+            </Modal>
+            <Modal
+                isOpen={isCreateBlockOpen()}
+                onClose={() => { setIsCreateBlockOpen(false); setPendingConflictData(null); setCreateError(""); }}
+                title="Novo Bloqueio"
+            >
+                <div class="flex flex-col gap-4">
+                    <Show when={createError()}>
+                        <div class="p-3 rounded bg-error/10 text-error text-sm font-medium">{createError()}</div>
+                    </Show>
+                    
+                    <Show when={pendingConflictData()}>
+                        <div class="p-4 rounded bg-warning/20 border border-warning/30 flex flex-col gap-2 text-sm">
+                            <p class="font-bold text-warning-foreground">Conflito de Agendamentos Pendentes</p>
+                            <p>{pendingConflictData().message}</p>
+                            <p>Deseja forçar o bloqueio e cancelar esses agendamentos?</p>
+                            <div class="flex gap-2 mt-2">
+                                <Button variant="primary" class="bg-warning text-warning-foreground hover:bg-warning/80" onClick={() => handleSaveBlock(true)}>Sim, forçar bloqueio</Button>
+                                <Button variant="outline" onClick={() => setPendingConflictData(null)}>Não, cancelar</Button>
+                            </div>
+                        </div>
+                    </Show>
+
+                    <Show when={!pendingConflictData()}>
+                        <Input labelText="Data" type="date" value={blockDate()} onInput={(e: any) => setBlockDate(e.target.value)} />
+                        <div class="flex gap-4">
+                            <div class="flex-1">
+                                <Input labelText="Início" type="time" value={blockStart()} onInput={(e: any) => setBlockStart(e.target.value)} />
+                            </div>
+                            <div class="flex-1">
+                                <Input labelText="Fim" type="time" value={blockEnd()} onInput={(e: any) => setBlockEnd(e.target.value)} />
+                            </div>
+                        </div>
+                        <Input labelText="Motivo" placeholder="Ex: Feriado, manutenção, almoço..." value={blockReason()} onInput={(e: any) => setBlockReason(e.target.value)} />
+                        
+                        <div class="flex flex-col gap-1">
+                            <label class="text-xs font-bold text-muted-foreground uppercase">Afeta</label>
+                            <select 
+                                class="h-10 rounded-md border border-input bg-card text-foreground px-3 py-2 text-sm focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
+                                value={blockProfId()} 
+                                onChange={(e: any) => setBlockProfId(e.target.value)}
+                            >
+                                <option value="">Todo o Estabelecimento</option>
+                                <For each={PROFESSIONALS}>
+                                    {(p) => <option value={p.id}>{p.name}</option>}
+                                </For>
+                            </select>
+                        </div>
+                        
+                        <div class="flex justify-end gap-2 mt-4">
+                            <Button variant="outline" onClick={() => setIsCreateBlockOpen(false)}>Cancelar</Button>
+                            <Button variant="primary" onClick={() => handleSaveBlock(false)}>Salvar Bloqueio</Button>
+                        </div>
+                    </Show>
+                </div>
             </Modal>
         </div>
     );

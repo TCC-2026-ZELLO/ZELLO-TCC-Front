@@ -1,6 +1,17 @@
 import { accessToken, API } from "~/store/appState";
 import { logoutAuth } from "~/services/auth.service";
 
+export class ApiError extends Error {
+    public status: number;
+    public data: any;
+    
+    constructor(message: string, status: number, data?: any) {
+        super(message);
+        this.status = status;
+        this.data = data;
+    }
+}
+
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     if (path.includes("undefined") || path.includes("null")) {
         console.warn(`[API Guard] Bloqueado: URL contém UUID inválido -> ${path}`);
@@ -27,11 +38,11 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 
     if (response.status === 401) {
         logoutAuth();
-        throw new Error("Sessão expirada");
+        throw new ApiError("Sessão expirada", 401);
     }
 
     const data = await response.json();
-    if (!response.ok) throw new Error(data.message || "Erro na requisição");
+    if (!response.ok) throw new ApiError(data.message || "Erro na requisição", response.status, data);
 
     return data;
 }
