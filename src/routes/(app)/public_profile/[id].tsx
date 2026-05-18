@@ -3,8 +3,22 @@ import { useParams } from "@solidjs/router";
 import { Card } from "~/components/Widgets/Card";
 import { Button } from "~/components/Widgets/Button";
 import { Tabs } from "~/components/Widgets/Tabs";
-import { StarIcon, MapPinIcon, CalendarIcon, CheckCircleIcon } from "~/components/Icons/Icons";
+import { StarIcon, MapPinIcon, CalendarIcon, CheckCircleIcon, RibbonIcon } from "~/components/Icons/Icons";
 import { professionalService } from "~/services/professional.service";
+
+const TYPE_COLORS: Record<string, string> = {
+    diploma:        "bg-blue-100 text-blue-700",
+    specialization: "bg-purple-100 text-purple-700",
+    course:         "bg-green-100 text-green-700",
+    certification:  "bg-amber-100 text-amber-700",
+};
+
+const TYPE_LABELS: Record<string, string> = {
+    diploma:        "Diploma",
+    specialization: "Especialização",
+    course:         "Curso",
+    certification:  "Certificação",
+};
 
 export default function PublicProfile() {
     const params = useParams();
@@ -23,6 +37,11 @@ export default function PublicProfile() {
     const [portfolio] = createResource(
         () => params.id,
         professionalService.getPortfolio
+    );
+
+    const [qualifications] = createResource(
+        () => params.id,
+        professionalService.getQualifications
     );
 
     return (
@@ -97,16 +116,56 @@ export default function PublicProfile() {
                             </p>
                         </Card>
 
-                        <Card class="p-6">
-                            <h3 class="font-bold text-lg text-foreground mb-4">Certificados Técnicos</h3>
-                            <div class="flex items-center gap-3 p-3 rounded-lg border border-border bg-secondary/30">
-                                <div class="size-10 rounded bg-primary/20 flex items-center justify-center text-primary font-bold">Z</div>
-                                <div class="flex flex-col">
-                                    <span class="text-sm font-semibold text-foreground">Perfil Verificado</span>
-                                    <span class="text-xs text-muted-foreground">Zello Platform</span>
+                        <Show when={(qualifications() ?? []).length > 0}>
+                            <Card class="p-6 flex flex-col gap-4">
+                                <h3 class="font-bold text-lg text-foreground flex items-center gap-2">
+                                    <RibbonIcon size={18} class="text-primary" />
+                                    Qualificações
+                                </h3>
+
+                                <div class="flex flex-col gap-3">
+                                    <For each={qualifications()}>
+                                        {(q) => (
+                                            <a
+                                                href={q.certificateUrl}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                class="flex items-center gap-3 p-3 rounded-xl border border-border bg-secondary/20 hover:bg-secondary/50 hover:border-primary/40 transition-colors group"
+                                            >
+                                                {/* Thumbnail ou ícone */}
+                                                <div class="shrink-0 size-12 rounded-lg overflow-hidden border border-border bg-muted flex items-center justify-center">
+                                                    <Show
+                                                        when={q.certificateUrl && !q.certificateUrl.endsWith(".pdf")}
+                                                        fallback={
+                                                            <span class="text-xs font-bold text-muted-foreground">PDF</span>
+                                                        }
+                                                    >
+                                                        <img src={q.certificateUrl} class="w-full h-full object-cover" alt={q.title} />
+                                                    </Show>
+                                                </div>
+
+                                                <div class="flex-1 flex flex-col gap-0.5 min-w-0">
+                                                    <span class="text-sm font-semibold text-foreground truncate group-hover:text-primary transition-colors">
+                                                        {q.title}
+                                                    </span>
+                                                    <Show when={q.institution}>
+                                                        <span class="text-xs text-muted-foreground truncate">{q.institution}</span>
+                                                    </Show>
+                                                    <div class="flex items-center gap-2 mt-1">
+                                                        <span class={`text-xs font-semibold px-2 py-0.5 rounded-full ${TYPE_COLORS[q.type] ?? "bg-secondary text-foreground"}`}>
+                                                            {TYPE_LABELS[q.type] ?? q.type}
+                                                        </span>
+                                                        <Show when={q.year}>
+                                                            <span class="text-xs text-muted-foreground">{q.year}</span>
+                                                        </Show>
+                                                    </div>
+                                                </div>
+                                            </a>
+                                        )}
+                                    </For>
                                 </div>
-                            </div>
-                        </Card>
+                            </Card>
+                        </Show>
                     </div>
 
                     {/* --- COLUNA PRINCIPAL: TABS --- */}
