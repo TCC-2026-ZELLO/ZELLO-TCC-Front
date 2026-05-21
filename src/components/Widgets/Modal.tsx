@@ -5,7 +5,16 @@ interface ModalProps {
     onClose: () => void;
     title: string;
     children: JSX.Element;
+    /** "md" (default) | "lg" | "xl" | "2xl" */
+    size?: "md" | "lg" | "xl" | "2xl";
 }
+
+const SIZE_CLASS: Record<string, string> = {
+    md:  "max-w-md",
+    lg:  "max-w-lg",
+    xl:  "max-w-xl",
+    "2xl": "max-w-2xl",
+};
 
 export function Modal(props: ModalProps) {
     return (
@@ -15,7 +24,7 @@ export function Modal(props: ModalProps) {
                 onClick={props.onClose}
             >
                 <div
-                    class="relative w-full max-w-md rounded-lg bg-card p-6 shadow-xl border border-border"
+                    class={`relative w-full rounded-lg bg-card p-6 shadow-xl border border-border ${SIZE_CLASS[props.size ?? "md"]}`}
                     onClick={(e) => e.stopPropagation()}
                 >
                     <div class="mb-4 flex items-center justify-between border-b border-border pb-3">

@@ -4,6 +4,7 @@ import { Header } from "~/components/Layout/Header";
 import { HelpIcon } from "~/components/Icons/Icons";
 import {RouteSectionProps} from "@solidjs/router";
 import { ProtectedRoute } from "~/components/Layout/ProtectedRoute";
+import { ToastContainer } from "~/components/Widgets/Toast";
 
 export default function AppLayout(props: RouteSectionProps) {
     return (
@@ -18,6 +19,8 @@ export default function AppLayout(props: RouteSectionProps) {
                     </ProtectedRoute>
                 </main>
             </div>
+
+            <ToastContainer />
         </div>
     );
 }
