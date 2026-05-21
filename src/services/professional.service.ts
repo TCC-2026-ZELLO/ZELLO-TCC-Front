@@ -64,6 +64,22 @@ export const professionalService = {
         return await http.post('/professionals/me/qualifications', formData);
     },
 
+    updateQualification: async (id: string, data: {
+        file?: File;
+        title?: string;
+        institution?: string;
+        type?: string;
+        year?: number;
+    }) => {
+        const formData = new FormData();
+        if (data.file)        formData.append('file', data.file);
+        if (data.title)       formData.append('title', data.title);
+        if (data.institution !== undefined) formData.append('institution', data.institution);
+        if (data.type)        formData.append('type', data.type);
+        if (data.year)        formData.append('year', String(data.year));
+        return await http.patch(`/professionals/me/qualifications/${id}`, formData);
+    },
+
     deleteQualification: async (id: string) => {
         return await http.delete(`/professionals/me/qualifications/${id}`);
     },
