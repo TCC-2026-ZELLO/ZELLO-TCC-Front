@@ -1,0 +1,26 @@
+import { http } from "./api";
+
+export interface CreateAppointmentDto {
+    professionalId: string;
+    businessId: string;
+    serviceId: string;
+    date: string;
+    startTime: string;
+}
+
+export const appointmentsService = {
+    create: async (data: CreateAppointmentDto) => {
+        const res = await http.post<any>("/appointments", data);
+        return res.data || res;
+    },
+
+    getMyAppointments: async () => {
+        const res = await http.get<any>("/appointments/me");
+        return res.data || res;
+    },
+
+    cancel: async (id: string) => {
+        const res = await http.patch<any>(`/appointments/${id}/cancel`, {});
+        return res.data || res;
+    },
+};

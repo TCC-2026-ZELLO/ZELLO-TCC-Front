@@ -67,6 +67,7 @@ export function Sidebar() {
                 <Show when={isMounted()}>
                     <Show when={accountRole() === "cliente"}>
                         <NavItem label={t().sidebar.nav.home} icon={<HomeIcon/>} href="/explore" />
+                        <NavItem label="Agendamentos" icon={<CalendarIcon/>} href="/agendamentos" />
                     </Show>
 
                     <Show when={accountRole() === "profissional"}>
