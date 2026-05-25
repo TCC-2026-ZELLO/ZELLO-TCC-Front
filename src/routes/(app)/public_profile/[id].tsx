@@ -5,6 +5,7 @@ import { Button } from "~/components/Widgets/Button";
 import { Tabs } from "~/components/Widgets/Tabs";
 import { StarIcon, MapPinIcon, CalendarIcon, CheckCircleIcon, RibbonIcon } from "~/components/Icons/Icons";
 import { professionalService } from "~/services/professional.service";
+import { BookingModal } from "~/components/Widgets/BookingModal";
 
 const TYPE_COLORS: Record<string, string> = {
     diploma:        "bg-blue-100 text-blue-700",
@@ -23,6 +24,7 @@ const TYPE_LABELS: Record<string, string> = {
 export default function PublicProfile() {
     const params = useParams();
     const [activeTab, setActiveTab] = createSignal("servicos");
+    const [selectedServiceForBooking, setSelectedServiceForBooking] = createSignal<any>(null);
 
     const [profile] = createResource(
         () => params.id,
@@ -196,13 +198,13 @@ export default function PublicProfile() {
                                                                 {svc.service?.name || svc.name}
                                                             </span>
                                                         </div>
-                                                        <span class="text-sm text-muted-foreground">{svc.durationMinutes || svc.duration} min</span>
+                                                        <span class="text-sm text-muted-foreground">{svc.service?.durationMinutes || svc.durationMinutes || svc.duration} min</span>
                                                     </div>
                                                     <div class="flex items-center gap-4">
                                                         <span class="font-semibold text-foreground">
-                                                            R$ {svc.price}
+                                                            R$ {svc.service?.price || svc.price}
                                                         </span>
-                                                        <Button variant="outline" class="rounded-full text-xs px-4">Reservar</Button>
+                                                        <Button variant="outline" class="rounded-full text-xs px-4" onClick={() => setSelectedServiceForBooking(svc)}>Reservar</Button>
                                                     </div>
                                                 </div>
                                             )}
@@ -240,6 +242,18 @@ export default function PublicProfile() {
                     </div>
                 </div>
             </div>
+            <Show when={selectedServiceForBooking()}>
+                <BookingModal 
+                    isOpen={!!selectedServiceForBooking()}
+                    onClose={() => setSelectedServiceForBooking(null)}
+                    professionalId={params.id}
+                    businessId={selectedServiceForBooking().businessProfessional?.business?.id || ""}
+                    serviceId={selectedServiceForBooking().service?.id}
+                    serviceName={selectedServiceForBooking().service?.name || selectedServiceForBooking().name}
+                    durationMinutes={selectedServiceForBooking().service?.durationMinutes || selectedServiceForBooking().durationMinutes || selectedServiceForBooking().duration || 60}
+                    price={selectedServiceForBooking().service?.price || selectedServiceForBooking().price}
+                />
+            </Show>
         </Show>
     );
 }
