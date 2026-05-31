@@ -9,7 +9,9 @@ import { Card } from "~/components/Widgets/Card";
 import { Input } from "~/components/Widgets/Input";
 import { IconButton } from "~/components/Widgets/IconButton";
 import { availabilityService } from "~/services/availability.service";
+import { appointmentsService } from "~/services/appointments.service";
 import { ApiError } from "~/services/api";
+import { getActiveBizId } from "~/store/appState";
 
 const PROFESSIONALS: Professional[] = [
     { id: "11111111-1111-1111-1111-111111111111", name: "Rafael (Você)", initials: "RF" },
@@ -57,6 +59,32 @@ export default function TeamSchedules() {
            return await availabilityService.getExceptions();
         } catch(e) { return []; }
     });
+
+    const [appointments, { refetch: refetchAppointments }] = createResource(
+        () => getActiveBizId(),
+        async (businessId) => {
+            try {
+                if (!businessId) return [];
+                return await appointmentsService.getByBusiness(businessId);
+            } catch(e) {
+                return [];
+            }
+        }
+    );
+
+    const pendingAppointments = createMemo(() => {
+        if (!appointments()) return [];
+        return appointments().filter((a: any) => a.status === "PENDING");
+    });
+
+    const handleUpdateStatus = async (id: string, status: string) => {
+        try {
+            await appointmentsService.updateStatus(id, status);
+            refetchAppointments();
+        } catch (err: any) {
+            alert(err.message || "Erro ao atualizar status.");
+        }
+    };
 
     const handleSaveBlock = async (forceOverwrite = false) => {
         setCreateError("");
@@ -136,14 +164,16 @@ export default function TeamSchedules() {
             <header class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
                     <h1 class="text-3xl font-bold">Agenda da Equipe</h1>
-                    <p class="text-sm text-muted-foreground mt-1">Quarta-feira, 25 de Março de 2026</p>
+                    <p class="text-sm text-muted-foreground mt-1">Gestão de horários e agendamentos</p>
                 </div>
-                <Badge variant="warning">
-                    <span class="flex items-center gap-2">
-                        <span class="h-2 w-2 rounded-full bg-warning"></span>
-                        3 aguardando aprovação
-                    </span>
-                </Badge>
+                <Show when={pendingAppointments().length > 0}>
+                    <Badge variant="warning">
+                        <span class="flex items-center gap-2">
+                            <span class="h-2 w-2 rounded-full bg-warning animate-pulse"></span>
+                            {pendingAppointments().length} aguardando aprovação
+                        </span>
+                    </Badge>
+                </Show>
             </header>
 
             <Tabs
@@ -151,7 +181,7 @@ export default function TeamSchedules() {
                 onChange={(v) => setActiveTab(v)}
                 items={[
                     { label: "Grade da Equipe", value: "grade" },
-                    { label: "Pendentes", value: "pendentes", badge: 3 },
+                    { label: "Pendentes", value: "pendentes", badge: pendingAppointments().length || undefined },
                     { label: "Horário de Expediente", value: "horario" },
                     { label: "Bloqueios", value: "bloqueios" }
                 ]}
@@ -190,29 +220,33 @@ export default function TeamSchedules() {
 
             <Show when={ActiveTab() === "pendentes"}>
                 <div class="flex flex-col gap-4">
-                    <For each={[
-                        { id: 1, client: "Sofia M.", service: "Microagulhamento", prof: "Isabella F.", date: "Seg, 28 Mar", time: "15:00", price: "R$ 450" },
-                        { id: 2, client: "Tânia B.", service: "Coloração Completa", prof: "Mariana C.", date: "Ter, 29 Mar", time: "10:00", price: "R$ 200" },
-                        { id: 3, client: "Ursula F.", service: "Nail Art Premium", prof: "Juliana S.", date: "Qua, 30 Mar", time: "14:00", price: "R$ 120" }
-                    ]}>
-                        {(item) => (
-                            <div class="flex flex-col sm:flex-row justify-between sm:items-center p-5 rounded-xl border border-border bg-card shadow-sm gap-4">
-                                <div>
-                                    <h4 class="font-bold text-foreground">{item.client}</h4>
-                                    <p class="text-sm text-muted-foreground">{item.service} · {item.prof}</p>
-                                    <div class="flex items-center gap-3 mt-2 text-sm text-muted-foreground">
-                                        <span class="flex items-center gap-1">📅 {item.date}</span>
-                                        <span class="flex items-center gap-1">⏰ {item.time}</span>
-                                        <span class="font-bold text-foreground">{item.price}</span>
-                                    </div>
-                                </div>
-                                <div class="flex items-center gap-2">
-                                    <Button variant="secondary">✓ Aprovar</Button>
-                                    <Button variant="outline" class="text-error border-error/20 hover:bg-error/10">✕ Recusar</Button>
-                                </div>
+                    <Show when={!appointments.loading} fallback={<div class="p-8 text-center text-muted-foreground">Carregando pendentes...</div>}>
+                        <Show when={pendingAppointments().length > 0} fallback={
+                            <div class="p-10 border border-dashed border-border rounded-xl text-center text-muted-foreground bg-card">
+                                Não há agendamentos pendentes no momento.
                             </div>
-                        )}
-                    </For>
+                        }>
+                            <For each={pendingAppointments()}>
+                                {(item: any) => (
+                                    <div class="flex flex-col sm:flex-row justify-between sm:items-center p-5 rounded-xl border border-border bg-card shadow-sm gap-4">
+                                        <div>
+                                            <h4 class="font-bold text-foreground">{item.client?.name || "Cliente"}</h4>
+                                            <p class="text-sm text-muted-foreground">{item.service?.name} · {item.professional?.user?.name}</p>
+                                            <div class="flex items-center gap-3 mt-2 text-sm text-muted-foreground">
+                                                <span class="flex items-center gap-1">📅 {item.date}</span>
+                                                <span class="flex items-center gap-1">⏰ {item.startTime}</span>
+                                                <span class="font-bold text-foreground">R$ {item.service?.price}</span>
+                                            </div>
+                                        </div>
+                                        <div class="flex items-center gap-2">
+                                            <Button variant="secondary" onClick={() => handleUpdateStatus(item.id, "CONFIRMED")}>✓ Aprovar</Button>
+                                            <Button variant="outline" class="text-error border-error/20 hover:bg-error/10" onClick={() => handleUpdateStatus(item.id, "CANCELLED")}>✕ Recusar</Button>
+                                        </div>
+                                    </div>
+                                )}
+                            </For>
+                        </Show>
+                    </Show>
                 </div>
             </Show>
 
@@ -320,19 +354,19 @@ export default function TeamSchedules() {
                     {(appt) => (
                         <div class="flex flex-col gap-4">
                             <div class="flex items-center gap-3">
-                                <Avatar size="lg" fallbackInitials={appt()!.clientName.substring(0, 2).toUpperCase()} />
+                                <Avatar size="lg" fallbackInitials={appt()?.clientName?.substring(0, 2).toUpperCase() || ""} />
                                 <div>
-                                    <h4 class="text-lg font-bold text-foreground">{appt()!.clientName}</h4>
-                                    <Badge variant={appt()!.status === "confirmed" ? "success" : appt()!.status === "pending" ? "warning" : "default"}>
-                                        {appt()!.status.toUpperCase()}
+                                    <h4 class="text-lg font-bold text-foreground">{appt()?.clientName}</h4>
+                                    <Badge variant={appt()?.status === "confirmed" ? "success" : appt()?.status === "pending" ? "warning" : "default"}>
+                                        {appt()?.status?.toUpperCase() || ""}
                                     </Badge>
                                 </div>
                             </div>
 
                             <div class="bg-muted rounded-md p-4 flex flex-col gap-2 border border-border text-foreground">
-                                <p class="text-sm"><strong>Serviço:</strong> {appt()!.service}</p>
-                                <p class="text-sm"><strong>Horário:</strong> {appt()!.startTime} ({appt()!.durationMins} min)</p>
-                                <p class="text-sm"><strong>Profissional:</strong> {PROFESSIONALS.find(p => p.id === appt()!.professionalId)?.name}</p>
+                                <p class="text-sm"><strong>Serviço:</strong> {appt()?.service}</p>
+                                <p class="text-sm"><strong>Horário:</strong> {appt()?.startTime} ({appt()?.durationMins} min)</p>
+                                <p class="text-sm"><strong>Profissional:</strong> {PROFESSIONALS.find(p => p.id === appt()?.professionalId)?.name}</p>
                             </div>
 
                             <div class="flex gap-2 mt-2">
