@@ -7,8 +7,10 @@ export interface Bound {
 }
 
 export const availabilityService = {
-    getBounds: (params: { date: string; professionalId: string; businessId: string; serviceId: string }) => {
-        const query = new URLSearchParams(params).toString();
+    getBounds: (params: { date: string; professionalId?: string; businessId: string; serviceId: string }) => {
+        const queryParams: any = { ...params };
+        if (!queryParams.professionalId) delete queryParams.professionalId;
+        const query = new URLSearchParams(queryParams).toString();
         return http.get<Bound[]>(`/availability/bounds?${query}`);
     },
 

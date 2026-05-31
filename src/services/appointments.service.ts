@@ -1,7 +1,7 @@
 import { http } from "./api";
 
 export interface CreateAppointmentDto {
-    professionalId: string;
+    professionalId?: string;
     businessId: string;
     serviceId: string;
     date: string;
@@ -21,6 +21,16 @@ export const appointmentsService = {
 
     cancel: async (id: string) => {
         const res = await http.patch<any>(`/appointments/${id}/cancel`, {});
+        return res.data || res;
+    },
+
+    getByBusiness: async (businessId: string) => {
+        const res = await http.get<any>(`/appointments/business/${businessId}`);
+        return res.data || res;
+    },
+
+    updateStatus: async (id: string, status: string) => {
+        const res = await http.patch<any>(`/appointments/${id}/status`, { status });
         return res.data || res;
     },
 };
