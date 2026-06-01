@@ -23,15 +23,13 @@ export function ProfileSwitcher(props: ProfileSwitcherProps) {
 
         let options: any[] = [];
 
-        if (user.roles.includes("client")) {
-            options.push({
-                id: "client",
-                roleType: "cliente",
-                name: user.name,
-                label: "Cliente",
-                colorClass: "bg-cliente"
-            });
-        }
+        options.push({
+            id: "client",
+            roleType: "cliente",
+            name: user.name,
+            label: "Cliente",
+            colorClass: "bg-cliente"
+        });
 
         if (user.roles.includes("professional")) {
             options.push({

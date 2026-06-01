@@ -1,4 +1,5 @@
 import { http } from "./api";
+import { getActiveBizId } from "~/store/appState";
 
 export interface CreateAppointmentDto {
     professionalId?: string;
@@ -31,6 +32,16 @@ export const appointmentsService = {
 
     updateStatus: async (id: string, status: string) => {
         const res = await http.patch<any>(`/appointments/${id}/status`, { status });
+        return res.data || res;
+    },
+
+    getAppointments: async (params: { date?: string; businessId?: string; professionalId?: string }) => {
+        const baseParams = { businessId: getActiveBizId(), ...params };
+
+        const cleanParams = Object.fromEntries(Object.entries(baseParams).filter(([_, v]) => v != null));
+        const query = new URLSearchParams(cleanParams as Record<string, string>).toString();
+
+        const res = await http.get<any>(`/appointments?${query}`);
         return res.data || res;
     },
 };
