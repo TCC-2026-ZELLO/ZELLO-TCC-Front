@@ -32,6 +32,7 @@ export function initializeStore() {
     const savedUser = localStorage.getItem("user");
     const savedToken = localStorage.getItem("access_token");
     const savedActiveBiz = localStorage.getItem("active_business");
+    const savedManagedBiz = localStorage.getItem("managed_businesses"); // <-- Adicionado
     const savedTheme = localStorage.getItem("theme") as "light" | "dark";
 
     batch(() => {
@@ -41,6 +42,7 @@ export function initializeStore() {
             setAccessToken(savedToken);
 
             if (savedActiveBiz) setActiveBusiness(JSON.parse(savedActiveBiz));
+            if (savedManagedBiz) setManagedBusinesses(JSON.parse(savedManagedBiz)); // <-- Adicionado
 
             // Determine role based on parsed user roles
             if (parsed.roles.includes("manager")) setAccountRole("estabelecimento");
