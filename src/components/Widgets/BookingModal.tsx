@@ -1,9 +1,13 @@
-import { createSignal, createEffect, Show, For } from "solid-js";
+import { createSignal, createEffect, onCleanup, Show, For } from "solid-js";
 import { Button } from "./Button";
 import { Input } from "./Input";
-import { availabilityService, Bound } from "~/services/availability.service";
+import { availabilityService, Bound, BoundsParams } from "~/services/availability.service";
 import { appointmentsService } from "~/services/appointments.service";
+import { ApiError } from "~/services/api";
 import { CalendarIcon, ClockIcon, XIcon, CheckCircleIcon } from "~/components/Icons/Icons";
+
+// Intervalo de atualização automática dos horários disponíveis (RF16/AC1).
+const BOUNDS_POLLING_INTERVAL_MS = 20000;
 
 interface BookingModalProps {
     isOpen: boolean;
@@ -25,65 +29,62 @@ export function BookingModal(props: BookingModalProps) {
     const [feedback, setFeedback] = createSignal({ type: "", message: "" });
     const [isSuccess, setIsSuccess] = createSignal(false);
 
-    const generatedSlots = () => {
-        const slots: string[] = [];
-        const duration = props.durationMinutes;
+    // Os horários disponíveis já chegam filtrados pelo backend de acordo
+    // com o fuso horário do estabelecimento e a antecedência mínima
+    // (RF16/AC5); aqui apenas convertemos os intervalos em slots de início.
+    const generatedSlots = () =>
+        availabilityService.generateAvailableSlots(bounds(), props.durationMinutes);
 
-        const now = new Date();
-        const currentDateStr = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, '0') + "-" + String(now.getDate()).padStart(2, '0');
-        const currentMins = now.getHours() * 60 + now.getMinutes();
+    const currentBoundsParams = (): BoundsParams => ({
+        date: date(),
+        professionalId: props.professionalId,
+        businessId: props.businessId,
+        serviceId: props.serviceId,
+    });
 
-        bounds().forEach((bound) => {
-            let current = timeToMins(bound.start);
-            const end = timeToMins(bound.end);
+    // Busca os horários disponíveis para a data selecionada. Se já houver
+    // uma resposta em cache para a mesma combinação, ela é exibida
+    // imediatamente (RF16/AC3) enquanto os dados são revalidados no backend.
+    const fetchBounds = async () => {
+        const params = currentBoundsParams();
+        const cached = availabilityService.getCachedBounds(params);
 
-            while (current + duration <= end) {
-                // Filtra horários do passado e exige 30 minutos de antecedência
-                if (!(date() === currentDateStr && current < currentMins + 30)) {
-                    slots.push(minsToTime(current));
-                }
-                current += duration;
-            }
-        });
+        if (cached) {
+            setBounds(cached);
+        } else {
+            setLoadingBounds(true);
+        }
 
-        return slots;
+        try {
+            const fresh = await availabilityService.refreshBounds(params);
+            setBounds(fresh);
+        } catch (err) {
+            console.error("Erro ao buscar horários", err);
+            if (!cached) setBounds([]);
+        } finally {
+            setLoadingBounds(false);
+        }
     };
 
-    const timeToMins = (t: string) => {
-        const [h, m] = t.split(":").map(Number);
-        return h * 60 + m;
-    };
-
-    const minsToTime = (m: number) => {
-        const hh = Math.floor(m / 60).toString().padStart(2, '0');
-        const mm = (m % 60).toString().padStart(2, '0');
-        return `${hh}:${mm}`;
-    };
-
-    createEffect(async () => {
+    createEffect(() => {
         if (!date() || !props.isOpen) {
             setBounds([]);
             setSelectedTime("");
             return;
         }
 
-        setLoadingBounds(true);
         setSelectedTime("");
-        try {
-            const res = await availabilityService.getBounds({
-                date: date(),
-                professionalId: props.professionalId,
-                businessId: props.businessId,
-                serviceId: props.serviceId,
-            });
-            // Dependendo do retorno da API, ajustar se necessário (res.data ou res)
-            setBounds(Array.isArray(res) ? res : ((res as any).data || []));
-        } catch (err) {
-            console.error("Erro ao buscar horários", err);
-            setBounds([]);
-        } finally {
-            setLoadingBounds(false);
-        }
+        fetchBounds();
+    });
+
+    // Mantém os horários bloqueados atualizados em tempo real enquanto o
+    // modal está aberto, refletindo reservas feitas por outros clientes
+    // (RF16/AC1).
+    createEffect(() => {
+        if (!date() || !props.isOpen) return;
+
+        const interval = setInterval(fetchBounds, BOUNDS_POLLING_INTERVAL_MS);
+        onCleanup(() => clearInterval(interval));
     });
 
     const handleConfirm = async () => {
@@ -107,7 +108,16 @@ export function BookingModal(props: BookingModalProps) {
                 handleClose();
             }, 3000);
         } catch (err: any) {
-            setFeedback({ type: "error", message: err.message || "Erro ao solicitar agendamento" });
+            if (err instanceof ApiError && err.status === 409) {
+                // Outro cliente confirmou este horário entre a seleção e a
+                // confirmação - atualiza a lista de horários e pede uma
+                // nova escolha (RF16/AC2).
+                setSelectedTime("");
+                setFeedback({ type: "error", message: err.message || "Este horário não está mais disponível. Selecione outro horário." });
+                fetchBounds();
+            } else {
+                setFeedback({ type: "error", message: err.message || "Erro ao solicitar agendamento" });
+            }
         } finally {
             setLoadingSubmit(false);
         }
