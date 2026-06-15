@@ -1,4 +1,4 @@
-import {createSignal, For, Show, createResource, createEffect, createMemo} from "solid-js";
+import {createSignal, For, Show, createResource, createEffect, createMemo, onCleanup} from "solid-js";
 import {useParams, useNavigate} from "@solidjs/router";
 import {Card} from "~/components/Widgets/Card";
 import {Button} from "~/components/Widgets/Button";
@@ -7,7 +7,7 @@ import {StarIcon, MapPinIcon, CalendarIcon, CheckCircleIcon} from "~/components/
 import {Modal} from "~/components/Widgets/Modal";
 import {Input} from "~/components/Widgets/Input";
 import {businessService} from "~/services/business.service";
-import {availabilityService} from "~/services/availability.service";
+import {availabilityService, BoundsParams} from "~/services/availability.service";
 import {appointmentsService} from "~/services/appointments.service";
 import {ApiError} from "~/services/api";
 
@@ -40,56 +40,63 @@ export default function EstablishmentProfile() {
     const [bookingError, setBookingError] = createSignal<string>("");
     const [isBooking, setIsBooking] = createSignal(false);
 
+    // Retorna os parâmetros de busca de disponibilidade para a seleção
+    // atual, ou null se a seleção ainda estiver incompleta.
+    const currentBoundsParams = (): BoundsParams | null => {
+        if (!selectedDate() || !selectedService()) return null;
+        return {
+            date: selectedDate(),
+            businessId: params.id as string,
+            serviceId: selectedService(),
+            professionalId: selectedProfessional() || undefined
+        };
+    };
+
     const [bounds, { refetch: refetchBounds }] = createResource(
-        () => {
-            if (!selectedDate() || !selectedService()) return null;
-            return {
-                date: selectedDate(),
-                businessId: params.id as string,
-                serviceId: selectedService(),
-                professionalId: selectedProfessional() || undefined
-            };
-        },
-        availabilityService.getBounds
+        currentBoundsParams,
+        async (boundsParams) => {
+            const cached = availabilityService.getCachedBounds(boundsParams);
+
+            if (cached) {
+                // Exibe o resultado em cache imediatamente e
+                // revalida em segundo plano; se algo mudou, recarrega.
+                availabilityService.refreshBounds(boundsParams)
+                    .then((fresh) => {
+                        if (JSON.stringify(fresh) !== JSON.stringify(cached)) {
+                            refetchBounds();
+                        }
+                    })
+                    .catch(() => {});
+                return cached;
+            }
+
+            return availabilityService.refreshBounds(boundsParams);
+        }
     );
+
+    // Mantém os horários bloqueados atualizados em tempo real enquanto o
+    // modal de agendamento está aberto (RF16/AC1).
+    createEffect(() => {
+        if (!isModalOpen() || !currentBoundsParams()) return;
+
+        const interval = setInterval(() => refetchBounds(), 20000);
+        onCleanup(() => clearInterval(interval));
+    });
 
     const availableSlots = createMemo(() => {
         const currentBounds = bounds();
         if (!currentBounds || currentBounds.length === 0) return [];
-        
+
         const service = catalog()?.find((s: any) => s.id === selectedService());
         if (!service) return [];
-        
+
         const duration = (service.durationMinutes || 0) + (service.cleanupMinutes || 0);
         if (duration <= 0) return [];
 
-        const timeToMins = (t: string) => {
-            if (!t) return 0;
-            const [h, m] = t.split(':').map(Number);
-            return h * 60 + m;
-        };
-        const minsToTime = (m: number) => {
-            const h = Math.floor(m / 60).toString().padStart(2, '0');
-            const min = (m % 60).toString().padStart(2, '0');
-            return `${h}:${min}`;
-        };
-
-        const slots: string[] = [];
-        const interval = 30; // intervalos de 30 min
-        
-        for (const b of currentBounds) {
-            let current = timeToMins(b.start);
-            const end = timeToMins(b.end);
-            
-            while (current + duration <= end) {
-                const timeStr = minsToTime(current);
-                if (!slots.includes(timeStr)) {
-                    slots.push(timeStr);
-                }
-                current += interval;
-            }
-        }
-        return slots;
+        // Os horários já vêm filtrados pelo backend (fuso do estabelecimento,
+        // antecedência mínima e duração ; aqui apenas
+        // convertemos os intervalos em slots de início a cada 30 minutos.
+        return availabilityService.generateAvailableSlots(currentBounds, duration, 30);
     });
 
     const handleOpenBooking = (serviceId?: string) => {
@@ -123,8 +130,17 @@ export default function EstablishmentProfile() {
             navigate("/agendamentos");
         } catch (err: any) {
             if (err instanceof ApiError && err.status === 409) {
+                // Outro cliente confirmou este horário entre a seleção e a
+                // confirmação - limpa a escolha e revalida a disponibilidade
+                // (RF16/AC2).
+                setSelectedTime("");
                 setBookingError("Este horário esgotou. Por favor, selecione outro horário no calendário.");
-                refetchBounds();
+                const boundsParams = currentBoundsParams();
+                if (boundsParams) {
+                    availabilityService.refreshBounds(boundsParams).finally(() => refetchBounds());
+                } else {
+                    refetchBounds();
+                }
             } else {
                 setBookingError(err.message || "Erro ao criar agendamento.");
             }
