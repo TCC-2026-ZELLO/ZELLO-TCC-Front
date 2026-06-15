@@ -10,7 +10,7 @@ import { IconButton } from "~/components/Widgets/IconButton";
 
 import { CatalogItemUI, catalogService } from "~/services/catalog.service";
 import { activeBusiness } from "~/store/appState";
-import { toast } from "~/store/toastStore"; // <-- Importando o seu store existente
+import { toast } from "~/store/toastStore";
 
 import { PlusIcon, EditIcon, TrashIcon, ClockIcon, BriefcaseIcon } from "~/components/Icons/Icons";
 import {ToastContainer} from "~/components/Widgets/Toast";

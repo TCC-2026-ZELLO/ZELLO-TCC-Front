@@ -8,8 +8,8 @@ import { activeBusiness } from "~/store/appState";
 import { businessProfessionalsService } from "~/services/business-professionals.service";
 import { professionalService } from "~/services/professional.service";
 import { catalogService } from "~/services/catalog.service";
-import { toast } from "~/store/toastStore"; // <-- Importando o seu store de toast
-import { ToastContainer } from "~/components/Widgets/toast"; // <-- Importando o seu container de toast
+import { toast } from "~/store/toastStore";
+import { ToastContainer } from "~/components/Widgets/Toast";
 import {
     CheckCircleIcon,
     PlusIcon,
@@ -233,7 +233,7 @@ export default function ProfessionalsPage() {
                 </Portal>
             </Show>
 
-            {/* --- MODAL: CONFIGURAÇÕES (JORNADA + SERVIÇOS) --- */}
+            {/* --- MODAL: CONFIGURAÇÕES --- */}
             <Show when={isEditModalOpen()}>
                 <Portal>
                     <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
