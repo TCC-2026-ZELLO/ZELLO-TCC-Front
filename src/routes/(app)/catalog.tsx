@@ -8,10 +8,12 @@ import { Tabs } from "~/components/Widgets/Tabs";
 import { Input } from "~/components/Widgets/Input";
 import { IconButton } from "~/components/Widgets/IconButton";
 
-import {CatalogItemUI, catalogService} from "~/services/catalog.service";
+import { CatalogItemUI, catalogService } from "~/services/catalog.service";
 import { activeBusiness } from "~/store/appState";
+import { toast } from "~/store/toastStore"; // <-- Importando o seu store existente
 
 import { PlusIcon, EditIcon, TrashIcon, ClockIcon, BriefcaseIcon } from "~/components/Icons/Icons";
+import {ToastContainer} from "~/components/Widgets/Toast";
 
 export default function CatalogPage() {
     const [activeTab, setActiveTab] = createSignal("servicos");
@@ -67,13 +69,15 @@ export default function CatalogPage() {
         try {
             if (editingId()) {
                 await catalogService.update(editingId() as string, formData());
+                toast.success("Serviço atualizado com sucesso!");
             } else {
                 await catalogService.create(bId as string, formData());
+                toast.success("Novo serviço adicionado ao catálogo!");
             }
             setIsModalOpen(false);
             refetch();
         } catch (e) {
-            alert("Erro ao salvar os dados no backend.");
+            toast.error("Erro ao salvar os dados no servidor.");
         } finally {
             setIsSaving(false);
         }
@@ -83,14 +87,15 @@ export default function CatalogPage() {
         if (!confirm("Tem certeza que deseja excluir este serviço? Esta ação não pode ser desfeita.")) return;
         try {
             await catalogService.delete(id);
+            toast.success("Serviço removido do catálogo.");
             refetch();
         } catch (e) {
-            alert("Erro ao excluir serviço.");
+            toast.error("Não foi possível excluir o serviço selecionado.");
         }
     };
 
     const handleToggleStatus = async (id: string, currentStatus: boolean) => {
-        alert("O backend atual não possui o campo 'active' ou 'status' para inativar serviços.");
+        toast.info("O backend atual não possui rotas para alternar o status do serviço.");
     };
 
     return (
@@ -131,7 +136,7 @@ export default function CatalogPage() {
                             <span class="font-bold text-foreground">Disponibilidade Geral</span>
                             <span class="text-sm text-muted-foreground">Abrir ou fechar a agenda da loja</span>
                         </div>
-                        <Switch checked={true} label="Loja Aberta" />
+                        <Switch checked={true} label="Loja Aberta" onChange={() => handleToggleStatus("", true)} />
                     </div>
                 </Card>
             </div>
@@ -192,9 +197,6 @@ export default function CatalogPage() {
                                             <div class="flex flex-col gap-2">
                                                 <div class="flex items-center gap-3">
                                                     <span class="font-bold text-base text-foreground">{item.name}</span>
-                                                    <Show when={!item.active}>
-                                                        <Badge variant="error">Inativo</Badge>
-                                                    </Show>
                                                 </div>
                                                 <div class="flex items-center gap-4 text-sm text-muted-foreground">
                                                     <span class="flex items-center gap-1.5">
@@ -214,13 +216,6 @@ export default function CatalogPage() {
                                                 </span>
 
                                                 <div class="flex items-center gap-2 border-l border-border pl-6">
-                                                    <div class="mr-4">
-                                                        <Switch
-                                                            checked={item.active}
-                                                            onChange={() => handleToggleStatus(item.id, item.active)}
-                                                        />
-                                                    </div>
-
                                                     <div onClick={() => openEditModal(item)}>
                                                         <IconButton> <EditIcon /> </IconButton>
                                                     </div>
@@ -318,6 +313,8 @@ export default function CatalogPage() {
                     </div>
                 </Portal>
             </Show>
+
+            <ToastContainer />
         </div>
     );
 }

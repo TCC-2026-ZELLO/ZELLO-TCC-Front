@@ -24,4 +24,8 @@ export const businessProfessionalsService = {
     findServices: (id: string) => http.get<any>(`/business-professionals/${id}/services`),
     updateServices: (id: string, serviceIds: string[]) =>
         http.patch(`/business-professionals/${id}/services`, { serviceIds }),
+
+    findShifts: (id: string) => http.get<any>(`/business-professionals/${id}/shifts`),
+    updateShifts: (id: string, shifts: any[]) =>
+        http.patch(`/business-professionals/${id}/shifts`, { shifts }),
 };

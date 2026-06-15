@@ -232,9 +232,8 @@ export default function Explore() {
                             const name     = isProf ? item.user?.name : (item.name || item.tradeName);
                             const specialty = isProf ? (item.specialty || "Especialista") : "Estabelecimento";
                             const coverImg = isProf
-                                ? (item.bannerUrl || item.photoUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random`)
-                                : (item.bannerUrl || item.logoUrl  || `https://placehold.co/400x300?text=${encodeURIComponent(name)}`);
-
+                                ? (item.bannerUrl?.trim() || item.photoUrl?.trim() || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random`)
+                                : (item.bannerUrl?.trim() || item.photoUrl?.trim() || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random`);
                             return (
                                 <Card
                                     class="flex flex-col overflow-hidden transition-all hover:shadow-xl hover:-translate-y-1 cursor-pointer hover:border-primary/40 group border-border/60 gap-0 p-0"
