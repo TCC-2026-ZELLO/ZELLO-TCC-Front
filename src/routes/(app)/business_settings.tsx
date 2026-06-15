@@ -6,6 +6,8 @@ import { Switch } from "~/components/Widgets/Switch";
 import { Tabs } from "~/components/Widgets/Tabs";
 import { getActiveBizId } from "~/store/appState";
 import { businessService } from "~/services/business.service";
+import { toast } from "~/store/toastStore";
+import { ToastContainer } from "~/components/Widgets/Toast";
 import {
     SaveIcon, CameraIcon, TrashIcon, PlusIcon
 } from "~/components/Icons/Icons";
@@ -54,10 +56,10 @@ export default function BusinessSettings() {
                 description: description(),
                 visibilityStatus: isPublic()
             });
-            alert("Dados da empresa atualizados!");
+            toast.success("Dados da empresa atualizados com sucesso!");
             await refetchProfile();
         } catch (e) {
-            alert("Erro ao salvar.");
+            toast.error("Erro ao salvar os dados do estabelecimento.");
         } finally {
             setLoading(false);
         }
@@ -71,13 +73,22 @@ export default function BusinessSettings() {
 
         setLoading(true);
         try {
-            if (type === 'photo') await businessService.updatePhoto(id, file);
-            if (type === 'banner') await businessService.updateBanner(id, file);
-            if (type === 'gallery') await businessService.addGalleryImage(id, file);
+            if (type === 'photo') {
+                await businessService.updatePhoto(id, file);
+                toast.success("Foto de perfil atualizada!");
+            }
+            if (type === 'banner') {
+                await businessService.updateBanner(id, file);
+                toast.success("Banner do estabelecimento atualizado!");
+            }
+            if (type === 'gallery') {
+                await businessService.addGalleryImage(id, file);
+                toast.success("Nova foto adicionada à galeria!");
+            }
 
             type === 'gallery' ? await refetchGallery() : await refetchProfile();
         } catch (err) {
-            alert("Falha no upload.");
+            toast.error("Falha ao realizar o upload da imagem.");
         } finally {
             setLoading(false);
             target.value = "";
@@ -91,7 +102,10 @@ export default function BusinessSettings() {
         setLoading(true);
         try {
             await businessService.deleteGalleryImage(id, imageId);
+            toast.success("Foto removida da galeria.");
             await refetchGallery();
+        } catch (e) {
+            toast.error("Não foi possível remover a imagem.");
         } finally {
             setLoading(false);
         }
@@ -198,6 +212,8 @@ export default function BusinessSettings() {
                     </Card>
                 </Show>
             </div>
+
+            <ToastContainer />
         </Show>
     );
 }

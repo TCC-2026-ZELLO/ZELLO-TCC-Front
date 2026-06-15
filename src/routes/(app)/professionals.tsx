@@ -8,6 +8,8 @@ import { activeBusiness } from "~/store/appState";
 import { businessProfessionalsService } from "~/services/business-professionals.service";
 import { professionalService } from "~/services/professional.service";
 import { catalogService } from "~/services/catalog.service";
+import { toast } from "~/store/toastStore";
+import { ToastContainer } from "~/components/Widgets/Toast";
 import {
     CheckCircleIcon,
     PlusIcon,
@@ -48,20 +50,27 @@ export default function ProfessionalsPage() {
         setSelectedBP(bp);
 
         try {
-            const res = await professionalService.getServices(bp.professional.id);
-            const currentServices = res.data || res;
-            const ids = currentServices.map((item: any) => item.service.id);
+            const serviceRes = await professionalService.getServices(bp.professional.id);
+            const serviceIds = (serviceRes.data || serviceRes).map((item: any) => item.service.id);
+
+            const shiftRes = await businessProfessionalsService.findShifts(bp.id);
+            const shifts = shiftRes.data || [];
+
+            const dayMap = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+            const activeDays = shifts.map(s => dayMap[s.dayOfWeek]);
 
             batch(() => {
-                setSelectedServiceIds(ids);
+                setSelectedServiceIds(serviceIds);
+                setDiasAtivos(activeDays);
+                if (shifts.length > 0) {
+                    setHoraInicio(shifts[0].startTime.substring(0, 5));
+                    setHoraFim(shifts[0].endTime.substring(0, 5));
+                }
                 setIsEditModalOpen(true);
             });
         } catch (e) {
-            console.error("Erro ao carregar serviços", e);
-            batch(() => {
-                setSelectedServiceIds([]);
-                setIsEditModalOpen(true);
-            });
+            console.error("Erro ao carregar dados", e);
+            setIsEditModalOpen(true);
         }
     };
 
@@ -78,9 +87,9 @@ export default function ProfessionalsPage() {
         try {
             await businessProfessionalsService.remove(bpId);
             refetch();
-            alert("Profissional removido com sucesso.");
+            toast.success("Profissional removido da equipe com sucesso.");
         } catch (e) {
-            alert("Erro ao remover profissional.");
+            toast.error("Erro ao remover o profissional.");
         } finally {
             setIsSaving(false);
         }
@@ -92,17 +101,26 @@ export default function ProfessionalsPage() {
 
         setIsSaving(true);
         try {
-            await businessProfessionalsService.update(bp.id, {
-                active: true,
-            });
-
             await businessProfessionalsService.updateServices(bp.id, selectedServiceIds());
+
+            const dayMap: Record<string, number> = {
+                "Dom": 0, "Seg": 1, "Ter": 2, "Qua": 3, "Qui": 4, "Sex": 5, "Sáb": 6
+            };
+
+            const shiftPayload = diasAtivos().map(dayLabel => ({
+                dayOfWeek: dayMap[dayLabel],
+                startTime: horaInicio(),
+                endTime: horaFim()
+            }));
+
+            await businessProfessionalsService.updateShifts(bp.id, shiftPayload);
 
             setIsEditModalOpen(false);
             refetch();
-            alert("Configurações atualizadas!");
+            toast.success("Configurações e jornada salvas com sucesso!");
         } catch (e) {
-            alert("Erro ao salvar configurações.");
+            console.error(e);
+            toast.error("Erro ao salvar as configurações da escala.");
         } finally {
             setIsSaving(false);
         }
@@ -124,9 +142,9 @@ export default function ProfessionalsPage() {
                 setNewProfEmail("");
             });
             refetch();
-            alert("Profissional vinculado com sucesso!");
+            toast.success("Profissional vinculado com sucesso!");
         } catch (e: any) {
-            alert("Não foi possível localizar um profissional com este e-mail.");
+            toast.error("Não foi possível localizar um profissional com este e-mail.");
         } finally {
             setIsSaving(false);
         }
@@ -215,7 +233,7 @@ export default function ProfessionalsPage() {
                 </Portal>
             </Show>
 
-            {/* --- MODAL: CONFIGURAÇÕES (JORNADA + SERVIÇOS) --- */}
+            {/* --- MODAL: CONFIGURAÇÕES --- */}
             <Show when={isEditModalOpen()}>
                 <Portal>
                     <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
@@ -299,8 +317,8 @@ export default function ProfessionalsPage() {
                     </div>
                 </Portal>
             </Show>
+
+            <ToastContainer />
         </div>
     );
 }
-
-

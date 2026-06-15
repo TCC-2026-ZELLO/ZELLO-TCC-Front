@@ -19,7 +19,7 @@ export interface CatalogItemPayload {
 
 const sanitizePayload = (data: CatalogItemUI): CatalogItemPayload => ({
     name: data.name,
-    price: data.price,
+    price: data.price as number,
     durationMinutes: data.durationMinutes,
     cleanupMinutes: data.cleanupMinutes || 0
 });
