@@ -12,6 +12,8 @@ import { IconButton } from "~/components/Widgets/IconButton";
 import { ApiError } from "~/services/api";
 import { availabilityService } from "~/services/availability.service";
 import { appointmentsService } from "~/services/appointments.service";import { businessProfessionalService } from "~/services/business-professional.service";
+import { getActiveBizId } from "~/store/appState";
+import { toast } from "~/store/toastStore";
 
 export default function TeamSchedules() {
     const [activeTab, setActiveTab] = createSignal("grade");
@@ -83,7 +85,8 @@ export default function TeamSchedules() {
         try {
             await appointmentsService.updateStatus(id, status);
             refetchAppointments();
-        } catch (err: any) { alert(err.message || "Erro ao atualizar status."); }
+            toast.success(status === "CANCELLED" ? "Agendamento recusado." : "Agendamento aprovado.");
+        } catch (err: any) { toast.error(err.message || "Erro ao atualizar status."); }
     };
 
     const [isModalOpen, setIsModalOpen] = createSignal(false);
@@ -127,6 +130,7 @@ export default function TeamSchedules() {
             setIsCreateBlockOpen(false);
             setPendingConflictData(null);
             setBlockStart(""); setBlockEnd(""); setBlockReason(""); setBlockProfId("");
+            toast.success("Bloqueio criado com sucesso!");
         } catch(e: any) {
             if (e instanceof ApiError) {
                 if (e.status === 412) setPendingConflictData(e.data);
@@ -141,7 +145,8 @@ export default function TeamSchedules() {
         try {
             await availabilityService.deleteException(id);
             refetchExceptions();
-        } catch(e) { alert("Erro ao apagar bloqueio."); }
+            toast.success("Bloqueio removido.");
+        } catch(e) { toast.error("Erro ao apagar bloqueio."); }
     };
 
     const diasDaSemana = [
@@ -161,17 +166,28 @@ export default function TeamSchedules() {
     };
 
     const handleSaveOperatingHours = async () => {
+        const businessId = getActiveBizId();
+        if (!businessId) {
+            toast.error("Selecione uma empresa para configurar os horários.");
+            return;
+        }
+
         setIsSavingHours(true);
         try {
             const promises = [0, 1, 2, 3, 4, 5, 6].map(diaId => availabilityService.saveOperatingHour({
+                businessId,
                 dayOfWeek: diaId,
                 startTime: `${abertura()}:00`,
                 endTime: `${fechamento()}:00`,
                 isOpen: diasSelecionados().includes(diaId)
             }));
             await Promise.all(promises);
-            alert("Horários salvos com sucesso!");
-        } finally { setIsSavingHours(false); }
+            toast.success("Horários salvos com sucesso!");
+        } catch (err: any) {
+            toast.error(err instanceof ApiError ? (err.message || "Erro ao salvar horários.") : "Erro ao salvar horários.");
+        } finally {
+            setIsSavingHours(false);
+        }
     };
 
     return (
