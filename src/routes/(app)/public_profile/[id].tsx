@@ -6,6 +6,7 @@ import { Tabs } from "~/components/Widgets/Tabs";
 import { StarIcon, MapPinIcon, CalendarIcon, CheckCircleIcon, RibbonIcon } from "~/components/Icons/Icons";
 import { professionalService } from "~/services/professional.service";
 import { BookingModal } from "~/components/Widgets/BookingModal";
+import { isAuthenticated } from "~/store/appState";
 
 const TYPE_COLORS: Record<string, string> = {
     diploma:        "bg-blue-100 text-blue-700",
@@ -23,9 +24,19 @@ const TYPE_LABELS: Record<string, string> = {
 
 export default function PublicProfile() {
     const params = useParams();
+    
+    // Actually, I can just use window.location.href or try to get navigate from the router properly.
+    // Let's just use window.location.href which is safe and simple for redirecting to login.
     const [activeTab, setActiveTab] = createSignal("servicos");
     const [selectedServiceForBooking, setSelectedServiceForBooking] = createSignal<any>(null);
 
+    const handleBookService = (svc: any) => {
+        if (!isAuthenticated()) {
+            window.location.href = `/login?redirect=${encodeURIComponent(window.location.pathname)}`;
+            return;
+        }
+        setSelectedServiceForBooking(svc);
+    };
     const [profile] = createResource(
         () => params.id,
         professionalService.getPublicProfile
@@ -101,7 +112,14 @@ export default function PublicProfile() {
                         </div>
 
                         <div class="w-full sm:w-auto">
-                            <Button variant="primary" class="w-full sm:w-auto py-3 px-8 text-base shadow-lg flex items-center gap-2 justify-center">
+                            <Button variant="primary" onClick={() => {
+                                if (!isAuthenticated()) {
+                                    window.location.href = `/login?redirect=${encodeURIComponent(window.location.pathname)}`;
+                                    return;
+                                }
+                                setActiveTab("servicos");
+                                window.scrollTo({ top: 500, behavior: "smooth" });
+                            }} class="w-full sm:w-auto py-3 px-8 text-base shadow-lg flex items-center gap-2 justify-center">
                                 <CalendarIcon class="size-5"/> Agendar Agora
                             </Button>
                         </div>
@@ -204,7 +222,7 @@ export default function PublicProfile() {
                                                         <span class="font-semibold text-foreground">
                                                             R$ {svc.service?.price || svc.price}
                                                         </span>
-                                                        <Button variant="outline" class="rounded-full text-xs px-4" onClick={() => setSelectedServiceForBooking(svc)}>Reservar</Button>
+                                                        <Button variant="outline" class="rounded-full text-xs px-4" onClick={() => handleBookService(svc)}>Reservar</Button>
                                                     </div>
                                                 </div>
                                             )}
