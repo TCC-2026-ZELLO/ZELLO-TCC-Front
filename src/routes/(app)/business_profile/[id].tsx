@@ -10,6 +10,7 @@ import {businessService} from "~/services/business.service";
 import {availabilityService, BoundsParams} from "~/services/availability.service";
 import {appointmentsService} from "~/services/appointments.service";
 import {ApiError} from "~/services/api";
+import {isAuthenticated} from "~/store/appState";
 
 export default function EstablishmentProfile() {
     const params = useParams();
@@ -100,6 +101,11 @@ export default function EstablishmentProfile() {
     });
 
     const handleOpenBooking = (serviceId?: string) => {
+        if (!isAuthenticated()) {
+            window.location.href = `/login?redirect=${encodeURIComponent(window.location.pathname)}`;
+            return;
+        }
+
         if (serviceId) setSelectedService(serviceId);
         else if (catalog() && catalog().length > 0) setSelectedService(catalog()[0].id);
         
