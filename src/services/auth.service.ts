@@ -7,7 +7,7 @@ import {
   setAccountRole,
   setManagedBusinesses,
   setActiveBusiness,
-} from "~/store/appState";
+} from "../store/appState";
 
 export type AccountType = "CLIENTE" | "PROFISSIONAL" | "ESTABELECIMENTO";
 

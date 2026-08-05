@@ -1,7 +1,7 @@
 import { Show } from "solid-js";
 import { useNavigate } from "@solidjs/router";
-import { NavItem } from "~/components/Layout/NavItem";
-import { ProfileSwitcher } from "~/components/Layout/ProfileSwitcher";
+import { NavItem } from "./NavItem";
+import { ProfileSwitcher } from "./ProfileSwitcher";
 
 import {
     accountRole,
@@ -10,7 +10,7 @@ import {
     idioma,
     isSidebarCollapsed,
     isMounted,
-} from "~/store/appState";
+} from "../../store/appState";
 
 import {
     ZelloIcon,
@@ -21,8 +21,8 @@ import {
     RibbonIcon,
     SettingsIcon,
     LogoutIcon,
-} from "~/components/Icons/Icons";
-import { logout } from "~/services/auth.service";
+} from "../Icons/Icons";
+import { logout } from "../../services/auth.service";
 
 export function Sidebar() {
     const navigate = useNavigate();

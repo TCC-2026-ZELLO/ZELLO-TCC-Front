@@ -1,8 +1,8 @@
 import { createSignal, Show } from "solid-js";
 import { A, useNavigate } from "@solidjs/router";
 
-import { Input } from "~/components/Widgets/Input";
-import { Button } from "~/components/Widgets/Button";
+import { Input } from "../components/Widgets/Input";
+import { Button } from "../components/Widgets/Button";
 
 import {
   ZelloIcon,
@@ -10,9 +10,9 @@ import {
   MoonIcon,
   SunIcon,
   GoogleIcon,
-} from "~/components/Icons/Icons";
-import { API, theme, toggleTheme } from "~/store/appState";
-import { login } from "~/services/auth.service";
+} from "../components/Icons/Icons";
+import { API, theme, toggleTheme } from "../store/appState";
+import { login } from "../services/auth.service";
 
 export default function Login() {
   const navigate = useNavigate();

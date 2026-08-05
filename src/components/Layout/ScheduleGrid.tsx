@@ -1,5 +1,5 @@
 import { For, Show } from "solid-js";
-import { Avatar } from "~/components/Widgets/Avatar";
+import { Avatar } from "../Widgets/Avatar";
 
 export type Professional = { id: string; name: string; initials: string; avatarUrl?: string };
 

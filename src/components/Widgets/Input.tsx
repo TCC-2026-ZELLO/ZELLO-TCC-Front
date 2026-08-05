@@ -1,5 +1,5 @@
 import { splitProps, JSX, Show, createSignal } from "solid-js";
-import { SearchIcon, EyeIcon, EyeOffIcon } from "~/components/Icons/Icons";
+import { SearchIcon, EyeIcon, EyeOffIcon } from "../Icons/Icons";
 
 export interface InputProps extends Omit<
   JSX.InputHTMLAttributes<HTMLInputElement>,

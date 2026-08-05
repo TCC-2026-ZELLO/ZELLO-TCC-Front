@@ -1,16 +1,16 @@
 import { createSignal, For, Show, createResource, createEffect, batch } from "solid-js";
-import { Card } from "~/components/Widgets/Card";
-import { Button } from "~/components/Widgets/Button";
-import { Input } from "~/components/Widgets/Input";
-import { Switch } from "~/components/Widgets/Switch";
-import { Tabs } from "~/components/Widgets/Tabs";
-import { Modal } from "~/components/Widgets/Modal";
-import { getProId } from "~/store/appState";
-import { toast } from "~/store/toastStore";
-import { professionalService } from "~/services/professional.service";
+import { Card } from "../components/Widgets/Card";
+import { Button } from "../components/Widgets/Button";
+import { Input } from "../components/Widgets/Input";
+import { Switch } from "../components/Widgets/Switch";
+import { Tabs } from "../components/Widgets/Tabs";
+import { Modal } from "../components/Widgets/Modal";
+import { getProId } from "../store/appState";
+import { toast } from "../store/toastStore";
+import { professionalService } from "../services/professional.service";
 import {
     SaveIcon, CameraIcon, TrashIcon, PlusIcon, RibbonIcon, EditIcon
-} from "~/components/Icons/Icons";
+} from "../components/Icons/Icons";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -167,6 +167,7 @@ export default function ProfessionalSettings() {
     const [addFileError, setAddFileError]   = createSignal("");
     const [addTitle, setAddTitle]           = createSignal("");
     const [addInstitution, setAddInstitution] = createSignal("");
+    const [addApprovement, setAddApprovement] = createSignal(0);
     const [addType, setAddType]             = createSignal("certification");
     const [addYear, setAddYear]             = createSignal("");
     const [addSubmitting, setAddSubmitting] = createSignal(false);
@@ -185,6 +186,7 @@ export default function ProfessionalSettings() {
                 file:        addFile()!,
                 title:       addTitle().trim(),
                 institution: addInstitution().trim() || undefined,
+                approvement: addApprovement() || 0,
                 type:        addType(),
                 year:        addYear() ? Number(addYear()) : undefined,
             });
@@ -208,6 +210,7 @@ export default function ProfessionalSettings() {
     const [editFileError, setEditFileError]   = createSignal("");
     const [editTitle, setEditTitle]           = createSignal("");
     const [editInstitution, setEditInstitution] = createSignal("");
+    const [editApprovement, setEditApprovement] = createSignal(0);
     const [editType, setEditType]             = createSignal("certification");
     const [editYear, setEditYear]             = createSignal("");
     const [editSubmitting, setEditSubmitting] = createSignal(false);
@@ -230,6 +233,7 @@ export default function ProfessionalSettings() {
                 file:        editFile() ?? undefined,
                 title:       editTitle().trim(),
                 institution: editInstitution().trim() || undefined,
+                approvement: editApprovement() || 0,
                 type:        editType(),
                 year:        editYear() ? Number(editYear()) : undefined,
             });
@@ -327,6 +331,7 @@ export default function ProfessionalSettings() {
         onFileError: (e: string) => void;
         title: string; onTitle: (v: string) => void;
         institution: string; onInstitution: (v: string) => void;
+        approvement: number; onApprovement: (v: number) => void;
         type: string; onType: (v: string) => void;
         year: string; onYear: (v: string) => void;
         currentUrl?: string;
@@ -354,6 +359,14 @@ export default function ProfessionalSettings() {
                 value={p.institution}
                 onInput={(e) => p.onInstitution(e.currentTarget.value)}
             />
+
+            <Input
+                labelText="Aproveitamento"
+                placeholder="Ex: 90, 100, 10"
+                value={p.approvement}
+                onInput={(e) => p.onApprovement(e.currentTarget.value as unknown as number)}
+            />
+
             <div class="grid grid-cols-2 gap-3">
                 <div class="flex flex-col gap-2">
                     <span class="text-xs font-semibold uppercase text-muted-foreground">Tipo</span>
@@ -554,6 +567,9 @@ export default function ProfessionalSettings() {
                                                     <Show when={q.institution}>
                                                         <span class="text-xs text-muted-foreground truncate">{q.institution}</span>
                                                     </Show>
+                                                    <Show when={q.approvement}>
+                                                        <span class="text-xs text-muted-foreground truncate">{q.approvement}</span>
+                                                    </Show>
                                                     <div class="flex items-center gap-2 mt-1">
                                                         <span class={`text-xs font-semibold px-2 py-0.5 rounded-full ${TYPE_COLORS[q.type] ?? "bg-secondary text-foreground"}`}>
                                                             {TYPE_LABELS[q.type] ?? q.type}
@@ -600,6 +616,7 @@ export default function ProfessionalSettings() {
                         onFile={setAddFile} onFileError={setAddFileError}
                         title={addTitle()} onTitle={setAddTitle}
                         institution={addInstitution()} onInstitution={setAddInstitution}
+                        approvement={addApprovement()} onApprovement={setAddApprovement}
                         type={addType()} onType={setAddType}
                         year={addYear()} onYear={setAddYear}
                     />
@@ -626,6 +643,7 @@ export default function ProfessionalSettings() {
                         onFile={setEditFile} onFileError={setEditFileError}
                         title={editTitle()} onTitle={setEditTitle}
                         institution={editInstitution()} onInstitution={setEditInstitution}
+                        approvement={editApprovement()} onApprovement={setEditApprovement}
                         type={editType()} onType={setEditType}
                         year={editYear()} onYear={setEditYear}
                         optional={true}

@@ -1,16 +1,16 @@
 import { createSignal, For, Show, createResource, createEffect, batch } from "solid-js";
-import { Card } from "~/components/Widgets/Card";
-import { Button } from "~/components/Widgets/Button";
-import { Input } from "~/components/Widgets/Input";
-import { Switch } from "~/components/Widgets/Switch";
-import { Tabs } from "~/components/Widgets/Tabs";
-import { getActiveBizId } from "~/store/appState";
-import { businessService } from "~/services/business.service";
-import { toast } from "~/store/toastStore";
-import { ToastContainer } from "~/components/Widgets/Toast";
+import { Card } from "../components/Widgets/Card";
+import { Button } from "../components/Widgets/Button";
+import { Input } from "../components/Widgets/Input";
+import { Switch } from "../components/Widgets/Switch";
+import { Tabs } from "../components/Widgets/Tabs";
+import { getActiveBizId } from "../store/appState";
+import { businessService } from "../services/business.service";
+import { toast } from "../store/toastStore";
+import { ToastContainer } from "../components/Widgets/Toast";
 import {
     SaveIcon, CameraIcon, TrashIcon, PlusIcon
-} from "~/components/Icons/Icons";
+} from "../components/Icons/Icons";
 
 export default function BusinessSettings() {
     const [activeTab, setActiveTab] = createSignal("perfil");

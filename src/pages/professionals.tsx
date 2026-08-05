@@ -1,15 +1,15 @@
 import { createSignal, createResource, For, Show, createEffect, batch } from "solid-js";
 import { Portal } from "solid-js/web";
-import { Card } from "~/components/Widgets/Card";
-import { Button } from "~/components/Widgets/Button";
-import { Input } from "~/components/Widgets/Input";
-import { Switch } from "~/components/Widgets/Switch";
-import { activeBusiness } from "~/store/appState";
-import { businessProfessionalsService } from "~/services/business-professionals.service";
-import { professionalService } from "~/services/professional.service";
-import { catalogService } from "~/services/catalog.service";
-import { toast } from "~/store/toastStore";
-import { ToastContainer } from "~/components/Widgets/Toast";
+import { Card } from "../components/Widgets/Card";
+import { Button } from "../components/Widgets/Button";
+import { Input } from "../components/Widgets/Input";
+import { Switch } from "../components/Widgets/Switch";
+import { activeBusiness } from "../store/appState";
+import { businessProfessionalsService } from "../services/business-professionals.service";
+import { professionalService } from "../services/professional.service";
+import { catalogService } from "../services/catalog.service";
+import { toast } from "../store/toastStore";
+import { ToastContainer } from "../components/Widgets/Toast";
 import {
     CheckCircleIcon,
     PlusIcon,
@@ -17,7 +17,7 @@ import {
     SaveIcon,
     BriefcaseIcon,
     ClockIcon, TrashIcon
-} from "~/components/Icons/Icons";
+} from "../components/Icons/Icons";
 
 export default function ProfessionalsPage() {
     const businessId = () => activeBusiness()?.businessId;

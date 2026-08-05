@@ -1,5 +1,5 @@
 import { For, JSX, splitProps } from "solid-js";
-import { StarIcon } from "~/components/Icons/Icons";
+import { StarIcon } from "../Icons/Icons";
 
 export interface RatingProps extends JSX.HTMLAttributes<HTMLDivElement> {
     value: number;

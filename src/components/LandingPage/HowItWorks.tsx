@@ -1,4 +1,4 @@
-import { SearchIcon, CalendarIcon, StarIcon } from "~/components/Icons/Icons";
+import { SearchIcon, CalendarIcon, StarIcon } from "../../components/Icons/Icons";
 
 export function HowItWorks() {
     const steps = [

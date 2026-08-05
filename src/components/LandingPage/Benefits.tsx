@@ -1,5 +1,5 @@
-import { Button } from "~/components/Widgets/Button";
-import { HeartIcon, BriefcaseIcon, CheckCircleIcon } from "~/components/Icons/Icons";
+import { Button } from "../../components/Widgets/Button";
+import { HeartIcon, BriefcaseIcon, CheckCircleIcon } from "../../components/Icons/Icons";
 import { useNavigate } from "@solidjs/router";
 
 export function Benefits() {

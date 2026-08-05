@@ -1,4 +1,4 @@
-import { ZelloIcon } from "~/components/Icons/Icons";
+import { ZelloIcon } from "../../components/Icons/Icons";
 
 export function Footer() {
     return (

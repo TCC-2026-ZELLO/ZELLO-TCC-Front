@@ -1,5 +1,5 @@
-import { accessToken, API } from "~/store/appState";
-import { logoutAuth } from "~/services/auth.service";
+import { accessToken, API } from "../store/appState";
+import { logoutAuth } from "./auth.service";
 
 export class ApiError extends Error {
     public status: number;

@@ -1,7 +1,7 @@
 import { JSX, Show } from "solid-js";
 import { A, useLocation } from "@solidjs/router";
 
-import { isSidebarCollapsed } from "~/store/appState";
+import { isSidebarCollapsed } from "../../store/appState";
 
 interface NavItemProps {
     label: string;

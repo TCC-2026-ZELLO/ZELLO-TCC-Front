@@ -1,12 +1,11 @@
 import { createSignal, createEffect, onCleanup, Show, For } from "solid-js";
 import { Button } from "./Button";
 import { Input } from "./Input";
-import { availabilityService, Bound, BoundsParams } from "~/services/availability.service";
-import { appointmentsService } from "~/services/appointments.service";
-import { ApiError } from "~/services/api";
-import { CalendarIcon, ClockIcon, XIcon, CheckCircleIcon } from "~/components/Icons/Icons";
+import { availabilityService, Bound, BoundsParams } from "../../services/availability.service";
+import { appointmentsService } from "../../services/appointments.service";
+import { ApiError } from "../../services/api";
+import { CalendarIcon, ClockIcon, XIcon, CheckCircleIcon } from "../Icons/Icons";
 
-// Intervalo de atualização automática dos horários disponíveis (RF16/AC1).
 const BOUNDS_POLLING_INTERVAL_MS = 20000;
 
 interface BookingModalProps {

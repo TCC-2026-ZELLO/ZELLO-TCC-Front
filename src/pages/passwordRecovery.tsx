@@ -1,15 +1,15 @@
 import { createSignal, Show } from "solid-js";
 import { A } from "@solidjs/router";
-import { Input } from "~/components/Widgets/Input";
-import { Button } from "~/components/Widgets/Button";
+import { Input } from "../components/Widgets/Input";
+import { Button } from "../components/Widgets/Button";
 import {
   ZelloIcon,
   GlobeIcon,
   MoonIcon,
   SunIcon,
   SuccessIcon,
-} from "~/components/Icons/Icons";
-import { theme, toggleTheme, API } from "~/store/appState";
+} from "../components/Icons/Icons";
+import { theme, toggleTheme, API } from "../store/appState";
 
 export default function PasswordRecovery() {
   const [email, setEmail] = createSignal("");
