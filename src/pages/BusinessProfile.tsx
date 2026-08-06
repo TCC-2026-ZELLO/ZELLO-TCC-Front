@@ -1,16 +1,15 @@
 import {createSignal, For, Show, createResource, createEffect, createMemo, onCleanup} from "solid-js";
 import {useParams, useNavigate} from "@solidjs/router";
-import {Card} from "~/components/Widgets/Card";
-import {Button} from "~/components/Widgets/Button";
-import {Tabs} from "~/components/Widgets/Tabs";
-import {StarIcon, MapPinIcon, CalendarIcon, CheckCircleIcon} from "~/components/Icons/Icons";
-import {Modal} from "~/components/Widgets/Modal";
-import {Input} from "~/components/Widgets/Input";
-import {businessService} from "~/services/business.service";
-import {availabilityService, BoundsParams} from "~/services/availability.service";
-import {appointmentsService} from "~/services/appointments.service";
-import {ApiError} from "~/services/api";
-import {isAuthenticated} from "~/store/appState";
+import {Card} from "../components/Widgets/Card";
+import {Button} from "../components/Widgets/Button";
+import {Tabs} from "../components/Widgets/Tabs";
+import {StarIcon, MapPinIcon, CalendarIcon, CheckCircleIcon} from "../components/Icons/Icons";
+import {Modal} from "../components/Widgets/Modal";
+import {Input} from "../components/Widgets/Input";
+import {businessService} from "../services/business.service";
+import {availabilityService, BoundsParams} from "../services/availability.service";
+import {appointmentsService} from "../services/appointments.service";
+import {ApiError} from "../services/api";
 
 export default function EstablishmentProfile() {
     const params = useParams();
@@ -101,11 +100,6 @@ export default function EstablishmentProfile() {
     });
 
     const handleOpenBooking = (serviceId?: string) => {
-        if (!isAuthenticated()) {
-            window.location.href = `/login?redirect=${encodeURIComponent(window.location.pathname)}`;
-            return;
-        }
-
         if (serviceId) setSelectedService(serviceId);
         else if (catalog() && catalog().length > 0) setSelectedService(catalog()[0].id);
         

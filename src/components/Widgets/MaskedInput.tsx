@@ -1,5 +1,5 @@
 import { createSignal, createEffect } from "solid-js";
-import { Input } from "~/components/Widgets/Input";
+import { Input } from "../Widgets/Input";
 
 interface MaskedInputProps {
   mask: 'cpf' | 'cnpj' | 'phone' | 'cep';

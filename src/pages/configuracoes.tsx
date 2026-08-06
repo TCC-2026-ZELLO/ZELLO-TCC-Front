@@ -1,8 +1,8 @@
 import { createSignal, Show } from "solid-js";
-import { Card } from "~/components/Widgets/Card";
-import { Button } from "~/components/Widgets/Button";
-import { Input } from "~/components/Widgets/Input";
-import { Switch } from "~/components/Widgets/Switch";
+import { Card } from "../components/Widgets/Card";
+import { Button } from "../components/Widgets/Button";
+import { Input } from "../components/Widgets/Input";
+import { Switch } from "../components/Widgets/Switch";
 import {
   idioma,
   setIdioma,
@@ -13,7 +13,7 @@ import {
   accessToken,
   currentUser,
   setCurrentUser,
-} from "~/store/appState";
+} from "../store/appState";
 import {
   CameraIcon,
   SaveIcon,
@@ -22,8 +22,8 @@ import {
   GlobeIcon,
   BriefcaseIcon,
   CheckCircleIcon, HomeIcon, EyeIcon
-} from "~/components/Icons/Icons";
-import { http } from "~/services/api";
+} from "../components/Icons/Icons";
+import { http } from "../services/api";
 
 export default function Settings() {
   const [nomeBase, setNomeBase] = createSignal("");

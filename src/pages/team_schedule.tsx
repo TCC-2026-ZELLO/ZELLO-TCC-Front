@@ -1,19 +1,19 @@
 import { createSignal, createMemo, Show, For, createResource, Suspense } from "solid-js";
-import { Badge } from "~/components/Widgets/Badge";
-import { Tabs } from "~/components/Widgets/Tabs";
-import { Avatar } from "~/components/Widgets/Avatar";
-import { Button } from "~/components/Widgets/Button";
-import { ScheduleGrid, Professional, Appointment } from "~/components/Layout/ScheduleGrid";
-import { Modal } from "~/components/Widgets/Modal";
-import { Card } from "~/components/Widgets/Card";
-import { Input } from "~/components/Widgets/Input";
-import { IconButton } from "~/components/Widgets/IconButton";
+import { Badge } from "../components/Widgets/Badge";
+import { Tabs } from "../components/Widgets/Tabs";
+import { Avatar } from "../components/Widgets/Avatar";
+import { Button } from "../components/Widgets/Button";
+import { ScheduleGrid, Professional, Appointment } from "../components/Layout/ScheduleGrid";
+import { Modal } from "../components/Widgets/Modal";
+import { Card } from "../components/Widgets/Card";
+import { Input } from "../components/Widgets/Input";
+import { IconButton } from "../components/Widgets/IconButton";
 
-import { ApiError } from "~/services/api";
-import { availabilityService } from "~/services/availability.service";
-import { appointmentsService } from "~/services/appointments.service";import { businessProfessionalService } from "~/services/business-professional.service";
-import { getActiveBizId } from "~/store/appState";
-import { toast } from "~/store/toastStore";
+import { ApiError } from "../services/api";
+import { availabilityService } from "../services/availability.service";
+import { appointmentsService } from "../services/appointments.service";import { businessProfessionalService } from "../services/business-professional.service";
+import { getActiveBizId } from "../store/appState";
+import { toast } from "../store/toastStore";
 
 export default function TeamSchedules() {
     const [activeTab, setActiveTab] = createSignal("grade");

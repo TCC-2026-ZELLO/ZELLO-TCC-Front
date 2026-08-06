@@ -1,9 +1,9 @@
 import { Show } from "solid-js";
-import { Badge } from "~/components/Widgets/Badge";
-import { ProfileSwitcher } from "~/components/Layout/ProfileSwitcher";
+import { Badge } from "../Widgets/Badge";
+import { ProfileSwitcher } from "./ProfileSwitcher";
 
-import { accountRole, idioma, theme, toggleTheme, t, toggleSidebar, currentUser } from "~/store/appState";
-import { MenuIcon, GlobeIcon, SunIcon, MoonIcon, BellIcon } from "~/components/Icons/Icons";
+import { accountRole, idioma, theme, toggleTheme, t, toggleSidebar, currentUser } from "../../store/appState";
+import { MenuIcon, GlobeIcon, SunIcon, MoonIcon, BellIcon } from "../Icons/Icons";
 
 export function Header() {
     return (

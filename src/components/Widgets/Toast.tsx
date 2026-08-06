@@ -1,5 +1,5 @@
 import { For } from "solid-js";
-import { toasts, ToastItem } from "~/store/toastStore";
+import { toasts, ToastItem } from "../../store/toastStore";
 
 const STYLES: Record<ToastItem["type"], string> = {
     success: "bg-green-600  text-white border-green-700",

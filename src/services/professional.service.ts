@@ -52,6 +52,7 @@ export const professionalService = {
         file: File;
         title: string;
         institution?: string;
+        approvement?: number;
         type?: string;
         year?: number;
     }) => {
@@ -59,6 +60,7 @@ export const professionalService = {
         formData.append('file', data.file);
         formData.append('title', data.title);
         if (data.institution) formData.append('institution', data.institution);
+        if (data.approvement !== undefined) formData.append('approvement', String(data.approvement));
         if (data.type)        formData.append('type', data.type);
         if (data.year)        formData.append('year', String(data.year));
         return await http.post('/professionals/me/qualifications', formData);
@@ -68,6 +70,7 @@ export const professionalService = {
         file?: File;
         title?: string;
         institution?: string;
+        approvement?: number;
         type?: string;
         year?: number;
     }) => {
@@ -75,6 +78,7 @@ export const professionalService = {
         if (data.file)        formData.append('file', data.file);
         if (data.title)       formData.append('title', data.title);
         if (data.institution !== undefined) formData.append('institution', data.institution);
+        if (data.approvement !== undefined) formData.append('approvement', String(data.approvement));
         if (data.type)        formData.append('type', data.type);
         if (data.year)        formData.append('year', String(data.year));
         return await http.patch(`/professionals/me/qualifications/${id}`, formData);

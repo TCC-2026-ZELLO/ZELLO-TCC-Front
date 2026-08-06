@@ -1,8 +1,9 @@
 import { createSignal, createResource, For, Show, createEffect } from "solid-js";
-import { Card } from "~/components/Widgets/Card";
-import { SearchIcon, MapPinIcon, StarIcon, FilterIcon } from "~/components/Icons/Icons";
-import { useNavigate, useSearchParams } from "@solidjs/router";
-import { searchService, SortBy } from "~/services/search.service";
+import { Card } from "../components/Widgets/Card";
+import { SearchIcon, MapPinIcon, StarIcon, FilterIcon } from "../components/Icons/Icons";
+import { useNavigate } from "@solidjs/router";
+import { searchService, SortBy } from "../services/search.service";
+
 
 const SORT_OPTIONS: { value: SortBy; label: string; icon: string }[] = [
     { value: "default",   label: "Relevância",  icon: "🎯" },
@@ -27,13 +28,13 @@ function StarRating(props: { value: number }) {
     );
 }
 
+
 export default function Explore() {
     const navigate = useNavigate();
-    const [searchParams] = useSearchParams();
 
-    const [searchQuery, setSearchQuery]       = createSignal(searchParams.q || "");
-    const [debouncedQuery, setDebouncedQuery] = createSignal(searchParams.q || "");
-    const [searchType, setSearchType]         = createSignal<"professionals" | "establishments">(searchParams.type === "establishments" ? "establishments" : "professionals");
+    const [searchQuery, setSearchQuery]       = createSignal("");
+    const [debouncedQuery, setDebouncedQuery] = createSignal("");
+    const [searchType, setSearchType]         = createSignal<"professionals" | "establishments">("professionals");
 
     createEffect(() => {
         const q = searchQuery();

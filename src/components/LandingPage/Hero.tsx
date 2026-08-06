@@ -1,7 +1,7 @@
 import { createSignal } from "solid-js";
 import { useNavigate } from "@solidjs/router";
-import { SearchIcon, MapPinIcon } from "~/components/Icons/Icons";
-import { Button } from "~/components/Widgets/Button";
+import { SearchIcon, MapPinIcon } from "../../components/Icons/Icons";
+import { Button } from "../../components/Widgets/Button";
 
 export function Hero() {
     const navigate = useNavigate();

@@ -1,6 +1,6 @@
 import { Show, For } from "solid-js";
-import { Dropdown } from "~/components/Widgets/Dropdown";
-import { Avatar } from "~/components/Widgets/Avatar";
+import { Dropdown } from "../Widgets/Dropdown";
+import { Avatar } from "../Widgets/Avatar";
 import {
     accountRole,
     currentUser,
@@ -8,7 +8,7 @@ import {
     managedBusinesses,
     activeBusiness,
     setActiveBusiness
-} from "~/store/appState";
+} from "../../store/appState";
 
 interface ProfileSwitcherProps {
     variant: "sidebar" | "header";

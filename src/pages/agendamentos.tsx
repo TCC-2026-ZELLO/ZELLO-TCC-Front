@@ -1,8 +1,8 @@
 import { createSignal, createResource, Show, For } from "solid-js";
-import { Card } from "~/components/Widgets/Card";
-import { Button } from "~/components/Widgets/Button";
-import { CalendarIcon, ClockIcon, MapPinIcon, CheckCircleIcon, XIcon, BriefcaseIcon } from "~/components/Icons/Icons";
-import { appointmentsService } from "~/services/appointments.service";
+import { Card } from "../components/Widgets/Card";
+import { Button } from "../components/Widgets/Button";
+import { CalendarIcon, ClockIcon, MapPinIcon, CheckCircleIcon, XIcon, BriefcaseIcon } from "../components/Icons/Icons";
+import { appointmentsService } from "../services/appointments.service";
 
 export default function Agendamentos() {
     const [filter, setFilter] = createSignal<"ALL" | "PENDING" | "CONFIRMED" | "CANCELLED">("ALL");

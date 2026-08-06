@@ -1,8 +1,8 @@
 import { Show, createSignal, onMount, onCleanup } from "solid-js";
 import { A, useNavigate } from "@solidjs/router";
-import { ZelloIcon, GlobeIcon, MoonIcon, SunIcon } from "~/components/Icons/Icons";
-import { Button } from "~/components/Widgets/Button";
-import { isAuthenticated, theme, toggleTheme } from "~/store/appState";
+import { ZelloIcon, GlobeIcon, MoonIcon, SunIcon } from "../../components/Icons/Icons";
+import { Button } from "../../components/Widgets/Button";
+import { isAuthenticated, theme, toggleTheme } from "../../store/appState";
 
 export function PublicHeader() {
     const navigate = useNavigate();

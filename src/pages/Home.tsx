@@ -1,10 +1,10 @@
 import { createResource, For, Show } from "solid-js";
 import { useNavigate } from "@solidjs/router";
-import { Card } from "~/components/Widgets/Card";
-import { Button } from "~/components/Widgets/Button";
-import { StarIcon, MapPinIcon, SearchIcon } from "~/components/Icons/Icons";
-import { searchService } from "~/services/search.service";
-import { currentUser } from "~/store/appState";
+import { Card } from "../components/Widgets/Card";
+import { Button } from "../components/Widgets/Button";
+import { StarIcon, MapPinIcon, SearchIcon } from "../components/Icons/Icons";
+import { searchService } from "../services/search.service";
+import { currentUser } from "../store/appState";
 
 function StarRating(props: { value: number }) {
     return (

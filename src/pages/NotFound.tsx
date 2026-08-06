@@ -1,20 +1,20 @@
 import { createSignal } from "solid-js";
 
-import { Badge } from "~/components/Widgets/Badge";
-import { Card } from "~/components/Widgets/Card";
-import { Button } from "~/components/Widgets/Button";
-import { Avatar } from "~/components/Widgets/Avatar";
-import { Input } from "~/components/Widgets/Input";
-import { Switch } from "~/components/Widgets/Switch";
-import { Tabs } from "~/components/Widgets/Tabs";
-import { IconButton } from "~/components/Widgets/IconButton";
-import { Rating } from "~/components/Widgets/Rating";
-import { ProgressBar } from "~/components/Widgets/ProgressBar";
-import { Stepper } from "~/components/Widgets/Stepper";
-import { NavItem } from "~/components/Layout/NavItem";
-import { Dropzone } from "~/components/Widgets/DropZone";
-import { Timeline } from "~/components/Widgets/TimeLine";
-import { CalendarIcon, HeartIcon, HomeIcon } from "~/components/Icons/Icons";
+import { Badge } from "../components/Widgets/Badge";
+import { Card } from "../components/Widgets/Card";
+import { Button } from "../components/Widgets/Button";
+import { Avatar } from "../components/Widgets/Avatar";
+import { Input } from "../components/Widgets/Input";
+import { Switch } from "../components/Widgets/Switch";
+import { Tabs } from "../components/Widgets/Tabs";
+import { IconButton } from "../components/Widgets/IconButton";
+import { Rating } from "../components/Widgets/Rating";
+import { ProgressBar } from "../components/Widgets/ProgressBar";
+import { Stepper } from "../components/Widgets/Stepper";
+import { NavItem } from "../components/Layout/NavItem";
+import { Dropzone } from "../components/Widgets/DropZone";
+import { Timeline } from "../components/Widgets/TimeLine";
+import { CalendarIcon, HeartIcon, HomeIcon } from "../components/Icons/Icons";
 
 export default function ZelloComponentsExample() {
     const [abaAtiva, setAbaAtiva] = createSignal("proximos");

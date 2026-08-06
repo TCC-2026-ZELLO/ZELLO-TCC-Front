@@ -1,19 +1,19 @@
 import { createSignal, createResource, For, Show } from "solid-js";
 import { Portal } from "solid-js/web";
-import { Card } from "~/components/Widgets/Card";
-import { Button } from "~/components/Widgets/Button";
-import { Badge } from "~/components/Widgets/Badge";
-import { Switch } from "~/components/Widgets/Switch";
-import { Tabs } from "~/components/Widgets/Tabs";
-import { Input } from "~/components/Widgets/Input";
-import { IconButton } from "~/components/Widgets/IconButton";
+import { Card } from "../components/Widgets/Card";
+import { Button } from "../components/Widgets/Button";
+import { Badge } from "../components/Widgets/Badge";
+import { Switch } from "../components/Widgets/Switch";
+import { Tabs } from "../components/Widgets/Tabs";
+import { Input } from "../components/Widgets/Input";
+import { IconButton } from "../components/Widgets/IconButton";
 
-import { CatalogItemUI, catalogService } from "~/services/catalog.service";
-import { activeBusiness } from "~/store/appState";
-import { toast } from "~/store/toastStore";
+import { CatalogItemUI, catalogService } from "../services/catalog.service";
+import { activeBusiness } from "../store/appState";
+import { toast } from "../store/toastStore";
 
-import { PlusIcon, EditIcon, TrashIcon, ClockIcon, BriefcaseIcon } from "~/components/Icons/Icons";
-import {ToastContainer} from "~/components/Widgets/Toast";
+import { PlusIcon, EditIcon, TrashIcon, ClockIcon, BriefcaseIcon } from "../components/Icons/Icons";
+import {ToastContainer} from "../components/Widgets/Toast";
 
 export default function CatalogPage() {
     const [activeTab, setActiveTab] = createSignal("servicos");

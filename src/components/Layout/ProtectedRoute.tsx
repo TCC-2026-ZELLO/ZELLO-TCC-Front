@@ -9,8 +9,8 @@ import {
   setAccessToken,
   setCurrentUser,
   setAccountRole
-} from "~/store/appState";
-import { loadUserContext } from "~/services/auth.service";
+} from "../../store/appState";
+import { loadUserContext } from "../../services/auth.service";
 
 interface ProtectedRouteProps {
   children: JSX.Element;

@@ -1,10 +1,10 @@
 import { createSignal, createEffect, Show } from "solid-js";
 import { A, useNavigate } from "@solidjs/router";
 
-import { Input } from "~/components/Widgets/Input";
-import { Button } from "~/components/Widgets/Button";
-import { MaskedInput } from "~/components/Widgets/MaskedInput";
-import { PhotoUpload } from "~/components/Widgets/PhotoUpload";
+import { Input } from "../components/Widgets/Input";
+import { Button } from "../components/Widgets/Button";
+import { MaskedInput } from "../components/Widgets/MaskedInput";
+import { PhotoUpload } from "../components/Widgets/PhotoUpload";
 
 import {
   ZelloIcon,
@@ -12,13 +12,13 @@ import {
   MoonIcon,
   SunIcon,
   GoogleIcon,
-} from "~/components/Icons/Icons";
-import { API, theme, toggleTheme } from "~/store/appState";
-import { type AccountType } from "~/services/auth.service";
+} from "../components/Icons/Icons";
+import { API, theme, toggleTheme } from "../store/appState";
+import { type AccountType } from "../services/auth.service";
 
-import { fetchAddressByCep } from "~/services/viacep.service";
-import { fetchCnpjData } from "~/services/cnpj.service";
-import { validateCpf, validateCnpj, validatePhone, validateCep } from "~/utils/validators";
+import { fetchAddressByCep } from "../services/viacep.service";
+import { fetchCnpjData } from "../services/cnpj.service";
+import { validateCpf, validateCnpj, validatePhone, validateCep } from "../utils/validators";
 
 const ACCOUNT_OPTIONS: {
   type: AccountType;

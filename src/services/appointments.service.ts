@@ -1,5 +1,5 @@
 import { http } from "./api";
-import { getActiveBizId } from "~/store/appState";
+import { getActiveBizId } from "../store/appState";
 
 export interface CreateAppointmentDto {
     professionalId?: string;
