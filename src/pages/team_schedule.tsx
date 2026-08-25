@@ -15,6 +15,33 @@ import { appointmentsService } from "../services/appointments.service";import { 
 import { getActiveBizId } from "../store/appState";
 import { toast } from "../store/toastStore";
 
+const ClientReputationBadge = (props: { clientId?: string }) => {
+    const [rep] = createResource(() => props.clientId, async (id) => {
+        if (!id) return null;
+        try {
+            return await appointmentsService.getClientReputation(id);
+        } catch { return null; }
+    });
+    return (
+        <Show when={rep()}>
+            {(r) => (
+                <div class="flex flex-wrap gap-2 mt-1.5">
+                    <Show when={r().noShowCount > 0}>
+                        <span class={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold border ${r().noShowCount >= 3 ? "bg-error/10 text-error border-error/20" : "bg-warning/10 text-warning-foreground border-warning/20"}`}>
+                            {r().noShowCount >= 3 ? `Alto Risco: ${r().noShowCount} faltas seguidas` : `Faltas recentes: ${r().noShowCount}`}
+                        </span>
+                    </Show>
+                    <Show when={r().successStreak > 0}>
+                        <span class="inline-flex items-center rounded-full bg-success/10 px-2.5 py-0.5 text-xs font-semibold text-success border border-success/20">
+                            Streak: {r().successStreak} agendamentos concluídos seguidos
+                        </span>
+                    </Show>
+                </div>
+            )}
+        </Show>
+    );
+};
+
 export default function TeamSchedules() {
     const [activeTab, setActiveTab] = createSignal("grade");
     const [professionalIdFilter, setProfessionalIdFilter] = createSignal<string | null>(null);
@@ -37,13 +64,16 @@ export default function TeamSchedules() {
         return raw.map((a: any) => ({
             id: a.id,
             professionalId: a.professional?.id,
+            clientId: a.client?.id,
             clientName: a.client?.name || "Cliente",
             service: a.service?.name || "Serviço",
             startTime: a.startTime,
+            endTime: a.endTime,
             durationMins: a.service?.durationMinutes || 60,
             date: a.date,
-            status: (a.status || 'pending').toLowerCase() as "confirmed" | "pending" | "completed",
-            colorClass: a.status === 'PENDING' ? 'bg-warning' : 'bg-primary',
+            status: (a.status || 'pending').toLowerCase() as "confirmed" | "pending" | "completed" | "no_show",
+            cancelledByRole: a.cancelledByRole,
+            colorClass: a.status === 'PENDING' ? 'bg-warning' : a.status === 'NO_SHOW' ? 'bg-error/80' : 'bg-primary',
             type: "appointment"
         } as Appointment));
     });
@@ -58,7 +88,7 @@ export default function TeamSchedules() {
         return list.filter((p: Professional) => p.id === professionalIdFilter());
     });
 
-    const confirmedSchedules = createMemo(() => (appointments() || []).filter(a => a.status === 'confirmed' || a.status === 'completed'));
+    const confirmedSchedules = createMemo(() => (appointments() || []).filter(a => a.status === 'confirmed' || a.status === 'completed' || a.status === 'no_show'));
     const pendingSchedules = createMemo(() => (appointments() || []).filter(a => a.status === 'pending'));
 
     const gridEvents = createMemo(() => {
@@ -81,20 +111,79 @@ export default function TeamSchedules() {
     });
 
     const handleUpdateStatus = async (id: string, status: string) => {
-        if (status === "CANCELLED" && !confirm("Deseja realmente recusar este agendamento?")) return;
+        if (status === "CANCELLED") {
+            setConfirmRefuseId(id);
+            return;
+        }
         try {
             await appointmentsService.updateStatus(id, status);
             refetchAppointments();
-            toast.success(status === "CANCELLED" ? "Agendamento recusado." : "Agendamento aprovado.");
+            toast.success("Agendamento aprovado.");
         } catch (err: any) { toast.error(err.message || "Erro ao atualizar status."); }
+    };
+
+    const executeRefuseAppointment = async (id: string) => {
+        try {
+            await appointmentsService.updateStatus(id, "CANCELLED");
+            refetchAppointments();
+            toast.success("Agendamento recusado.");
+            setConfirmRefuseId(null);
+        } catch (err: any) {
+            toast.error(err.message || "Erro ao recusar agendamento.");
+            setConfirmRefuseId(null);
+        }
     };
 
     const [isModalOpen, setIsModalOpen] = createSignal(false);
     const [selectedAppointment, setSelectedAppointment] = createSignal<Appointment | null>(null);
+    const [showCancelJustified, setShowCancelJustified] = createSignal(false);
+    const [cancelReason, setCancelReason] = createSignal("");
+    const [affectsReputation, setAffectsReputation] = createSignal(false);
+    const [confirmNoShowModal, setConfirmNoShowModal] = createSignal<{ type: "MARK" | "REVERT" | "PRESENCE"; id: string } | null>(null);
+    const [confirmRefuseId, setConfirmRefuseId] = createSignal<string | null>(null);
+    const [confirmDeleteBlockId, setConfirmDeleteBlockId] = createSignal<string | null>(null);
+
     const handleModalOpen = (appt: Appointment) => {
         if (appt.type === "block") return;
         setSelectedAppointment(appt);
+        setShowCancelJustified(false);
         setIsModalOpen(true);
+    };
+
+    const executeMarkNoShow = async (id: string) => {
+        try {
+            await appointmentsService.markNoShow(id);
+            refetchAppointments();
+            toast.success("No-Show registrado.");
+            setIsModalOpen(false);
+            setConfirmNoShowModal(null);
+        } catch (e: any) {
+            toast.error(e.message || "Erro ao registrar No-Show.");
+            setConfirmNoShowModal(null);
+        }
+    };
+
+    const executeRevertNoShow = async (id: string) => {
+        try {
+            await appointmentsService.revertNoShow(id);
+            refetchAppointments();
+            toast.success("No-Show revertido.");
+            setIsModalOpen(false);
+            setConfirmNoShowModal(null);
+        } catch (e: any) {
+            toast.error(e.message || "Erro ao reverter No-Show.");
+            setConfirmNoShowModal(null);
+        }
+    };
+
+    const submitCancelJustified = async (id: string) => {
+        if (!cancelReason()) return toast.error("Por favor, insira o motivo do cancelamento.");
+        try {
+            await appointmentsService.cancelJustified(id, cancelReason(), affectsReputation());
+            refetchAppointments();
+            toast.success("Agendamento cancelado com justificativa.");
+            setIsModalOpen(false);
+        } catch (e: any) { toast.error(e.message || "Erro ao cancelar."); }
     };
 
     const [isCreateBlockOpen, setIsCreateBlockOpen] = createSignal(false);
@@ -140,13 +229,20 @@ export default function TeamSchedules() {
         }
     };
 
-    const handleDeleteException = async (id: string) => {
-        if (!confirm("Deseja realmente apagar este bloqueio?")) return;
+    const handleDeleteException = (id: string) => {
+        setConfirmDeleteBlockId(id);
+    };
+
+    const executeDeleteException = async (id: string) => {
         try {
             await availabilityService.deleteException(id);
             refetchExceptions();
             toast.success("Bloqueio removido.");
-        } catch(e) { toast.error("Erro ao apagar bloqueio."); }
+            setConfirmDeleteBlockId(null);
+        } catch(e) {
+            toast.error("Erro ao apagar bloqueio.");
+            setConfirmDeleteBlockId(null);
+        }
     };
 
     const diasDaSemana = [
@@ -269,6 +365,7 @@ export default function TeamSchedules() {
                                                 <div>
                                                     <h4 class="font-bold text-foreground">{item.clientName}</h4>
                                                     <p class="text-sm text-muted-foreground">{item.service} · {profName}</p>
+                                                    <ClientReputationBadge clientId={item.clientId} />
                                                     <div class="flex items-center gap-3 mt-2 text-sm text-muted-foreground">
                                                         <span class="flex items-center gap-1">📅 {item.date}</span>
                                                         <span class="flex items-center gap-1">⏰ {item.startTime}</span>
@@ -377,26 +474,82 @@ export default function TeamSchedules() {
                         const profName = professionals()?.find((p: any) => p.id === appt().professionalId)?.name || "Desconhecido";
                         return (
                             <div class="flex flex-col gap-4">
-                                <div class="flex items-center gap-3">
-                                    <Avatar size="lg" fallbackInitials={appt().clientName?.substring(0, 2).toUpperCase() || ""} />
-                                    <div>
-                                        <h4 class="text-lg font-bold text-foreground">{appt().clientName}</h4>
-                                        <Badge variant={appt().status === "confirmed" ? "success" : appt().status === "pending" ? "warning" : "default"}>
-                                            {appt().status?.toUpperCase()}
-                                        </Badge>
+                                <div class="flex items-center justify-between gap-3">
+                                    <div class="flex items-center gap-3">
+                                        <Avatar size="lg" fallbackInitials={appt().clientName?.substring(0, 2).toUpperCase() || ""} />
+                                        <div>
+                                            <h4 class="text-lg font-bold text-foreground">{appt().clientName}</h4>
+                                            <span class="text-xs text-muted-foreground font-mono">#{appt().id.substring(0, 8)}</span>
+                                        </div>
                                     </div>
+                                    <Badge variant={appt().status === "confirmed" ? "success" : appt().status === "pending" ? "warning" : appt().status === "no_show" ? "error" : "default"}>
+                                        {appt().status === "no_show" ? "No-Show" : appt().status?.toUpperCase()}
+                                    </Badge>
                                 </div>
 
                                 <div class="bg-muted rounded-md p-4 flex flex-col gap-2 border border-border text-foreground">
                                     <p class="text-sm"><strong>Serviço:</strong> {appt().service}</p>
                                     <p class="text-sm"><strong>Data e Hora:</strong> {appt().date} às {appt().startTime} ({appt().durationMins} min)</p>
                                     <p class="text-sm"><strong>Profissional:</strong> {profName}</p>
+                                    <ClientReputationBadge clientId={appt().clientId} />
                                 </div>
 
-                                <div class="flex gap-2 mt-2">
-                                    <Button variant="primary" class="flex-1 text-center justify-center">Editar</Button>
-                                    <Button variant="outline" class="flex-1 text-center justify-center" onClick={() => setIsModalOpen(false)}>Fechar</Button>
-                                </div>
+                                <Show when={!showCancelJustified()}>
+                                    <div class="flex flex-col gap-2 mt-2">
+                                        <Show when={appt().status === "confirmed"}>
+                                            <Button variant="outline" class="w-full text-error border-error/30 hover:bg-error/10" onClick={() => setConfirmNoShowModal({ type: "MARK", id: appt().id })}>
+                                                Registrar No-Show
+                                            </Button>
+                                            <Button variant="outline" class="w-full" onClick={() => setShowCancelJustified(true)}>
+                                                Cancelar com Justificativa
+                                            </Button>
+                                        </Show>
+
+                                        <Show when={appt().status === "no_show"}>
+                                            <Show when={appt().cancelledByRole === "manager_noshow"}>
+                                                <div class="text-xs text-center text-muted-foreground mb-1">
+                                                    Penalidade de No-Show já aplicada ao cliente
+                                                </div>
+                                                <Button variant="secondary" class="w-full" onClick={() => setConfirmNoShowModal({ type: "REVERT", id: appt().id })}>
+                                                    Reverter No-Show
+                                                </Button>
+                                            </Show>
+                                            <Show when={appt().cancelledByRole !== "manager_noshow"}>
+                                                <div class="text-xs text-center text-muted-foreground mb-1">
+                                                    Horário liberado automaticamente: Cliente ainda não recebeu no-show
+                                                </div>
+                                                <Button variant="outline" class="w-full text-error border-error/30 hover:bg-error/10 mb-1" onClick={() => setConfirmNoShowModal({ type: "MARK", id: appt().id })}>
+                                                    Registrar No-Show
+                                                </Button>
+                                                <Button variant="secondary" class="w-full" onClick={() => setConfirmNoShowModal({ type: "PRESENCE", id: appt().id })}>
+                                                    Registrar Presença
+                                                </Button>
+                                            </Show>
+                                        </Show>
+                                        
+                                        <div class="flex gap-2">
+                                            <Button variant="primary" class="flex-1 text-center justify-center">Editar</Button>
+                                            <Button variant="outline" class="flex-1 text-center justify-center" onClick={() => setIsModalOpen(false)}>Fechar</Button>
+                                        </div>
+                                    </div>
+                                </Show>
+
+                                <Show when={showCancelJustified()}>
+                                    <div class="flex flex-col gap-3 mt-2 bg-card border border-border rounded-lg p-4">
+                                        <h5 class="font-bold text-sm">Cancelamento Justificado</h5>
+                                        <Input labelText="Motivo do Cancelamento" placeholder="Ex: Cliente teve emergência, Erro nosso, etc." value={cancelReason()} onInput={(e: any) => setCancelReason(e.target.value)} />
+                                        
+                                        <label class="flex items-center gap-2 text-sm cursor-pointer mt-2">
+                                            <input type="checkbox" checked={affectsReputation()} onChange={(e: any) => setAffectsReputation(e.target.checked)} class="rounded text-primary focus:ring-primary h-4 w-4 border-input bg-background" />
+                                            Afeta a reputação do cliente? (Penaliza)
+                                        </label>
+
+                                        <div class="flex gap-2 mt-4">
+                                            <Button variant="outline" class="flex-1" onClick={() => setShowCancelJustified(false)}>Voltar</Button>
+                                            <Button variant="primary" class="flex-1 bg-error hover:bg-error/90 text-error-foreground" onClick={() => submitCancelJustified(appt().id)}>Confirmar Cancelamento</Button>
+                                        </div>
+                                    </div>
+                                </Show>
                             </div>
                         );
                     }}
@@ -454,6 +607,119 @@ export default function TeamSchedules() {
                     </Show>
                 </div>
             </Modal>
+
+            <Show when={confirmNoShowModal()}>
+                {(modalData) => (
+                    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+                        <div class="bg-card w-full max-w-sm rounded-2xl shadow-xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200 border border-border">
+                            <div class="p-6 flex flex-col items-center text-center gap-4">
+                                <div class={`size-16 rounded-full flex items-center justify-center mb-2 ${
+                                    modalData().type === "MARK" 
+                                        ? "bg-red-500/10 text-red-500" 
+                                        : modalData().type === "PRESENCE" 
+                                        ? "bg-emerald-500/10 text-emerald-500" 
+                                        : "bg-blue-500/10 text-blue-500"
+                                }`}>
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                                </div>
+                                <h2 class="text-xl font-bold text-foreground">
+                                    {modalData().type === "MARK" 
+                                        ? "Registrar No-Show" 
+                                        : modalData().type === "PRESENCE" 
+                                        ? "Registrar Presença" 
+                                        : "Reverter No-Show"}
+                                </h2>
+                                <p class="text-muted-foreground text-sm">
+                                    {modalData().type === "MARK" 
+                                        ? "Confirmar a falta do cliente? A penalidade de No-Show será aplicada à reputação do cliente." 
+                                        : modalData().type === "PRESENCE" 
+                                        ? "Deseja confirmar a presença do cliente? O agendamento será marcado como concluído e aumentará a pontuação do cliente." 
+                                        : "Deseja reverter este No-Show? A penalidade de falta será removida da reputação do cliente."}
+                                </p>
+                            </div>
+                            <div class="flex border-t border-border bg-muted/30">
+                                <button 
+                                    class="flex-1 py-4 font-semibold text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors border-r border-border"
+                                    onClick={() => setConfirmNoShowModal(null)}
+                                >
+                                    Cancelar
+                                </button>
+                                <button 
+                                    class={`flex-1 py-4 font-bold transition-colors ${
+                                        modalData().type === "MARK" 
+                                            ? "text-red-500 hover:bg-red-500 hover:text-white" 
+                                            : modalData().type === "PRESENCE" 
+                                            ? "text-emerald-500 hover:bg-emerald-500 hover:text-white" 
+                                            : "text-primary hover:bg-primary/10"
+                                    }`}
+                                    onClick={() => modalData().type === "MARK" ? executeMarkNoShow(modalData().id) : executeRevertNoShow(modalData().id)}
+                                >
+                                    {modalData().type === "MARK" 
+                                        ? "Confirmar No-Show" 
+                                        : modalData().type === "PRESENCE" 
+                                        ? "Confirmar Presença" 
+                                        : "Reverter No-Show"}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </Show>
+            <Show when={confirmRefuseId()}>
+                <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+                    <div class="bg-card w-full max-w-sm rounded-2xl shadow-xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200 border border-border">
+                        <div class="p-6 flex flex-col items-center text-center gap-4">
+                            <div class="size-16 rounded-full bg-red-500/10 text-red-500 flex items-center justify-center mb-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
+                            </div>
+                            <h2 class="text-xl font-bold text-foreground">Recusar Agendamento</h2>
+                            <p class="text-muted-foreground text-sm">Deseja realmente recusar este agendamento pendente? Esta ação não poderá ser desfeita.</p>
+                        </div>
+                        <div class="flex border-t border-border bg-muted/30">
+                            <button 
+                                class="flex-1 py-4 font-semibold text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors border-r border-border"
+                                onClick={() => setConfirmRefuseId(null)}
+                            >
+                                Voltar
+                            </button>
+                            <button 
+                                class="flex-1 py-4 font-bold text-red-500 hover:bg-red-500 hover:text-white transition-colors"
+                                onClick={() => executeRefuseAppointment(confirmRefuseId()!)}
+                            >
+                                Confirmar Recusa
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </Show>
+
+            <Show when={confirmDeleteBlockId()}>
+                <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+                    <div class="bg-card w-full max-w-sm rounded-2xl shadow-xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200 border border-border">
+                        <div class="p-6 flex flex-col items-center text-center gap-4">
+                            <div class="size-16 rounded-full bg-red-500/10 text-red-500 flex items-center justify-center mb-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                            </div>
+                            <h2 class="text-xl font-bold text-foreground">Remover Bloqueio</h2>
+                            <p class="text-muted-foreground text-sm">Deseja realmente remover este bloqueio de horário da agenda?</p>
+                        </div>
+                        <div class="flex border-t border-border bg-muted/30">
+                            <button 
+                                class="flex-1 py-4 font-semibold text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors border-r border-border"
+                                onClick={() => setConfirmDeleteBlockId(null)}
+                            >
+                                Voltar
+                            </button>
+                            <button 
+                                class="flex-1 py-4 font-bold text-red-500 hover:bg-red-500 hover:text-white transition-colors"
+                                onClick={() => executeDeleteException(confirmDeleteBlockId()!)}
+                            >
+                                Confirmar Remoção
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </Show>
         </div>
     );
 }

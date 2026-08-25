@@ -3,12 +3,42 @@ import { Card } from "../components/Widgets/Card";
 import { Button } from "../components/Widgets/Button";
 import { CalendarIcon, ClockIcon, MapPinIcon, CheckCircleIcon, XIcon, BriefcaseIcon } from "../components/Icons/Icons";
 import { appointmentsService } from "../services/appointments.service";
+import { getClientId } from "../store/appState";
+
+const MyReputation = () => {
+    const [rep] = createResource(getClientId, async (id) => {
+        if (!id) return null;
+        try {
+            return await appointmentsService.getClientReputation(id);
+        } catch { return null; }
+    });
+
+    return (
+        <Show when={rep()}>
+            {(r) => (
+                <div class="flex flex-wrap gap-2 mb-4">
+                    <Show when={r().noShowCount > 0}>
+                        <div class={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold border ${r().noShowCount >= 3 ? "bg-error/10 text-error border-error/20 font-bold" : "bg-warning/10 text-warning-foreground border-warning/20"}`}>
+                            No-Show: Você possui {r().noShowCount} falta(s).{r().noShowCount >= 3 ? " Múltiplas faltas podem bloquear seus agendamentos!" : ""}
+                        </div>
+                    </Show>
+                    <Show when={r().successStreak > 0}>
+                        <div class="flex items-center gap-2 bg-success/10 text-success border border-success/20 px-4 py-2 rounded-lg text-sm font-semibold">
+                            Streak: {r().successStreak} agendamentos concluídos seguidos
+                        </div>
+                    </Show>
+                </div>
+            )}
+        </Show>
+    );
+};
 
 export default function Agendamentos() {
     const [filter, setFilter] = createSignal<"ALL" | "PENDING" | "CONFIRMED" | "CANCELLED">("ALL");
     const [appointments, { refetch }] = createResource(appointmentsService.getMyAppointments);
     const [canceling, setCanceling] = createSignal<string | null>(null);
     const [confirmCancelId, setConfirmCancelId] = createSignal<string | null>(null);
+    const [cancelErrorMessage, setCancelErrorMessage] = createSignal<string | null>(null);
 
     const executeCancel = async (id: string) => {
         setCanceling(id);
@@ -17,7 +47,8 @@ export default function Agendamentos() {
             setConfirmCancelId(null);
             refetch();
         } catch (err: any) {
-            alert(err.message || "Erro ao cancelar agendamento.");
+            setConfirmCancelId(null);
+            setCancelErrorMessage(err.message || "Erro ao cancelar agendamento.");
         } finally {
             setCanceling(null);
         }
@@ -29,12 +60,20 @@ export default function Agendamentos() {
         return appointments().filter((app: any) => app.status === filter());
     };
 
-    const getStatusLabel = (status: string) => {
+    const getStatusLabel = (app: any) => {
+        const status = typeof app === "string" ? app : app.status;
+        const role = typeof app === "object" ? app.cancelledByRole : null;
+
         switch (status) {
             case "PENDING": return { text: "Aguardando Confirmação", color: "bg-amber-500/10 text-amber-500 border-amber-500/20" };
             case "CONFIRMED": return { text: "Confirmado", color: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" };
+            case "COMPLETED": return { text: "Confirmado: Presente", color: "bg-blue-500/10 text-blue-500 border-blue-500/20" };
             case "CANCELLED": return { text: "Cancelado", color: "bg-red-500/10 text-red-500 border-red-500/20" };
-            case "COMPLETED": return { text: "Concluído", color: "bg-blue-500/10 text-blue-500 border-blue-500/20" };
+            case "NO_SHOW": 
+                if (role === "manager" || role === "manager_noshow") {
+                    return { text: "No-Show: Falta", color: "bg-red-900/10 text-red-600 border-red-600/20 font-bold" };
+                }
+                return { text: "No-Show", color: "bg-red-900/10 text-red-600 border-red-600/20 font-bold" };
             default: return { text: status, color: "bg-secondary text-muted-foreground" };
         }
     };
@@ -45,6 +84,8 @@ export default function Agendamentos() {
                 <h1 class="text-3xl font-bold text-foreground">Meus Agendamentos</h1>
                 <p class="text-muted-foreground">Acompanhe e gerencie as suas reservas de serviços.</p>
             </header>
+            
+            <MyReputation />
 
             <div class="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
                 <Button variant={filter() === "ALL" ? "primary" : "outline"} onClick={() => setFilter("ALL")} class="rounded-full">Todos</Button>
@@ -64,7 +105,7 @@ export default function Agendamentos() {
                     }>
                         <For each={filteredAppointments()}>
                             {(app) => {
-                                const statusInfo = getStatusLabel(app.status);
+                                const statusInfo = getStatusLabel(app);
                                 return (
                                     <Card class="p-6 flex flex-col md:flex-row justify-between gap-6 border-border group hover:border-primary/40 transition-colors">
                                         <div class="flex flex-col gap-4">
@@ -97,7 +138,7 @@ export default function Agendamentos() {
                                         </div>
 
                                         <div class="flex flex-row md:flex-col items-center justify-end md:justify-center gap-3 border-t md:border-t-0 md:border-l border-border pt-4 md:pt-0 md:pl-6 min-w-32">
-                                            <Show when={app.status === "PENDING"}>
+                                            <Show when={app.status === "PENDING" || app.status === "CONFIRMED"}>
                                                 <Button 
                                                     variant="outline" 
                                                     class="w-full text-red-500 hover:text-red-600 hover:bg-red-50 hover:border-red-200" 
@@ -110,6 +151,11 @@ export default function Agendamentos() {
                                             <Show when={app.status === "CONFIRMED"}>
                                                 <div class="text-center w-full bg-emerald-50 text-emerald-600 py-2 rounded-lg border border-emerald-100 font-medium text-sm flex items-center justify-center gap-2">
                                                     <CheckCircleIcon size={16} /> Horário Reservado
+                                                </div>
+                                            </Show>
+                                            <Show when={app.status === "COMPLETED"}>
+                                                <div class="text-center w-full bg-blue-50 text-blue-600 py-2 rounded-lg border border-blue-100 font-medium text-sm flex items-center justify-center gap-2">
+                                                    <CheckCircleIcon size={16} /> Serviço Concluído
                                                 </div>
                                             </Show>
                                         </div>
@@ -128,8 +174,8 @@ export default function Agendamentos() {
                             <div class="size-16 bg-red-500/10 text-red-500 rounded-full flex items-center justify-center mb-2">
                                 <XIcon size={32} />
                             </div>
-                            <h2 class="text-xl font-bold text-foreground">Cancelar Pedido</h2>
-                            <p class="text-muted-foreground">Tem certeza que deseja cancelar este agendamento? Esta ação não pode ser desfeita.</p>
+                            <h2 class="text-xl font-bold text-foreground">Cancelar Agendamento</h2>
+                            <p class="text-muted-foreground text-sm">Tem certeza que deseja cancelar este agendamento? Esta ação não pode ser desfeita.</p>
                         </div>
                         <div class="flex border-t border-border bg-muted/30">
                             <button 
@@ -144,7 +190,29 @@ export default function Agendamentos() {
                                 onClick={() => executeCancel(confirmCancelId()!)}
                                 disabled={!!canceling()}
                             >
-                                {canceling() ? "Aguarde..." : "Sim, Cancelar"}
+                                {canceling() ? "Aguarde..." : "Confirmar Cancelamento"}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </Show>
+
+            <Show when={cancelErrorMessage()}>
+                <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+                    <div class="bg-card w-full max-w-sm rounded-2xl shadow-xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200 border border-border">
+                        <div class="p-6 flex flex-col items-center text-center gap-4">
+                            <div class="size-16 bg-amber-500/10 text-amber-500 rounded-full flex items-center justify-center mb-2">
+                                <XIcon size={32} />
+                            </div>
+                            <h2 class="text-xl font-bold text-foreground">Aviso de Cancelamento</h2>
+                            <p class="text-muted-foreground text-sm">{cancelErrorMessage()}</p>
+                        </div>
+                        <div class="flex border-t border-border bg-muted/30">
+                            <button 
+                                class="flex-1 py-4 font-bold text-primary hover:bg-primary/10 transition-colors"
+                                onClick={() => setCancelErrorMessage(null)}
+                            >
+                                Entendido
                             </button>
                         </div>
                     </div>
