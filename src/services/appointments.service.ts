@@ -44,4 +44,24 @@ export const appointmentsService = {
         const res = await http.get<any>(`/appointments?${query}`);
         return res.data || res;
     },
+
+    markNoShow: async (id: string) => {
+        const res = await http.patch<any>(`/appointments/${id}/no-show`, {});
+        return res.data || res;
+    },
+
+    revertNoShow: async (id: string) => {
+        const res = await http.patch<any>(`/appointments/${id}/revert-no-show`, {});
+        return res.data || res;
+    },
+
+    cancelJustified: async (id: string, reason: string, affectsReputation: boolean) => {
+        const res = await http.patch<any>(`/appointments/${id}/cancel-justified`, { reason, affectsReputation });
+        return res.data || res;
+    },
+
+    getClientReputation: async (clientId: string) => {
+        const res = await http.get<any>(`/appointments/client/${clientId}/reputation`);
+        return res.data || res;
+    },
 };
