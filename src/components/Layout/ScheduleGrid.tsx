@@ -11,7 +11,7 @@ export type Appointment = {
     reason?: string;
     startTime: string;
     durationMins: number;
-    status?: "confirmed" | "pending" | "completed";
+    status?: "confirmed" | "pending" | "completed" | "no_show";
     colorClass?: string;
     type?: "appointment" | "block";
 };
