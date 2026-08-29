@@ -8,12 +8,16 @@ import { Modal } from "../components/Widgets/Modal";
 import { Card } from "../components/Widgets/Card";
 import { Input } from "../components/Widgets/Input";
 import { IconButton } from "../components/Widgets/IconButton";
+import { BookingModal } from "../components/Widgets/BookingModal";
 
 import { ApiError } from "../services/api";
 import { availabilityService } from "../services/availability.service";
-import { appointmentsService } from "../services/appointments.service";import { businessProfessionalService } from "../services/business-professional.service";
-import { getActiveBizId } from "../store/appState";
+import { appointmentsService, MAX_RESCHEDULES } from "../services/appointments.service";
+import { businessProfessionalService } from "../services/business-professional.service";
+import { getActiveBizId, t } from "../store/appState";
 import { toast } from "../store/toastStore";
+
+const formatDate = (isoDate?: string) => (isoDate ? isoDate.split("-").reverse().join("/") : "");
 
 export default function TeamSchedules() {
     const [activeTab, setActiveTab] = createSignal("grade");
@@ -25,28 +29,35 @@ export default function TeamSchedules() {
         const raw = Array.isArray(res) ? res : (res?.data || []);
         return raw.map((item: any) => ({
             id: item.professional?.id || item.id,
-            name: item.professional?.user?.name || item.name || "Profissional",
+            name: item.professional?.user?.name || item.name || t().teamSchedule.defaultProfessional,
             initials: (item.professional?.user?.name || item.name || "P").substring(0, 2).toUpperCase()
         }));
     });
 
-    const [appointments, { refetch: refetchAppointments }] = createResource(selectedDate, async (date) => {
+    // Guardamos a resposta crua da API: o modal de detalhes precisa de campos
+    // (serviceId, rescheduleCount, proposta pendente) que não cabem no tipo
+    // Appointment usado pela grade.
+    const [rawAppointments, { refetch: refetchAppointments }] = createResource(selectedDate, async (date) => {
         const res = await appointmentsService.getAppointments({ date });
-        const raw = Array.isArray(res) ? res : (res?.data || []);
+        return Array.isArray(res) ? res : (res?.data || []);
+    });
 
-        return raw.map((a: any) => ({
+    const appointments = createMemo<Appointment[]>(() =>
+        (rawAppointments() || []).map((a: any) => ({
             id: a.id,
             professionalId: a.professional?.id,
-            clientName: a.client?.name || "Cliente",
-            service: a.service?.name || "Serviço",
+            clientName: a.client?.name || t().teamSchedule.defaultClient,
+            service: a.service?.name || t().teamSchedule.defaultService,
             startTime: a.startTime,
             durationMins: a.service?.durationMinutes || 60,
             date: a.date,
             status: (a.status || 'pending').toLowerCase() as "confirmed" | "pending" | "completed",
             colorClass: a.status === 'PENDING' ? 'bg-warning' : 'bg-primary',
             type: "appointment"
-        } as Appointment));
-    });
+        } as Appointment))
+    );
+
+    const rawById = (id: string) => (rawAppointments() || []).find((a: any) => a.id === id);
 
     const [exceptions, { refetch: refetchExceptions }] = createResource(selectedDate, async (date) => {
         try { return await availabilityService.getExceptions({ date }); } catch { return []; }
@@ -58,8 +69,8 @@ export default function TeamSchedules() {
         return list.filter((p: Professional) => p.id === professionalIdFilter());
     });
 
-    const confirmedSchedules = createMemo(() => (appointments() || []).filter(a => a.status === 'confirmed' || a.status === 'completed'));
-    const pendingSchedules = createMemo(() => (appointments() || []).filter(a => a.status === 'pending'));
+    const confirmedSchedules = createMemo(() => appointments().filter(a => a.status === 'confirmed' || a.status === 'completed'));
+    const pendingSchedules = createMemo(() => appointments().filter(a => a.status === 'pending'));
 
     const gridEvents = createMemo(() => {
         const apps = confirmedSchedules();
@@ -81,20 +92,44 @@ export default function TeamSchedules() {
     });
 
     const handleUpdateStatus = async (id: string, status: string) => {
-        if (status === "CANCELLED" && !confirm("Deseja realmente recusar este agendamento?")) return;
+        if (status === "CANCELLED" && !confirm(t().teamSchedule.pending.confirmReject)) return;
         try {
             await appointmentsService.updateStatus(id, status);
             refetchAppointments();
-            toast.success(status === "CANCELLED" ? "Agendamento recusado." : "Agendamento aprovado.");
-        } catch (err: any) { toast.error(err.message || "Erro ao atualizar status."); }
+            toast.success(
+                status === "CANCELLED"
+                    ? t().teamSchedule.statusUpdated.rejected
+                    : t().teamSchedule.statusUpdated.approved,
+            );
+        } catch (err: any) {
+            toast.error(err.message || t().teamSchedule.statusUpdated.error);
+        }
     };
 
     const [isModalOpen, setIsModalOpen] = createSignal(false);
-    const [selectedAppointment, setSelectedAppointment] = createSignal<Appointment | null>(null);
+    const [selectedAppointment, setSelectedAppointment] = createSignal<any>(null);
     const handleModalOpen = (appt: Appointment) => {
         if (appt.type === "block") return;
-        setSelectedAppointment(appt);
+        const raw = rawById(appt.id);
+        if (!raw) return;
+        setSelectedAppointment(raw);
         setIsModalOpen(true);
+    };
+
+    // --- RF22/AC3: proposta de novo horário pelo gestor ---------------------
+    const [proposalTarget, setProposalTarget] = createSignal<any>(null);
+
+    const remainingReschedules = (appt: any) =>
+        Math.max(0, MAX_RESCHEDULES - (appt?.rescheduleCount ?? 0));
+
+    const canPropose = (appt: any) =>
+        ["PENDING", "CONFIRMED"].includes(appt?.status) &&
+        !appt?.proposedDate &&
+        remainingReschedules(appt) > 0;
+
+    const openProposal = (appt: any) => {
+        setIsModalOpen(false);
+        setProposalTarget(appt);
     };
 
     const [isCreateBlockOpen, setIsCreateBlockOpen] = createSignal(false);
@@ -109,7 +144,7 @@ export default function TeamSchedules() {
     const handleSaveBlock = async (forceOverwrite = false) => {
         setCreateError("");
         if (!blockDate() || !blockStart() || !blockEnd() || !blockReason()) {
-            setCreateError("Preencha todos os campos obrigatórios.");
+            setCreateError(t().teamSchedule.blocks.requiredFields);
             return;
         }
         try {
@@ -130,29 +165,33 @@ export default function TeamSchedules() {
             setIsCreateBlockOpen(false);
             setPendingConflictData(null);
             setBlockStart(""); setBlockEnd(""); setBlockReason(""); setBlockProfId("");
-            toast.success("Bloqueio criado com sucesso!");
+            toast.success(t().teamSchedule.blocks.created);
         } catch(e: any) {
             if (e instanceof ApiError) {
                 if (e.status === 412) setPendingConflictData(e.data);
-                else if (e.status === 409) setCreateError("Conflito: Já existem horários confirmados neste intervalo.");
-                else setCreateError(e.message || "Erro ao criar bloqueio.");
-            } else setCreateError("Erro ao criar bloqueio.");
+                else if (e.status === 409) setCreateError(t().teamSchedule.blocks.confirmedConflict);
+                else setCreateError(e.message || t().teamSchedule.blocks.createError);
+            } else setCreateError(t().teamSchedule.blocks.createError);
         }
     };
 
     const handleDeleteException = async (id: string) => {
-        if (!confirm("Deseja realmente apagar este bloqueio?")) return;
+        if (!confirm(t().teamSchedule.blocks.confirmDelete)) return;
         try {
             await availabilityService.deleteException(id);
             refetchExceptions();
-            toast.success("Bloqueio removido.");
-        } catch(e) { toast.error("Erro ao apagar bloqueio."); }
+            toast.success(t().teamSchedule.blocks.deleted);
+        } catch(e) { toast.error(t().teamSchedule.blocks.deleteError); }
     };
 
-    const diasDaSemana = [
-        { id: 1, label: "Seg" }, { id: 2, label: "Ter" }, { id: 3, label: "Qua" },
-        { id: 4, label: "Qui" }, { id: 5, label: "Sex" }, { id: 6, label: "Sáb" }, { id: 0, label: "Dom" }
-    ];
+    const diasDaSemana = () => {
+        const d = t().teamSchedule.hours.days;
+        return [
+            { id: 1, label: d.mon }, { id: 2, label: d.tue }, { id: 3, label: d.wed },
+            { id: 4, label: d.thu }, { id: 5, label: d.fri }, { id: 6, label: d.sat }, { id: 0, label: d.sun }
+        ];
+    };
+
     const [diasSelecionados, setDiasSelecionados] = createSignal([1, 2, 3, 4, 5, 6]);
     const [abertura, setAbertura] = createSignal("08:00");
     const [fechamento, setFechamento] = createSignal("18:00");
@@ -168,7 +207,7 @@ export default function TeamSchedules() {
     const handleSaveOperatingHours = async () => {
         const businessId = getActiveBizId();
         if (!businessId) {
-            toast.error("Selecione uma empresa para configurar os horários.");
+            toast.error(t().teamSchedule.hours.noBusiness);
             return;
         }
 
@@ -182,9 +221,9 @@ export default function TeamSchedules() {
                 isOpen: diasSelecionados().includes(diaId)
             }));
             await Promise.all(promises);
-            toast.success("Horários salvos com sucesso!");
+            toast.success(t().teamSchedule.hours.saved);
         } catch (err: any) {
-            toast.error(err instanceof ApiError ? (err.message || "Erro ao salvar horários.") : "Erro ao salvar horários.");
+            toast.error(err instanceof ApiError ? (err.message || t().teamSchedule.hours.saveError) : t().teamSchedule.hours.saveError);
         } finally {
             setIsSavingHours(false);
         }
@@ -194,8 +233,8 @@ export default function TeamSchedules() {
         <div class="flex flex-col gap-6 w-full max-w-6xl mx-auto p-10 text-foreground bg-background">
             <header class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
-                    <h1 class="text-3xl font-bold">Agenda da Equipe</h1>
-                    <p class="text-sm text-muted-foreground mt-1">Gestão de horários e agendamentos</p>
+                    <h1 class="text-3xl font-bold">{t().teamSchedule.title}</h1>
+                    <p class="text-sm text-muted-foreground mt-1">{t().teamSchedule.subtitle}</p>
                 </div>
                 <div class="flex items-center gap-4">
                     <Input type="date" value={selectedDate()} onInput={(e) => setSelectedDate(e.currentTarget.value)} class="w-48"/>
@@ -203,7 +242,7 @@ export default function TeamSchedules() {
                         <Badge variant="warning">
                             <span class="flex items-center gap-2">
                                 <span class="h-2 w-2 rounded-full bg-warning animate-pulse"></span>
-                                {pendingSchedules().length} aguardando aprovação
+                                {t().teamSchedule.pendingBadge(pendingSchedules().length)}
                             </span>
                         </Badge>
                     </Show>
@@ -214,14 +253,14 @@ export default function TeamSchedules() {
                 activeValue={activeTab()}
                 onChange={setActiveTab}
                 items={[
-                    { label: "Grade da Equipe", value: "grade" },
-                    { label: "Pendentes", value: "pendentes", badge: pendingSchedules().length || undefined },
-                    { label: "Horário de Expediente", value: "horario" },
-                    { label: "Bloqueios", value: "bloqueios" }
+                    { label: t().teamSchedule.tabs.grid, value: "grade" },
+                    { label: t().teamSchedule.tabs.pending, value: "pendentes", badge: pendingSchedules().length || undefined },
+                    { label: t().teamSchedule.tabs.hours, value: "horario" },
+                    { label: t().teamSchedule.tabs.blocks, value: "bloqueios" }
                 ]}
             />
 
-            <Suspense fallback={<div class="p-10 text-center text-muted-foreground">Carregando dados da agenda...</div>}>
+            <Suspense fallback={<div class="p-10 text-center text-muted-foreground">{t().teamSchedule.loading}</div>}>
                 <Show when={activeTab() === "grade"}>
                     <div class="flex flex-col gap-4">
                         <div class="flex gap-2 overflow-x-auto pb-2">
@@ -229,7 +268,7 @@ export default function TeamSchedules() {
                                 class={`px-4 py-2 rounded-full text-sm font-medium transition-colors border ${!professionalIdFilter() ? 'bg-primary text-primary-foreground border-primary' : 'bg-secondary text-secondary-foreground border-transparent hover:bg-secondary/80'}`}
                                 onClick={() => setProfessionalIdFilter(null)}
                             >
-                                Todos
+                                {t().teamSchedule.allProfessionals}
                             </button>
                             <For each={professionals() || []}>
                                 {(prof: any) => (
@@ -255,28 +294,44 @@ export default function TeamSchedules() {
 
                 <Show when={activeTab() === "pendentes"}>
                     <div class="flex flex-col gap-4">
-                        <Show when={!appointments.loading} fallback={<div class="p-8 text-center text-muted-foreground">Carregando pendentes...</div>}>
+                        <Show when={!rawAppointments.loading} fallback={<div class="p-8 text-center text-muted-foreground">{t().teamSchedule.pending.loading}</div>}>
                             <Show when={pendingSchedules().length > 0} fallback={
                                 <div class="p-10 border border-dashed border-border rounded-xl text-center text-muted-foreground bg-card">
-                                    Não há agendamentos pendentes no momento.
+                                    {t().teamSchedule.pending.empty}
                                 </div>
                             }>
                                 <For each={pendingSchedules()}>
                                     {(item) => {
-                                        const profName = professionals()?.find((p: any) => p.id === item.professionalId)?.name || "Profissional";
+                                        const profName = professionals()?.find((p: any) => p.id === item.professionalId)?.name
+                                            || t().teamSchedule.defaultProfessional;
+                                        const raw = () => rawById(item.id);
                                         return (
                                             <div class="flex flex-col sm:flex-row justify-between sm:items-center p-5 rounded-xl border border-border bg-card shadow-sm gap-4">
                                                 <div>
                                                     <h4 class="font-bold text-foreground">{item.clientName}</h4>
                                                     <p class="text-sm text-muted-foreground">{item.service} · {profName}</p>
                                                     <div class="flex items-center gap-3 mt-2 text-sm text-muted-foreground">
-                                                        <span class="flex items-center gap-1">📅 {item.date}</span>
+                                                        <span class="flex items-center gap-1">📅 {formatDate(item.date)}</span>
                                                         <span class="flex items-center gap-1">⏰ {item.startTime}</span>
                                                     </div>
+                                                    <Show when={raw()?.proposedDate}>
+                                                        <p class="text-xs text-warning mt-2">
+                                                            {t().teamSchedule.pending.proposalSent(formatDate(raw().proposedDate), raw().proposedStartTime)}
+                                                        </p>
+                                                    </Show>
                                                 </div>
                                                 <div class="flex items-center gap-2">
-                                                    <Button variant="secondary" onClick={() => handleUpdateStatus(item.id, "CONFIRMED")}>✓ Aprovar</Button>
-                                                    <Button variant="outline" class="text-error border-error/20 hover:bg-error/10" onClick={() => handleUpdateStatus(item.id, "CANCELLED")}>✕ Recusar</Button>
+                                                    <Button variant="secondary" onClick={() => handleUpdateStatus(item.id, "CONFIRMED")}>
+                                                        {t().teamSchedule.pending.approve}
+                                                    </Button>
+                                                    <Show when={canPropose(raw())}>
+                                                        <Button variant="outline" onClick={() => openProposal(raw())}>
+                                                            {t().teamSchedule.pending.propose}
+                                                        </Button>
+                                                    </Show>
+                                                    <Button variant="outline" class="text-error border-error/20 hover:bg-error/10" onClick={() => handleUpdateStatus(item.id, "CANCELLED")}>
+                                                        {t().teamSchedule.pending.reject}
+                                                    </Button>
                                                 </div>
                                             </div>
                                         );
@@ -292,14 +347,16 @@ export default function TeamSchedules() {
                         <Card>
                             <div class="mb-6 flex items-center gap-2 border-b border-border pb-4 font-medium text-foreground">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-muted-foreground"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
-                                <span>Horário de Funcionamento</span>
+                                <span>{t().teamSchedule.hours.title}</span>
                             </div>
 
                             <div class="flex flex-col gap-8">
                                 <div>
-                                    <span class="mb-3 block text-xs font-bold uppercase tracking-wider text-muted-foreground">Dias de Funcionamento</span>
+                                    <span class="mb-3 block text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                                        {t().teamSchedule.hours.daysLabel}
+                                    </span>
                                     <div class="flex flex-wrap gap-2">
-                                        <For each={diasDaSemana}>
+                                        <For each={diasDaSemana()}>
                                             {(dia) => (
                                                 <button
                                                     onClick={() => toggleDia(dia.id)}
@@ -317,16 +374,16 @@ export default function TeamSchedules() {
                                 </div>
 
                                 <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
-                                    <Input labelText="ABERTURA" type="time" value={abertura()} onInput={e => setAbertura(e.currentTarget.value)} />
-                                    <Input labelText="FECHAMENTO" type="time" value={fechamento()} onInput={e => setFechamento(e.currentTarget.value)} />
-                                    <Input labelText="INÍCIO DO ALMOÇO" type="time" value={inicioAlmoco()} onInput={e => setInicioAlmoco(e.currentTarget.value)} />
-                                    <Input labelText="FIM DO ALMOÇO" type="time" value={fimAlmoco()} onInput={e => setFimAlmoco(e.currentTarget.value)} />
+                                    <Input labelText={t().teamSchedule.hours.opening} type="time" value={abertura()} onInput={e => setAbertura(e.currentTarget.value)} />
+                                    <Input labelText={t().teamSchedule.hours.closing} type="time" value={fechamento()} onInput={e => setFechamento(e.currentTarget.value)} />
+                                    <Input labelText={t().teamSchedule.hours.lunchStart} type="time" value={inicioAlmoco()} onInput={e => setInicioAlmoco(e.currentTarget.value)} />
+                                    <Input labelText={t().teamSchedule.hours.lunchEnd} type="time" value={fimAlmoco()} onInput={e => setFimAlmoco(e.currentTarget.value)} />
                                 </div>
 
                                 <div class="pt-2">
                                     <Button class="bg-primary hover:opacity-90 text-primary-foreground rounded-xl px-6" onClick={handleSaveOperatingHours} disabled={isSavingHours()}>
                                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2 inline-block"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
-                                        {isSavingHours() ? "Salvando..." : "Salvar Horários"}
+                                        {isSavingHours() ? t().teamSchedule.hours.saving : t().teamSchedule.hours.save}
                                     </Button>
                                 </div>
                             </div>
@@ -338,24 +395,26 @@ export default function TeamSchedules() {
                     <div class="flex flex-col gap-4">
                         <div>
                             <Button class="bg-primary hover:opacity-90 text-primary-foreground rounded-xl px-6" onClick={() => setIsCreateBlockOpen(true)}>
-                                + Adicionar Bloqueio
+                                {t().teamSchedule.blocks.add}
                             </Button>
                         </div>
 
                         <div class="flex flex-col gap-3 mt-2">
-                            <Show when={exceptions() && exceptions().length > 0} fallback={<p class="text-muted-foreground text-sm">Nenhum bloqueio registrado nesta data.</p>}>
+                            <Show when={exceptions() && exceptions().length > 0} fallback={<p class="text-muted-foreground text-sm">{t().teamSchedule.blocks.empty}</p>}>
                                 <For each={exceptions()}>
                                     {(item: any) => (
                                         <div class="flex items-center justify-between rounded-2xl border border-border bg-card p-5 shadow-sm">
                                             <div class="flex items-center gap-6">
                                                 <div class="flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold border bg-error/10 text-error border-error/20">
-                                                    Bloqueio
+                                                    {t().teamSchedule.blocks.tag}
                                                 </div>
                                                 <div>
                                                     <p class="font-bold text-foreground">{item.reason}</p>
                                                     <p class="text-sm text-muted-foreground">
-                                                        {item.date} • {item.startTime} - {item.endTime}
-                                                        {item.professional ? ` • ${item.professional.name || 'Profissional ' + item.professional.id.substring(0,4)}` : ' • Todo o Estabelecimento'}
+                                                        {formatDate(item.date)} • {item.startTime} - {item.endTime}
+                                                        {item.professional
+                                                            ? ` • ${item.professional.name || t().teamSchedule.defaultProfessional + ' ' + item.professional.id.substring(0, 4)}`
+                                                            : ` • ${t().teamSchedule.blocks.wholeBusiness}`}
                                                     </p>
                                                 </div>
                                             </div>
@@ -371,31 +430,69 @@ export default function TeamSchedules() {
                 </Show>
             </Suspense>
 
-            <Modal isOpen={isModalOpen()} onClose={() => setIsModalOpen(false)} title="Detalhes do Agendamento">
+            <Modal isOpen={isModalOpen()} onClose={() => setIsModalOpen(false)} title={t().teamSchedule.details.title}>
                 <Show when={selectedAppointment()}>
                     {(appt) => {
-                        const profName = professionals()?.find((p: any) => p.id === appt().professionalId)?.name || "Desconhecido";
+                        const profName = professionals()?.find((p: any) => p.id === appt().professional?.id)?.name
+                            || appt().professional?.user?.name
+                            || t().teamSchedule.details.unknownProfessional;
+
                         return (
                             <div class="flex flex-col gap-4">
                                 <div class="flex items-center gap-3">
-                                    <Avatar size="lg" fallbackInitials={appt().clientName?.substring(0, 2).toUpperCase() || ""} />
+                                    <Avatar size="lg" fallbackInitials={(appt().client?.name || "").substring(0, 2).toUpperCase()} />
                                     <div>
-                                        <h4 class="text-lg font-bold text-foreground">{appt().clientName}</h4>
-                                        <Badge variant={appt().status === "confirmed" ? "success" : appt().status === "pending" ? "warning" : "default"}>
-                                            {appt().status?.toUpperCase()}
+                                        <h4 class="text-lg font-bold text-foreground">
+                                            {appt().client?.name || t().teamSchedule.defaultClient}
+                                        </h4>
+                                        <Badge variant={appt().status === "CONFIRMED" ? "success" : appt().status === "PENDING" ? "warning" : "default"}>
+                                            {(t().appointments.status as Record<string, string>)[appt().status] ?? appt().status}
                                         </Badge>
                                     </div>
                                 </div>
 
                                 <div class="bg-muted rounded-md p-4 flex flex-col gap-2 border border-border text-foreground">
-                                    <p class="text-sm"><strong>Serviço:</strong> {appt().service}</p>
-                                    <p class="text-sm"><strong>Data e Hora:</strong> {appt().date} às {appt().startTime} ({appt().durationMins} min)</p>
-                                    <p class="text-sm"><strong>Profissional:</strong> {profName}</p>
+                                    <p class="text-sm">
+                                        <strong>{t().teamSchedule.details.service}</strong> {appt().service?.name}
+                                    </p>
+                                    <p class="text-sm">
+                                        <strong>{t().teamSchedule.details.dateTime}</strong>{" "}
+                                        {formatDate(appt().date)} — {appt().startTime} ({appt().service?.durationMinutes || 60} {t().common.minutesShort})
+                                    </p>
+                                    <p class="text-sm">
+                                        <strong>{t().teamSchedule.details.professional}</strong> {profName}
+                                    </p>
+                                    <p class="text-sm">
+                                        <strong>{t().teamSchedule.details.rescheduleCount}</strong>{" "}
+                                        {appt().rescheduleCount ?? 0} / {MAX_RESCHEDULES}
+                                    </p>
                                 </div>
 
+                                <Show when={appt().proposedDate}>
+                                    <div class="p-3 rounded bg-warning/10 border border-warning/30 text-sm">
+                                        {t().teamSchedule.details.pendingProposal(formatDate(appt().proposedDate), appt().proposedStartTime)}
+                                    </div>
+                                </Show>
+
+                                <Show when={remainingReschedules(appt()) === 0}>
+                                    <div class="p-3 rounded bg-error/10 border border-error/20 text-sm text-error">
+                                        {t().teamSchedule.details.limitReached(MAX_RESCHEDULES)}
+                                    </div>
+                                </Show>
+
                                 <div class="flex gap-2 mt-2">
-                                    <Button variant="primary" class="flex-1 text-center justify-center">Editar</Button>
-                                    <Button variant="outline" class="flex-1 text-center justify-center" onClick={() => setIsModalOpen(false)}>Fechar</Button>
+                                    <Show when={canPropose(appt())}>
+                                        <Button
+                                            variant="primary"
+                                            class="flex-1 text-center justify-center"
+                                            onClick={() => openProposal(appt())}
+                                        >
+                                            {t().teamSchedule.details.proposeNewTime}
+                                        </Button>
+                                    </Show>
+                                    <Button variant="outline" class="flex-1 text-center justify-center" onClick={() => setIsModalOpen(false)}>
+                                        {t().common.close}
+                                    </Button>
                                 </div>
                             </div>
                         );
@@ -403,7 +500,23 @@ export default function TeamSchedules() {
                 </Show>
             </Modal>
 
-            <Modal isOpen={isCreateBlockOpen()} onClose={() => { setIsCreateBlockOpen(false); setPendingConflictData(null); setCreateError(""); }} title="Novo Bloqueio">
+            <Show when={proposalTarget()}>
+                <BookingModal
+                    isOpen={!!proposalTarget()}
+                    mode="propose"
+                    appointmentId={proposalTarget().id}
+                    initialDate={proposalTarget().date}
+                    professionalId={proposalTarget().professional?.id}
+                    businessId={proposalTarget().business?.id || getActiveBizId()}
+                    serviceId={proposalTarget().service?.id}
+                    serviceName={proposalTarget().service?.name || t().teamSchedule.defaultService}
+                    durationMinutes={proposalTarget().service?.durationMinutes || 60}
+                    onSuccess={refetchAppointments}
+                    onClose={() => setProposalTarget(null)}
+                />
+            </Show>
+
+            <Modal isOpen={isCreateBlockOpen()} onClose={() => { setIsCreateBlockOpen(false); setPendingConflictData(null); setCreateError(""); }} title={t().teamSchedule.blocks.modalTitle}>
                 <div class="flex flex-col gap-4">
                     <Show when={createError()}>
                         <div class="p-3 rounded bg-error/10 text-error text-sm font-medium">{createError()}</div>
@@ -411,36 +524,45 @@ export default function TeamSchedules() {
 
                     <Show when={pendingConflictData()}>
                         <div class="p-4 rounded bg-warning/20 border border-warning/30 flex flex-col gap-2 text-sm">
-                            <p class="font-bold text-warning-foreground">Conflito de Agendamentos Pendentes</p>
+                            <p class="font-bold text-warning-foreground">{t().teamSchedule.blocks.pendingConflictTitle}</p>
                             <p>{pendingConflictData().message}</p>
-                            <p>Deseja forçar o bloqueio e cancelar esses agendamentos?</p>
+                            <p>{t().teamSchedule.blocks.pendingConflictQuestion}</p>
                             <div class="flex gap-2 mt-2">
-                                <Button variant="primary" class="bg-warning text-warning-foreground hover:bg-warning/80" onClick={() => handleSaveBlock(true)}>Sim, forçar bloqueio</Button>
-                                <Button variant="outline" onClick={() => setPendingConflictData(null)}>Não, cancelar</Button>
+                                <Button variant="primary" class="bg-warning text-warning-foreground hover:bg-warning/80" onClick={() => handleSaveBlock(true)}>
+                                    {t().teamSchedule.blocks.forceBlock}
+                                </Button>
+                                <Button variant="outline" onClick={() => setPendingConflictData(null)}>
+                                    {t().teamSchedule.blocks.dontForce}
+                                </Button>
                             </div>
                         </div>
                     </Show>
 
                     <Show when={!pendingConflictData()}>
-                        <Input labelText="Data" type="date" value={blockDate()} onInput={(e: any) => setBlockDate(e.target.value)} />
+                        <Input labelText={t().teamSchedule.blocks.date} type="date" value={blockDate()} onInput={(e: any) => setBlockDate(e.target.value)} />
                         <div class="flex gap-4">
                             <div class="flex-1">
-                                <Input labelText="Início" type="time" value={blockStart()} onInput={(e: any) => setBlockStart(e.target.value)} />
+                                <Input labelText={t().teamSchedule.blocks.start} type="time" value={blockStart()} onInput={(e: any) => setBlockStart(e.target.value)} />
                             </div>
                             <div class="flex-1">
-                                <Input labelText="Fim" type="time" value={blockEnd()} onInput={(e: any) => setBlockEnd(e.target.value)} />
+                                <Input labelText={t().teamSchedule.blocks.end} type="time" value={blockEnd()} onInput={(e: any) => setBlockEnd(e.target.value)} />
                             </div>
                         </div>
-                        <Input labelText="Motivo" placeholder="Ex: Feriado, manutenção, almoço..." value={blockReason()} onInput={(e: any) => setBlockReason(e.target.value)} />
+                        <Input
+                            labelText={t().teamSchedule.blocks.reason}
+                            placeholder={t().teamSchedule.blocks.reasonPlaceholder}
+                            value={blockReason()}
+                            onInput={(e: any) => setBlockReason(e.target.value)}
+                        />
 
                         <div class="flex flex-col gap-1">
-                            <label class="text-xs font-bold text-muted-foreground uppercase">Afeta</label>
+                            <label class="text-xs font-bold text-muted-foreground uppercase">{t().teamSchedule.blocks.affects}</label>
                             <select
                                 class="h-10 rounded-md border border-input bg-card text-foreground px-3 py-2 text-sm focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
                                 value={blockProfId()}
                                 onChange={(e: any) => setBlockProfId(e.target.value)}
                             >
-                                <option value="">Todo o Estabelecimento</option>
+                                <option value="">{t().teamSchedule.blocks.wholeBusiness}</option>
                                 <For each={professionals() || []}>
                                     {(p: any) => <option value={p.id}>{p.name}</option>}
                                 </For>
@@ -448,8 +570,8 @@ export default function TeamSchedules() {
                         </div>
 
                         <div class="flex justify-end gap-2 mt-4">
-                            <Button variant="outline" onClick={() => setIsCreateBlockOpen(false)}>Cancelar</Button>
-                            <Button variant="primary" onClick={() => handleSaveBlock(false)}>Salvar Bloqueio</Button>
+                            <Button variant="outline" onClick={() => setIsCreateBlockOpen(false)}>{t().common.cancel}</Button>
+                            <Button variant="primary" onClick={() => handleSaveBlock(false)}>{t().teamSchedule.blocks.save}</Button>
                         </div>
                     </Show>
                 </div>

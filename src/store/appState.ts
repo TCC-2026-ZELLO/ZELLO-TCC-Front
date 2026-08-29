@@ -1,7 +1,7 @@
 import { createSignal, batch } from "solid-js";
 import { isServer } from "solid-js/web";
 import { translations, Language } from "./translations";
-import { BusinessContext, User } from "~/services/auth.service";
+import { BusinessContext, User } from "../services/auth.service";
 
 export type AccountType = "CLIENTE" | "PROFISSIONAL" | "ESTABELECIMENTO";
 
@@ -32,7 +32,7 @@ export function initializeStore() {
     const savedUser = localStorage.getItem("user");
     const savedToken = localStorage.getItem("access_token");
     const savedActiveBiz = localStorage.getItem("active_business");
-    const savedManagedBiz = localStorage.getItem("managed_businesses"); // <-- Adicionado
+    const savedManagedBiz = localStorage.getItem("managed_businesses");
     const savedTheme = localStorage.getItem("theme") as "light" | "dark";
 
     batch(() => {
@@ -42,9 +42,8 @@ export function initializeStore() {
             setAccessToken(savedToken);
 
             if (savedActiveBiz) setActiveBusiness(JSON.parse(savedActiveBiz));
-            if (savedManagedBiz) setManagedBusinesses(JSON.parse(savedManagedBiz)); // <-- Adicionado
+            if (savedManagedBiz) setManagedBusinesses(JSON.parse(savedManagedBiz));
 
-            // Determine role based on parsed user roles
             if (parsed.roles.includes("manager")) setAccountRole("estabelecimento");
             else if (parsed.roles.includes("professional")) setAccountRole("profissional");
             else setAccountRole("cliente");
