@@ -6,6 +6,7 @@ import { Tabs } from "../components/Widgets/Tabs";
 import { StarIcon, MapPinIcon, CalendarIcon, CheckCircleIcon, RibbonIcon } from "../components/Icons/Icons";
 import { professionalService } from "../services/professional.service";
 import { BookingModal } from "../components/Widgets/BookingModal";
+import { ReviewListWidget } from "../components/Widgets/ReviewListWidget";
 
 const TYPE_COLORS: Record<string, string> = {
     diploma:        "bg-blue-100 text-blue-700",
@@ -91,8 +92,8 @@ export default function PublicProfile() {
                             <div class="flex flex-wrap items-center justify-center sm:justify-start gap-4 mt-3 text-sm">
                                 <div class="flex items-center gap-1 font-semibold text-foreground">
                                     <span class="text-yellow-500"> <StarIcon/> </span>
-                                    {profile()?.rating || "5.0"}
-                                    <span class="text-muted-foreground font-normal ml-1">(Avaliações)</span>
+                                    {profile()?.averageRating != null ? Number(profile()?.averageRating).toFixed(1) : "5.0"}
+                                    <span class="text-muted-foreground font-normal ml-1">({profile()?.reviewCount ?? 0} Avaliações)</span>
                                 </div>
                                 <div class="flex items-center gap-1 text-muted-foreground">
                                     <MapPinIcon/> {profile()?.city || "Brasil"}
@@ -234,9 +235,7 @@ export default function PublicProfile() {
 
                             {/* TAB: AVALIAÇÕES */}
                             <Show when={activeTab() === "avaliacoes"}>
-                                <div class="p-8 text-center text-muted-foreground bg-secondary/20 rounded-2xl border border-dashed border-border">
-                                    Nenhuma avaliação disponível para este profissional.
-                                </div>
+                                <ReviewListWidget professionalId={params.id} />
                             </Show>
                         </div>
                     </div>
@@ -246,7 +245,7 @@ export default function PublicProfile() {
                 <BookingModal 
                     isOpen={!!selectedServiceForBooking()}
                     onClose={() => setSelectedServiceForBooking(null)}
-                    professionalId={params.id}
+                    professionalId={params.id as string}
                     businessId={selectedServiceForBooking().businessProfessional?.business?.id || ""}
                     serviceId={selectedServiceForBooking().service?.id}
                     serviceName={selectedServiceForBooking().service?.name || selectedServiceForBooking().name}

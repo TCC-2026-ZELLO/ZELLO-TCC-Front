@@ -10,6 +10,7 @@ import {businessService} from "../services/business.service";
 import {availabilityService, BoundsParams} from "../services/availability.service";
 import {appointmentsService} from "../services/appointments.service";
 import {ApiError} from "../services/api";
+import {ReviewListWidget} from "../components/Widgets/ReviewListWidget";
 import {brl, combosService} from "../services/combos.service";
 import {ComboBookingModal} from "../components/Layout/ComboBookingModal";
 
@@ -271,7 +272,8 @@ export default function EstablishmentProfile() {
                                     {label: "Serviços", value: "services"},
                                     {label: "Combos", value: "combos"},
                                     {label: "Equipe", value: "team"},
-                                    {label: "Galeria", value: "gallery"}
+                                    {label: "Galeria", value: "gallery"},
+                                    {label: "Avaliações", value: "reviews"}
                                 ]}
                             />
                         </div>

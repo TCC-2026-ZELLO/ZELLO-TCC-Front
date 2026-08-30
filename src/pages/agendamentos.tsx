@@ -7,8 +7,9 @@ import { appointmentsService, MAX_RESCHEDULES } from "../services/appointments.s
 import { t, getClientId } from "../store/appState";
 import { toast } from "../store/toastStore";
 import { ApiError } from "../services/api";
+import { ReviewWidget } from "../components/Widgets/ReviewWidget";
 
-type StatusFilter = "ALL" | "PENDING" | "CONFIRMED" | "CANCELLED";
+type StatusFilter = "ALL" | "PENDING" | "CONFIRMED" | "COMPLETED" | "CANCELLED";
 
 const formatDate = (isoDate: string) => isoDate.split("-").reverse().join("/");
 
@@ -73,9 +74,6 @@ export default function Agendamentos() {
             refetch();
             toast.success(t().appointments.toasts.cancelled);
         } catch (err: any) {
-            // O backend explica o motivo (política de antecedência, no-show,
-            // status inválido), então mostramos a mensagem num modal em vez
-            // de um toast que some.
             setConfirmCancelId(null);
             setCancelErrorMessage(err.message || t().appointments.toasts.cancelError);
         } finally {
@@ -108,7 +106,12 @@ export default function Agendamentos() {
     const filteredAppointments = () => {
         const list = appointments() || [];
         if (filter() === "ALL") return list;
-        return list.filter((app: any) => app.status === filter());
+        return list.filter((app: any) => {
+            if (filter() === "CANCELLED") {
+                return app.status === "CANCELLED" || app.status === "NO_SHOW";
+            }
+            return app.status === filter();
+        });
     };
 
     const remainingReschedules = (app: any) =>
@@ -149,6 +152,9 @@ export default function Agendamentos() {
                 </Button>
                 <Button variant={filter() === "CONFIRMED" ? "primary" : "outline"} onClick={() => setFilter("CONFIRMED")} class="rounded-full">
                     {t().appointments.filters.confirmed}
+                </Button>
+                <Button variant={filter() === "COMPLETED" ? "primary" : "outline"} onClick={() => setFilter("COMPLETED")} class="rounded-full">
+                    {t().appointments.filters.completed}
                 </Button>
                 <Button variant={filter() === "CANCELLED" ? "primary" : "outline"} onClick={() => setFilter("CANCELLED")} class="rounded-full">
                     {t().appointments.filters.cancelled}
@@ -212,8 +218,11 @@ export default function Agendamentos() {
                                             </Show>
 
                                             <Show when={app.status === "COMPLETED"}>
-                                                <div class="text-center w-full bg-blue-500/10 text-blue-600 py-2 rounded-lg border border-blue-500/20 font-medium text-sm flex items-center justify-center gap-2">
+                                                <div class="text-center w-full bg-blue-500/10 text-blue-600 py-2 rounded-lg border border-blue-500/20 font-medium text-sm flex items-center justify-center gap-2 mb-2">
                                                     <CheckCircleIcon size={16}/> {t().appointments.completed}
+                                                </div>
+                                                <div class="w-full">
+                                                    <ReviewWidget appointment={app} onReviewed={() => refetch()} />
                                                 </div>
                                             </Show>
 
