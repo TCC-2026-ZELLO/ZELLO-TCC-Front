@@ -90,6 +90,7 @@ export const translations = {
                 all: "Todos",
                 pending: "Pendentes",
                 confirmed: "Confirmados",
+                completed: "Concluídos",
                 cancelled: "Cancelados"
             },
             status: {
@@ -350,6 +351,25 @@ export const translations = {
                 confirmPassword: "CONFIRMAR SENHA",
                 changePasswordBtn: "Alterar Senha"
             }
+        },
+        reviews: {
+            rateService: "Avaliar Atendimento",
+            rateProfessional: "Avaliar Profissional",
+            rateBusiness: "Avaliar Estabelecimento",
+            targetType: "O que deseja avaliar?",
+            professional: "Profissional",
+            business: "Estabelecimento",
+            commentLabel: "Deixe seu comentário (mín. 10 caracteres)",
+            commentPlaceholder: "Conte como foi sua experiência...",
+            submit: "Enviar Avaliação",
+            success: "Avaliação enviada com sucesso!",
+            error: "Erro ao enviar avaliação.",
+            expired: "Prazo para avaliação expirou (30 dias).",
+            readOnlyTitle: "Sua Avaliação",
+            duplicateError: "Você já avaliou este item.",
+            noReviews: "Nenhuma avaliação encontrada.",
+            average: "Média de Avaliações",
+            totalReviews: "Total de Avaliações"
         }
     },
     EN: {
@@ -443,6 +463,7 @@ export const translations = {
                 all: "All",
                 pending: "Pending",
                 confirmed: "Confirmed",
+                completed: "Completed",
                 cancelled: "Cancelled"
             },
             status: {
@@ -702,6 +723,25 @@ export const translations = {
                 confirmPassword: "CONFIRM PASSWORD",
                 changePasswordBtn: "Change Password"
             }
+        },
+        reviews: {
+            rateService: "Rate Service",
+            rateProfessional: "Rate Professional",
+            rateBusiness: "Rate Business",
+            targetType: "What do you want to rate?",
+            professional: "Professional",
+            business: "Business",
+            commentLabel: "Leave a comment (min. 10 chars)",
+            commentPlaceholder: "Tell us about your experience...",
+            submit: "Submit Review",
+            success: "Review submitted successfully!",
+            error: "Error submitting review.",
+            expired: "Time limit to review has expired (30 days).",
+            readOnlyTitle: "Your Review",
+            duplicateError: "You have already reviewed this item.",
+            noReviews: "No reviews found.",
+            average: "Average Rating",
+            totalReviews: "Total Reviews"
         }
     }
 } as const;
