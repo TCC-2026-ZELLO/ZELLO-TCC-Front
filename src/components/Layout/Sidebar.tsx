@@ -21,6 +21,7 @@ import {
     RibbonIcon,
     SettingsIcon,
     LogoutIcon,
+    MapPinIcon,
 } from "../Icons/Icons";
 import { logout } from "../../services/auth.service";
 
@@ -67,6 +68,7 @@ export function Sidebar() {
                 <Show when={isMounted()}>
                     <Show when={accountRole() === "cliente"}>
                         <NavItem label={t().sidebar.nav.home} icon={<HomeIcon/>} href="/explore" />
+                        <NavItem label="Mapa" icon={<MapPinIcon/>} href="/mapa" />
                         <NavItem label="Agendamentos" icon={<CalendarIcon/>} href="/agendamentos" />
                     </Show>
 
