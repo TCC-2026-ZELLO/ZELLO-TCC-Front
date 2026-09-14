@@ -10,6 +10,8 @@ import {businessService} from "../services/business.service";
 import {availabilityService, BoundsParams} from "../services/availability.service";
 import {appointmentsService} from "../services/appointments.service";
 import {ApiError} from "../services/api";
+import {brl, combosService} from "../services/combos.service";
+import {ComboBookingModal} from "../components/Layout/ComboBookingModal";
 
 export default function EstablishmentProfile() {
     const params = useParams();
@@ -31,6 +33,11 @@ export default function EstablishmentProfile() {
         businessService.getCatalog
     );
 
+    const [combos] = createResource(
+        () => params.id,
+        (id: string) => combosService.list(id)
+    );
+
     // Modal state
     const [isModalOpen, setIsModalOpen] = createSignal(false);
     const [selectedService, setSelectedService] = createSignal<string>("");
@@ -40,6 +47,7 @@ export default function EstablishmentProfile() {
     const [bookingError, setBookingError] = createSignal<string>("");
     const [isBooking, setIsBooking] = createSignal(false);
 
+    const [selectedCombo, setSelectedCombo] = createSignal<string | null>(null);
     // Retorna os parâmetros de busca de disponibilidade para a seleção
     // atual, ou null se a seleção ainda estiver incompleta.
     const currentBoundsParams = (): BoundsParams | null => {
@@ -102,7 +110,7 @@ export default function EstablishmentProfile() {
     const handleOpenBooking = (serviceId?: string) => {
         if (serviceId) setSelectedService(serviceId);
         else if (catalog() && catalog().length > 0) setSelectedService(catalog()[0].id);
-        
+
         setSelectedProfessional("");
         setSelectedDate(new Date().toISOString().split("T")[0]);
         setSelectedTime("");
@@ -261,6 +269,7 @@ export default function EstablishmentProfile() {
                                 onChange={(val) => setActiveTab(val as string)}
                                 items={[
                                     {label: "Serviços", value: "services"},
+                                    {label: "Combos", value: "combos"},
                                     {label: "Equipe", value: "team"},
                                     {label: "Galeria", value: "gallery"}
                                 ]}
@@ -297,6 +306,66 @@ export default function EstablishmentProfile() {
                                                 </div>
                                             )}
                                         </For>
+                                    </Show>
+                                </div>
+                            </Show>
+
+                            {/* TAB: COMBOS */}
+                            <Show when={activeTab() === "combos"}>
+                                <div class="flex flex-col gap-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                                    <Show when={!combos.loading} fallback={
+                                        <div class="p-10 text-center text-muted-foreground animate-pulse">
+                                            Carregando combos...
+                                        </div>
+                                    }>
+                                        <Show when={(combos() ?? []).length > 0} fallback={
+                                            <div
+                                                class="p-10 text-center text-muted-foreground border-2 border-dashed border-border rounded-2xl">
+                                                Este estabelecimento ainda não montou combos.
+                                            </div>
+                                        }>
+                                            <For each={combos()}>
+                                                {(combo) => (
+                                                    <div
+                                                        class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl border border-border bg-card hover:border-primary/50 transition-all group">
+                                                        <div class="flex flex-col">
+                                                            <span
+                                                                class="font-bold text-foreground group-hover:text-primary transition-colors">
+                                                                {combo.name}
+                                                            </span>
+                                                            <span class="text-sm text-muted-foreground">
+                                                                {combo.stages
+                                                                    .flatMap((stage) => stage.services.map((svc) => svc.name))
+                                                                    .join(" + ")}
+                                                            </span>
+                                                            <span class="text-xs text-muted-foreground mt-1">
+                                                                {combo.durationMinutes} min
+                                                                <Show when={combo.requiresMultipleProfessionals}>
+                                                                    {" · atendimento simultâneo"}
+                                                                </Show>
+                                                            </span>
+                                                        </div>
+
+                                                        <div class="flex items-center gap-4 justify-between sm:justify-end">
+                                                            <div class="flex flex-col items-start sm:items-end">
+                                                                <span class="font-semibold text-foreground">
+                                                                    {brl(combo.price)}
+                                                                </span>
+                                                                <span class="text-xs text-muted-foreground line-through">
+                                                                    {brl(combo.originalPrice)}
+                                                                </span>
+                                                                <span class="text-xs font-semibold text-emerald-600">
+                                                                    −{combo.discountPercent}%
+                                                                </span>
+                                                            </div>
+                                                            <Button variant="outline"
+                                                                    onClick={() => setSelectedCombo(combo.id)}
+                                                                    class="rounded-full text-xs px-4">Selecionar</Button>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </For>
+                                        </Show>
                                     </Show>
                                 </div>
                             </Show>
@@ -374,7 +443,7 @@ export default function EstablishmentProfile() {
 
                     <div class="flex flex-col gap-1">
                         <label class="text-sm font-bold text-foreground">Serviço</label>
-                        <select 
+                        <select
                             class="h-10 rounded-md border border-input bg-card text-foreground px-3 py-2 text-sm focus:ring-2 focus:ring-primary focus:border-transparent outline-none"
                             value={selectedService()}
                             onChange={(e: any) => setSelectedService(e.target.value)}
@@ -387,7 +456,7 @@ export default function EstablishmentProfile() {
 
                     <div class="flex flex-col gap-1">
                         <label class="text-sm font-bold text-foreground">Profissional</label>
-                        <select 
+                        <select
                             class="h-10 rounded-md border border-input bg-card text-foreground px-3 py-2 text-sm focus:ring-2 focus:ring-primary focus:border-transparent outline-none"
                             value={selectedProfessional()}
                             onChange={(e: any) => { setSelectedProfessional(e.target.value); setSelectedTime(""); }}
@@ -408,7 +477,7 @@ export default function EstablishmentProfile() {
                                 <div class="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
                                     <For each={availableSlots()}>
                                         {(slot: string) => (
-                                            <button 
+                                            <button
                                                 class={`py-2 px-3 text-sm rounded-md border transition-all ${selectedTime() === slot ? "bg-primary text-primary-foreground border-primary font-bold shadow-md" : "bg-card text-foreground border-border hover:border-primary/50"}`}
                                                 onClick={() => setSelectedTime(slot)}
                                             >
@@ -429,6 +498,14 @@ export default function EstablishmentProfile() {
                     </div>
                 </div>
             </Modal>
+            <Show when={selectedCombo()}>
+                <ComboBookingModal
+                    comboId={selectedCombo() as string}
+                    isOpen={!!selectedCombo()}
+                    onClose={() => setSelectedCombo(null)}
+                    onBooked={() => navigate("/agendamentos")}
+                />
+            </Show>
         </Show>
     );
 }

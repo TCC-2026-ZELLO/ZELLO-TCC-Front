@@ -4,6 +4,7 @@ import { Tabs } from "../components/Widgets/Tabs";
 import { Avatar } from "../components/Widgets/Avatar";
 import { Button } from "../components/Widgets/Button";
 import { ScheduleGrid, Professional, Appointment } from "../components/Layout/ScheduleGrid";
+import { WeekStrip, DayCount } from "../components/Layout/WeekStrip";
 import { Modal } from "../components/Widgets/Modal";
 import { Card } from "../components/Widgets/Card";
 import { Input } from "../components/Widgets/Input";
@@ -78,6 +79,38 @@ export default function TeamSchedules() {
         return Array.isArray(res) ? res : (res?.data || []);
     });
 
+    const [visibleRange, setVisibleRange] = createSignal<string[]>([]);
+
+    const [dayCounts, { refetch: refetchDayCounts }] = createResource(visibleRange, async (dates) => {
+        if (dates.length === 0) return {} as Record<string, DayCount>;
+
+        const counts: Record<string, DayCount> = {};
+        for (const date of dates) counts[date] = { pending: 0, confirmed: 0 };
+
+        try {
+            const res = await appointmentsService.getAppointments({
+                businessId: getActiveBizId(),
+                dateFrom: dates[0],
+                dateTo: dates[dates.length - 1]
+            });
+            const list = Array.isArray(res) ? res : (res?.data || []);
+
+            for (const appt of list) {
+                const day = counts[appt.date];
+                if (!day) continue;
+                if (appt.status === "PENDING") day.pending++;
+                else if (appt.status === "CONFIRMED") day.confirmed++;
+            }
+        }
+
+        return counts;
+    });
+
+    const refreshSchedules = () => {
+        refetchAppointments();
+        refetchDayCounts();
+    };
+
     const appointments = createMemo<Appointment[]>(() =>
         (rawAppointments() || []).map((a: any) => ({
             id: a.id,
@@ -148,7 +181,7 @@ export default function TeamSchedules() {
         }
         try {
             await appointmentsService.updateStatus(id, status);
-            refetchAppointments();
+            refreshSchedules();
             toast.success(t().teamSchedule.statusUpdated.approved);
         } catch (err: any) {
             toast.error(err.message || t().teamSchedule.statusUpdated.error);
@@ -158,7 +191,7 @@ export default function TeamSchedules() {
     const executeRefuseAppointment = async (id: string) => {
         try {
             await appointmentsService.updateStatus(id, "CANCELLED");
-            refetchAppointments();
+            refreshSchedules();
             toast.success(t().teamSchedule.statusUpdated.rejected);
         } catch (err: any) {
             toast.error(err.message || t().teamSchedule.statusUpdated.refuseError);
@@ -171,7 +204,7 @@ export default function TeamSchedules() {
     const executeMarkNoShow = async (id: string) => {
         try {
             await appointmentsService.markNoShow(id);
-            refetchAppointments();
+            refreshSchedules();
             toast.success(t().teamSchedule.noShowModal.markSuccess);
             setIsModalOpen(false);
         } catch (e: any) {
@@ -184,7 +217,7 @@ export default function TeamSchedules() {
     const executeRevertNoShow = async (id: string) => {
         try {
             await appointmentsService.revertNoShow(id);
-            refetchAppointments();
+            refreshSchedules();
             toast.success(t().teamSchedule.noShowModal.revertSuccess);
             setIsModalOpen(false);
         } catch (e: any) {
@@ -237,7 +270,7 @@ export default function TeamSchedules() {
         }
         try {
             await appointmentsService.cancelJustified(id, cancelReason(), affectsReputation());
-            refetchAppointments();
+            refreshSchedules();
             toast.success(t().teamSchedule.justifiedCancel.success);
             setIsModalOpen(false);
         } catch (e: any) {
@@ -291,7 +324,7 @@ export default function TeamSchedules() {
             });
 
             refetchExceptions();
-            refetchAppointments();
+            refreshSchedules();
             setIsCreateBlockOpen(false);
             setPendingConflictData(null);
             setBlockStart(""); setBlockEnd(""); setBlockReason(""); setBlockProfId("");
@@ -365,22 +398,19 @@ export default function TeamSchedules() {
 
     return (
         <div class="flex flex-col gap-6 w-full max-w-6xl mx-auto p-10 text-foreground bg-background">
-            <header class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <header class="flex flex-col gap-4">
                 <div>
                     <h1 class="text-3xl font-bold">{t().teamSchedule.title}</h1>
                     <p class="text-sm text-muted-foreground mt-1">{t().teamSchedule.subtitle}</p>
                 </div>
-                <div class="flex items-center gap-4">
-                    <Input type="date" value={selectedDate()} onInput={(e) => setSelectedDate(e.currentTarget.value)} class="w-48"/>
-                    <Show when={pendingSchedules().length > 0}>
-                        <Badge variant="warning">
-                            <span class="flex items-center gap-2">
-                                <span class="h-2 w-2 rounded-full bg-warning animate-pulse"></span>
-                                {t().teamSchedule.pendingBadge(pendingSchedules().length)}
-                            </span>
-                        </Badge>
-                    </Show>
-                </div>
+
+                <WeekStrip
+                    selectedDate={selectedDate()}
+                    onSelect={setSelectedDate}
+                    counts={dayCounts()}
+                    onRangeChange={setVisibleRange}
+                    loading={dayCounts.loading}
+                />
             </header>
 
             <Tabs
@@ -743,7 +773,7 @@ export default function TeamSchedules() {
                     serviceId={proposalTarget().service?.id}
                     serviceName={proposalTarget().service?.name || t().teamSchedule.defaultService}
                     durationMinutes={proposalTarget().service?.durationMinutes || 60}
-                    onSuccess={refetchAppointments}
+                    onSuccess={refreshSchedules}
                     onClose={() => setProposalTarget(null)}
                 />
             </Show>
