@@ -2,7 +2,6 @@ import { createSignal, createResource, For, Show } from "solid-js";
 import { Portal } from "solid-js/web";
 import { Card } from "../components/Widgets/Card";
 import { Button } from "../components/Widgets/Button";
-import { Badge } from "../components/Widgets/Badge";
 import { Switch } from "../components/Widgets/Switch";
 import { Tabs } from "../components/Widgets/Tabs";
 import { Input } from "../components/Widgets/Input";
@@ -13,7 +12,8 @@ import { activeBusiness } from "../store/appState";
 import { toast } from "../store/toastStore";
 
 import { PlusIcon, EditIcon, TrashIcon, ClockIcon, BriefcaseIcon } from "../components/Icons/Icons";
-import {ToastContainer} from "../components/Widgets/Toast";
+import { ToastContainer } from "../components/Widgets/Toast";
+import { CombosTab } from "../components/Layout/ComboTab";
 
 export default function CatalogPage() {
     const [activeTab, setActiveTab] = createSignal("servicos");
@@ -37,8 +37,7 @@ export default function CatalogPage() {
         return list.filter((item: any) => {
             const matchesSearch = item.name.toLowerCase().includes(search().toLowerCase());
             const matchesFilter = filter() === "Todos" || item.category === filter();
-            const matchesTab = activeTab() === "servicos" ? !item.isCombo : item.isCombo;
-            return matchesSearch && matchesFilter && matchesTab;
+            return matchesSearch && matchesFilter;
         });
     };
 
@@ -108,12 +107,15 @@ export default function CatalogPage() {
                         Gerenciando: <span class="font-medium text-foreground">{activeBusiness()?.name || "Carregando..."}</span>
                     </p>
                 </div>
-                <Button variant="primary" disabled={!businessId()} onClick={openAddModal}>
-                    <div class="flex items-center gap-2">
-                        <PlusIcon />
-                        <span>Novo Serviço</span>
-                    </div>
-                </Button>
+
+                <Show when={activeTab() === "servicos"}>
+                    <Button variant="primary" disabled={!businessId()} onClick={openAddModal}>
+                        <div class="flex items-center gap-2">
+                            <PlusIcon />
+                            <span>Novo Serviço</span>
+                        </div>
+                    </Button>
+                </Show>
             </header>
 
             {/* --- RESUMO --- */}
@@ -141,102 +143,124 @@ export default function CatalogPage() {
                 </Card>
             </div>
 
-            {/* --- CONTROLES E FILTROS --- */}
-            <div class="flex flex-col gap-6">
-                <Tabs
-                    activeValue={activeTab()}
-                    onChange={(val) => setActiveTab(val)}
-                    items={[
-                        { label: "Serviços Individuais", value: "servicos" },
-                        { label: "Combos / Pacotes", value: "combos" }
-                    ]}
-                />
+            {/* --- ABAS --- */}
+            <Tabs
+                activeValue={activeTab()}
+                onChange={(val) => setActiveTab(val)}
+                items={[
+                    { label: "Serviços Individuais", value: "servicos" },
+                    { label: "Combos / Pacotes", value: "combos" }
+                ]}
+            />
 
-                <div class="flex flex-col sm:flex-row gap-4 items-center justify-between">
-                    <div class="flex gap-2 overflow-x-auto w-full sm:w-auto no-scrollbar pb-1">
-                        <For each={categories}>
-                            {(cat) => (
-                                <Button
-                                    variant={filter() === cat ? "primary" : "outline"}
-                                    size="sm"
-                                    onClick={() => setFilter(cat)}
-                                >
-                                    {cat}
-                                </Button>
-                            )}
-                        </For>
-                    </div>
-
-                    <div class="w-full sm:w-72">
-                        <Input
-                            searchIcon
-                            placeholder="Buscar serviço..."
-                            value={search()}
-                            onInput={(e) => setSearch(e.currentTarget.value)}
+            <Show
+                when={activeTab() === "servicos"}
+                fallback={
+                    <Show
+                        when={businessId()}
+                        fallback={
+                            <Card>
+                                <div class="p-8 text-center text-muted-foreground">
+                                    Selecione uma empresa para gerenciar os combos.
+                                </div>
+                            </Card>
+                        }
+                    >
+                        <CombosTab
+                            businessId={businessId() as string}
+                            services={(services() ?? []) as any}
                         />
-                    </div>
-                </div>
-            </div>
-
-            {/* --- LISTA DE CATÁLOGO --- */}
-            <Card>
-                <div class="flex flex-col">
-                    <div class="px-6 py-4 bg-muted/30 border-b border-border flex justify-between items-center">
-                        <span class="text-xs font-bold uppercase tracking-widest text-muted-foreground">
-                            {filteredServices().length} Serviços Encontrados
-                        </span>
-                    </div>
-
-                    <Show when={!services.loading} fallback={<div class="p-8 text-center text-muted-foreground animate-pulse">Sincronizando com o banco de dados...</div>}>
-                        <Show when={filteredServices().length > 0} fallback={<div class="p-8 text-center text-muted-foreground">Nenhum serviço encontrado.</div>}>
-                            <div class="flex flex-col divide-y divide-border">
-                                <For each={filteredServices()}>
-                                    {(item) => (
-                                        <div class="p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 transition-colors hover:bg-muted/10">
-
-                                            <div class="flex flex-col gap-2">
-                                                <div class="flex items-center gap-3">
-                                                    <span class="font-bold text-base text-foreground">{item.name}</span>
-                                                </div>
-                                                <div class="flex items-center gap-4 text-sm text-muted-foreground">
-                                                    <span class="flex items-center gap-1.5">
-                                                        <ClockIcon /> {item.durationMinutes} min
-                                                    </span>
-                                                    <Show when={item.cleanupMinutes > 0}>
-                                                        <span class="flex items-center gap-1.5 opacity-70">
-                                                            + {item.cleanupMinutes} min limpeza
-                                                        </span>
-                                                    </Show>
-                                                </div>
-                                            </div>
-
-                                            <div class="flex items-center gap-6 w-full md:w-auto justify-between md:justify-end">
-                                                <span class="font-bold text-lg text-foreground">
-                                                    {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(item.price)}
-                                                </span>
-
-                                                <div class="flex items-center gap-2 border-l border-border pl-6">
-                                                    <div onClick={() => openEditModal(item)}>
-                                                        <IconButton> <EditIcon /> </IconButton>
-                                                    </div>
-
-                                                    <div
-                                                        onClick={() => handleDelete(item.id)}
-                                                        class="text-muted-foreground hover:text-error transition-colors cursor-pointer p-2"
-                                                    >
-                                                        <TrashIcon />
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                        </div>
-                                    )}
-                                </For>
-                            </div>
-                        </Show>
                     </Show>
+                }
+            >
+                <div class="flex flex-col gap-8">
+                    {/* --- CONTROLES E FILTROS --- */}
+                    <div class="flex flex-col sm:flex-row gap-4 items-center justify-between">
+                        <div class="flex gap-2 overflow-x-auto w-full sm:w-auto no-scrollbar pb-1">
+                            <For each={categories}>
+                                {(cat) => (
+                                    <Button
+                                        variant={filter() === cat ? "primary" : "outline"}
+                                        size="sm"
+                                        onClick={() => setFilter(cat)}
+                                    >
+                                        {cat}
+                                    </Button>
+                                )}
+                            </For>
+                        </div>
+
+                        <div class="w-full sm:w-72">
+                            <Input
+                                searchIcon
+                                placeholder="Buscar serviço..."
+                                value={search()}
+                                onInput={(e) => setSearch(e.currentTarget.value)}
+                            />
+                        </div>
+                    </div>
+
+                    {/* --- LISTA DE CATÁLOGO --- */}
+                    <Card>
+                        <div class="flex flex-col">
+                            <div class="px-6 py-4 bg-muted/30 border-b border-border flex justify-between items-center">
+                                <span class="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+                                    {filteredServices().length} Serviços Encontrados
+                                </span>
+                            </div>
+
+                            <Show when={!services.loading} fallback={<div class="p-8 text-center text-muted-foreground animate-pulse">Sincronizando com o banco de dados...</div>}>
+                                <Show when={filteredServices().length > 0} fallback={<div class="p-8 text-center text-muted-foreground">Nenhum serviço encontrado.</div>}>
+                                    <div class="flex flex-col divide-y divide-border">
+                                        <For each={filteredServices()}>
+                                            {(item) => (
+                                                <div class="p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 transition-colors hover:bg-muted/10">
+
+                                                    <div class="flex flex-col gap-2">
+                                                        <div class="flex items-center gap-3">
+                                                            <span class="font-bold text-base text-foreground">{item.name}</span>
+                                                        </div>
+                                                        <div class="flex items-center gap-4 text-sm text-muted-foreground">
+                                                            <span class="flex items-center gap-1.5">
+                                                                <ClockIcon /> {item.durationMinutes} min
+                                                            </span>
+                                                            <Show when={item.cleanupMinutes > 0}>
+                                                                <span class="flex items-center gap-1.5 opacity-70">
+                                                                    + {item.cleanupMinutes} min limpeza
+                                                                </span>
+                                                            </Show>
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="flex items-center gap-6 w-full md:w-auto justify-between md:justify-end">
+                                                        <span class="font-bold text-lg text-foreground">
+                                                            {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(item.price)}
+                                                        </span>
+
+                                                        <div class="flex items-center gap-2 border-l border-border pl-6">
+                                                            <div onClick={() => openEditModal(item)}>
+                                                                <IconButton> <EditIcon /> </IconButton>
+                                                            </div>
+
+                                                            <div
+                                                                onClick={() => handleDelete(item.id)}
+                                                                class="text-muted-foreground hover:text-error transition-colors cursor-pointer p-2"
+                                                            >
+                                                                <TrashIcon />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                </div>
+                                            )}
+                                        </For>
+                                    </div>
+                                </Show>
+                            </Show>
+                        </div>
+                    </Card>
                 </div>
-            </Card>
+            </Show>
 
             {/* --- MODAL (CREATE / UPDATE) --- */}
             <Show when={isModalOpen()}>
