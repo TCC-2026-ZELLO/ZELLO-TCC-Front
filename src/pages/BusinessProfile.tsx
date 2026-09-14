@@ -214,8 +214,8 @@ export default function EstablishmentProfile() {
                             <div class="flex flex-wrap items-center justify-center sm:justify-start gap-4 mt-3 text-sm">
                                 <div class="flex items-center gap-1 font-semibold text-foreground">
                                     <span class="text-yellow-500"><StarIcon class="size-5"/></span>
-                                    {business()?.rating || "4.9"}
-                                    <span class="text-muted-foreground font-normal ml-1">(Avaliações)</span>
+                                    {business()?.averageRating != null ? Number(business()?.averageRating).toFixed(1) : "5.0"}
+                                    <span class="text-muted-foreground font-normal ml-1">({business()?.reviewCount ?? 0} Avaliações)</span>
                                 </div>
                                 <div class="flex items-center gap-1 text-muted-foreground">
                                     <MapPinIcon class="size-4"/>
@@ -429,6 +429,11 @@ export default function EstablishmentProfile() {
                                         </For>
                                     </Show>
                                 </div>
+                            </Show>
+
+                            {/* TAB: AVALIAÇÕES */}
+                            <Show when={activeTab() === "reviews"}>
+                                <ReviewListWidget businessId={params.id} />
                             </Show>
                         </div>
                     </div>
