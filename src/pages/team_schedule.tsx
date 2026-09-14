@@ -102,6 +102,9 @@ export default function TeamSchedules() {
                 else if (appt.status === "CONFIRMED") day.confirmed++;
             }
         }
+        catch (_e) {
+
+        }
 
         return counts;
     });
