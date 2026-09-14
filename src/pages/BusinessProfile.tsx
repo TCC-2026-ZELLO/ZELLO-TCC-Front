@@ -10,6 +10,8 @@ import {businessService} from "../services/business.service";
 import {availabilityService, BoundsParams} from "../services/availability.service";
 import {appointmentsService} from "../services/appointments.service";
 import {ApiError} from "../services/api";
+import {brl, combosService} from "../services/combos.service";
+import {ComboBookingModal} from "../components/Layout/ComboBookingModal";
 import {ReviewListWidget} from "../components/Widgets/ReviewListWidget";
 import {brl, combosService} from "../services/combos.service";
 import {ComboBookingModal} from "../components/Layout/ComboBookingModal";
