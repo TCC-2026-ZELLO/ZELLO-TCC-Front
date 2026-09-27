@@ -74,6 +74,20 @@ export const ReviewListWidget = (props: ReviewListProps) => {
                                 <p class="text-sm text-foreground leading-relaxed">
                                     "{review.comment}"
                                 </p>
+
+                                {/* RF26 - CA1: resposta destacada logo abaixo do comentário do cliente */}
+                                <Show when={review.responseText}>
+                                    <div class="mt-1 ml-2 pl-4 border-l-2 border-primary/50 flex flex-col gap-1">
+                                        <span class="text-xs font-bold text-primary">
+                                            {review.targetType === 'PROFESSIONAL'
+                                                ? t().reviews.response.fromProfessional
+                                                : t().reviews.response.fromBusiness}
+                                        </span>
+                                        <p class="text-sm text-muted-foreground leading-relaxed">
+                                            {review.responseText}
+                                        </p>
+                                    </div>
+                                </Show>
                             </div>
                         )}
                     </For>

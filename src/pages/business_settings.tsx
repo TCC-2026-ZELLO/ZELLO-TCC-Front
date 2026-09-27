@@ -4,8 +4,10 @@ import { Button } from "../components/Widgets/Button";
 import { Input } from "../components/Widgets/Input";
 import { Switch } from "../components/Widgets/Switch";
 import { Tabs } from "../components/Widgets/Tabs";
-import { getActiveBizId } from "../store/appState";
+import { ReviewManageCard } from "../components/Widgets/ReviewManageCard";
+import { getActiveBizId, t } from "../store/appState";
 import { businessService } from "../services/business.service";
+import { getBusinessReceivedReviews } from "../services/reviews.service";
 import { toast } from "../store/toastStore";
 import { ToastContainer } from "../components/Widgets/Toast";
 import {
@@ -27,6 +29,11 @@ export default function BusinessSettings() {
     const [gallery, { refetch: refetchGallery }] = createResource(
         getActiveBizId,
         businessService.getGallery
+    );
+
+    const [receivedReviews, { refetch: refetchReceivedReviews }] = createResource(
+        getActiveBizId,
+        getBusinessReceivedReviews
     );
 
     const [isPublic, setIsPublic] = createSignal(false);
@@ -129,6 +136,7 @@ export default function BusinessSettings() {
                     items={[
                         { label: "Informações", value: "perfil" },
                         { label: "Galeria de Fotos", value: "gallery" },
+                        { label: t().reviews.response.tabLabel, value: "avaliacoes" },
                     ]}
                 />
 
@@ -210,6 +218,42 @@ export default function BusinessSettings() {
                             </div>
                         </div>
                     </Card>
+                </Show>
+
+                {/* ABA AVALIAÇÕES (RF26) */}
+                <Show when={activeTab() === "avaliacoes"}>
+                    <div class="flex flex-col gap-4 animate-in fade-in slide-in-from-bottom-4">
+                        <header>
+                            <h2 class="text-xl font-bold">{t().reviews.response.tabLabel}</h2>
+                            <p class="text-sm text-muted-foreground">
+                                Responda, edite ou remova as respostas às avaliações recebidas pelo estabelecimento.
+                            </p>
+                        </header>
+
+                        <Show
+                            when={!receivedReviews.loading}
+                            fallback={<p class="text-center text-sm text-muted-foreground py-8">{t().reviews.response.loading}</p>}
+                        >
+                            <Show
+                                when={(receivedReviews() ?? []).length > 0}
+                                fallback={
+                                    <div class="p-8 text-center text-muted-foreground bg-secondary/20 rounded-2xl border border-dashed border-border">
+                                        {t().reviews.response.noReviewsToManage}
+                                    </div>
+                                }
+                            >
+                                <For each={receivedReviews()}>
+                                    {(review) => (
+                                        <ReviewManageCard
+                                            review={review}
+                                            canDelete={true}
+                                            onChanged={() => refetchReceivedReviews()}
+                                        />
+                                    )}
+                                </For>
+                            </Show>
+                        </Show>
+                    </div>
                 </Show>
             </div>
 

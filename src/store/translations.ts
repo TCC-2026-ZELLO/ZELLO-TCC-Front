@@ -369,7 +369,27 @@ export const translations = {
             duplicateError: "Você já avaliou este item.",
             noReviews: "Nenhuma avaliação encontrada.",
             average: "Média de Avaliações",
-            totalReviews: "Total de Avaliações"
+            totalReviews: "Total de Avaliações",
+            response: {
+                tabLabel: "Avaliações",
+                fromProfessional: "Resposta do profissional",
+                fromBusiness: "Resposta do estabelecimento",
+                placeholder: "Escreva uma resposta cordial ao cliente...",
+                reply: "Responder",
+                edit: "Editar resposta",
+                save: "Salvar Resposta",
+                cancel: "Cancelar",
+                delete: "Excluir Resposta",
+                deleteConfirm: "Remover esta resposta? O comentário original do cliente será mantido.",
+                success: "Resposta enviada com sucesso!",
+                updateSuccess: "Resposta atualizada com sucesso!",
+                deleteSuccess: "Resposta removida.",
+                error: "Erro ao enviar a resposta.",
+                empty: "Ainda sem resposta a este comentário.",
+                tooShort: "A resposta deve ter pelo menos 5 caracteres.",
+                loading: "Carregando avaliações recebidas...",
+                noReviewsToManage: "Você ainda não recebeu nenhuma avaliação."
+            }
         }
     },
     EN: {
@@ -741,7 +761,27 @@ export const translations = {
             duplicateError: "You have already reviewed this item.",
             noReviews: "No reviews found.",
             average: "Average Rating",
-            totalReviews: "Total Reviews"
+            totalReviews: "Total Reviews",
+            response: {
+                tabLabel: "Reviews",
+                fromProfessional: "Response from the professional",
+                fromBusiness: "Response from the business",
+                placeholder: "Write a courteous response to the client...",
+                reply: "Reply",
+                edit: "Edit response",
+                save: "Save Response",
+                cancel: "Cancel",
+                delete: "Delete Response",
+                deleteConfirm: "Remove this response? The client's original comment will be kept.",
+                success: "Response sent successfully!",
+                updateSuccess: "Response updated successfully!",
+                deleteSuccess: "Response removed.",
+                error: "Error sending the response.",
+                empty: "No response to this comment yet.",
+                tooShort: "The response must be at least 5 characters long.",
+                loading: "Loading received reviews...",
+                noReviewsToManage: "You haven't received any reviews yet."
+            }
         }
     }
 } as const;
