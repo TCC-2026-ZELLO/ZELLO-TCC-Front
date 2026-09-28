@@ -5,9 +5,11 @@ import { Input } from "../components/Widgets/Input";
 import { Switch } from "../components/Widgets/Switch";
 import { Tabs } from "../components/Widgets/Tabs";
 import { Modal } from "../components/Widgets/Modal";
-import { getProId } from "../store/appState";
+import { ReviewManageCard } from "../components/Widgets/ReviewManageCard";
+import { getProId, t } from "../store/appState";
 import { toast } from "../store/toastStore";
 import { professionalService } from "../services/professional.service";
+import { getMyReceivedReviews } from "../services/reviews.service";
 import {
     SaveIcon, CameraIcon, TrashIcon, PlusIcon, RibbonIcon, EditIcon
 } from "../components/Icons/Icons";
@@ -140,6 +142,10 @@ export default function ProfessionalSettings() {
     const [qualifications, { refetch: refetchQualifications }] = createResource(
         getProId,
         professionalService.getQualifications
+    );
+    const [receivedReviews, { refetch: refetchReceivedReviews }] = createResource(
+        getProId,
+        getMyReceivedReviews
     );
 
     // ── Estado: Perfil ────────────────────────────────────────────────────────
@@ -407,6 +413,7 @@ export default function ProfessionalSettings() {
                     { label: "Perfil",        value: "perfil"       },
                     { label: "Portfólio",     value: "portfolio"    },
                     { label: "Certificações", value: "certificados" },
+                    { label: t().reviews.response.tabLabel, value: "avaliacoes" },
                 ]}
             />
 
@@ -605,6 +612,42 @@ export default function ProfessionalSettings() {
                             </Show>
                         </Show>
                     </Card>
+                </div>
+            </Show>
+
+            {/* ── ABA AVALIAÇÕES (RF26) ────────────────────────────────────── */}
+            <Show when={activeTab() === "avaliacoes"}>
+                <div class="flex flex-col gap-4 animate-in fade-in slide-in-from-bottom-4">
+                    <header>
+                        <h2 class="text-xl font-bold">{t().reviews.response.tabLabel}</h2>
+                        <p class="text-sm text-muted-foreground">
+                            Responda aos comentários dos seus clientes para gerir sua reputação.
+                        </p>
+                    </header>
+
+                    <Show
+                        when={!receivedReviews.loading}
+                        fallback={<p class="text-center text-sm text-muted-foreground py-8">{t().reviews.response.loading}</p>}
+                    >
+                        <Show
+                            when={(receivedReviews() ?? []).length > 0}
+                            fallback={
+                                <div class="p-8 text-center text-muted-foreground bg-secondary/20 rounded-2xl border border-dashed border-border">
+                                    {t().reviews.response.noReviewsToManage}
+                                </div>
+                            }
+                        >
+                            <For each={receivedReviews()}>
+                                {(review) => (
+                                    <ReviewManageCard
+                                        review={review}
+                                        canDelete={false}
+                                        onChanged={() => refetchReceivedReviews()}
+                                    />
+                                )}
+                            </For>
+                        </Show>
+                    </Show>
                 </div>
             </Show>
 
