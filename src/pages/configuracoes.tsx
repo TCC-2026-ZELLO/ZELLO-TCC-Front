@@ -36,12 +36,38 @@ export default function Settings() {
   const [loadingSecurity, setLoadingSecurity] = createSignal(false);
   const [feedbackSecurity, setFeedbackSecurity] = createSignal({ type: "", message: "" });
 
+  const [wantsEmail, setWantsEmail] = createSignal(currentUser()?.wantsEmailReminders ?? true);
+  const [wantsWhatsapp, setWantsWhatsapp] = createSignal(currentUser()?.wantsWhatsappReminders ?? true);
+  const [loadingReminders, setLoadingReminders] = createSignal(false);
+  const [feedbackReminders, setFeedbackReminders] = createSignal({ type: "", message: "" });
+
   const [loadingProfile, setLoadingProfile] = createSignal<string | null>(null);
 
   const hasRole = (role: string) => currentUser()?.roles?.includes(role);
 
   const isStrongPassword = (v: string) => {
     return v.length >= 8 && /(?=.*\d)(?=.*\W+)(?![.\n])(?=.*[A-Z])(?=.*[a-z]).*$/.test(v);
+  };
+
+  const handleSaveReminders = async () => {
+    const user = currentUser();
+    if (!user) return;
+    setLoadingReminders(true);
+    setFeedbackReminders({ type: "", message: "" });
+    try {
+      await http.patch(`/users/${user.id}`, {
+        wantsEmailReminders: wantsEmail(),
+        wantsWhatsappReminders: wantsWhatsapp()
+      });
+      setCurrentUser({ ...user, wantsEmailReminders: wantsEmail(), wantsWhatsappReminders: wantsWhatsapp() });
+      localStorage.setItem("user", JSON.stringify({ ...user, wantsEmailReminders: wantsEmail(), wantsWhatsappReminders: wantsWhatsapp() }));
+      setFeedbackReminders({ type: "success", message: "Preferências de lembretes atualizadas." });
+    } catch (e: any) {
+      setFeedbackReminders({ type: "error", message: e.response?.data?.message || "Erro ao salvar lembretes." });
+    } finally {
+      setLoadingReminders(false);
+      setTimeout(() => setFeedbackReminders({ type: "", message: "" }), 3000);
+    }
   };
 
   const handleSaveBasicData = async () => {
@@ -209,7 +235,7 @@ export default function Settings() {
                 <Switch checked={theme() === "dark"} onChange={() => toggleTheme()} />
               </div>
 
-              <div class="flex items-center justify-between">
+              <div class="flex items-center justify-between border-b border-border pb-6 mb-6">
                 <div class="flex items-center gap-4">
                   <div class="flex size-10 items-center justify-center rounded-lg bg-secondary text-secondary-foreground"><GlobeIcon /></div>
                   <div class="flex flex-col"><span class="font-medium text-foreground">Idioma</span><span class="text-sm text-muted-foreground">Selecione a linguagem da interface.</span></div>
@@ -219,6 +245,33 @@ export default function Settings() {
                   <button class={`rounded-md px-3 py-1.5 text-sm font-medium transition-all ${idioma() === "EN" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"}`} onClick={() => setIdioma("EN")}>EN</button>
                 </div>
               </div>
+
+              <div class="flex items-center justify-between border-b border-border pb-6 mb-6">
+                <div class="flex items-center gap-4">
+                  <div class="flex size-10 items-center justify-center rounded-lg bg-secondary text-secondary-foreground">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
+                  </div>
+                  <div class="flex flex-col"><span class="font-medium text-foreground">Lembretes por E-mail</span><span class="text-sm text-muted-foreground">Receba avisos 24h e 1h antes do agendamento.</span></div>
+                </div>
+                <Switch checked={wantsEmail()} onChange={() => setWantsEmail(!wantsEmail())} />
+              </div>
+
+              <div class="flex items-center justify-between mb-6">
+                <div class="flex items-center gap-4">
+                  <div class="flex size-10 items-center justify-center rounded-lg bg-secondary text-green-600">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path></svg>
+                  </div>
+                  <div class="flex flex-col"><span class="font-medium text-foreground">Lembretes por WhatsApp</span><span class="text-sm text-muted-foreground">Avisos práticos direto no seu celular.</span></div>
+                </div>
+                <Switch checked={wantsWhatsapp()} onChange={() => setWantsWhatsapp(!wantsWhatsapp())} />
+              </div>
+
+              <Button variant="primary" class="w-fit" onClick={handleSaveReminders} disabled={loadingReminders()}>
+                {loadingReminders() ? "Salvando..." : "Salvar Notificações"}
+              </Button>
+              <Show when={feedbackReminders().message}>
+                <p class={`text-sm mt-2 font-medium ${feedbackReminders().type === "error" ? "text-red-500" : "text-green-500"}`}>{feedbackReminders().message}</p>
+              </Show>
             </Card>
           </section>
 

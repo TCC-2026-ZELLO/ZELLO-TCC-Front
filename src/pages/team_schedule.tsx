@@ -1,4 +1,4 @@
-import { createSignal, createMemo, Show, For, createResource, Suspense } from "solid-js";
+import { createSignal, createMemo, Show, For, createResource, Suspense, onMount } from "solid-js";
 import { Badge } from "../components/Widgets/Badge";
 import { Tabs } from "../components/Widgets/Tabs";
 import { Avatar } from "../components/Widgets/Avatar";
@@ -71,9 +71,6 @@ export default function TeamSchedules() {
         }));
     });
 
-    // Guardamos a resposta crua da API: o modal de detalhes precisa de campos
-    // (serviceId, rescheduleCount, proposta pendente, cancelledByRole) que não
-    // cabem no tipo Appointment usado pela grade.
     const [rawAppointments, { refetch: refetchAppointments }] = createResource(selectedDate, async (date) => {
         const res = await appointmentsService.getAppointments({ date });
         return Array.isArray(res) ? res : (res?.data || []);
@@ -368,6 +365,26 @@ export default function TeamSchedules() {
     const [inicioAlmoco, setInicioAlmoco] = createSignal("12:00");
     const [fimAlmoco, setFimAlmoco] = createSignal("13:00");
     const [isSavingHours, setIsSavingHours] = createSignal(false);
+    onMount(async () => {
+        const bizId = getActiveBizId();
+        if (bizId) {
+            try {
+                const res = await availabilityService.getOperatingHours(bizId);
+                const hours = res.data || res;
+                if (hours && hours.length > 0) {
+                    const openDays = hours.filter((h: any) => h.isOpen);
+                    if (openDays.length > 0) {
+                        setAbertura(openDays[0].startTime.substring(0, 5));
+                        setFechamento(openDays[0].endTime.substring(0, 5));
+                        setDiasSelecionados(openDays.map((h: any) => h.dayOfWeek));
+                    }
+                }
+            } catch (e) {
+                console.error("Failed to fetch operating hours", e);
+            }
+        }
+    });
+
 
     const toggleDia = (diaId: number) => {
         if (diasSelecionados().includes(diaId)) setDiasSelecionados(diasSelecionados().filter(d => d !== diaId));
@@ -661,6 +678,13 @@ export default function TeamSchedules() {
                                 <Show when={!showCancelJustified()}>
                                     <div class="flex flex-col gap-2 mt-2">
                                         <Show when={appt().status === "CONFIRMED"}>
+                                            <Button
+                                                variant="primary"
+                                                class="w-full bg-emerald-500 hover:bg-emerald-600 border-transparent text-white"
+                                                onClick={() => handleUpdateStatus(appt().id, "COMPLETED")}
+                                            >
+                                                Concluir Atendimento
+                                            </Button>
                                             <Button
                                                 variant="outline"
                                                 class="w-full text-error border-error/30 hover:bg-error/10"

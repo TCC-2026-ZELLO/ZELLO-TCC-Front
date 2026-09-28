@@ -85,6 +85,8 @@ export const availabilityService = {
         return slots;
     },
 
+    getOperatingHours: (businessId: string) => http.get<any[]>(`/availability/operating-hours?businessId=${businessId}`),
+
     saveOperatingHour: (data: { businessId: string; dayOfWeek: number; startTime: string; endTime: string; isOpen: boolean }) =>
         http.post("/availability/operating-hours", data),
 

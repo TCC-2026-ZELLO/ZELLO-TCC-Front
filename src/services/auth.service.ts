@@ -27,6 +27,8 @@ export interface User {
   professional?: { id: string };
   manager?: { id: string };
   provider?: string;
+  wantsEmailReminders?: boolean;
+  wantsWhatsappReminders?: boolean;
 }
 
 export interface RegisterPayload {
