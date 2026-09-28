@@ -30,6 +30,7 @@ import BusinessSettings from "./pages/business_settings";
 import Catalog from "./pages/catalog";
 import Configuracoes from "./pages/configuracoes";
 import Explore from "./pages/explore";
+import LocationSearch from "./pages/LocationSearch";
 import ProfessionalSettings from "./pages/professional_settings";
 import Professionals from "./pages/professionals";
 import TeamSchedule from "./pages/team_schedule";
@@ -58,6 +59,7 @@ render(
             <Route path="/catalog" component={Catalog} />
             <Route path="/configuracoes" component={Configuracoes} />
             <Route path="/explore" component={Explore} />
+            <Route path="/mapa" component={LocationSearch} />
             <Route path="/professional_settings" component={ProfessionalSettings} />
             <Route path="/professionals" component={Professionals} />
             <Route path="/team_schedule" component={TeamSchedule} />

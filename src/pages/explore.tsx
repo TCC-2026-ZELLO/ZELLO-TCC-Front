@@ -83,9 +83,18 @@ export default function Explore() {
         <div class="flex flex-col gap-6 p-4 md:p-8 animate-in fade-in duration-500">
 
             <div class="flex flex-col gap-3">
-                <div>
-                    <h1 class="text-3xl font-bold text-foreground tracking-tight">Descubra Serviços</h1>
-                    <p class="text-sm text-muted-foreground">Encontre os melhores especialistas em beleza e bem-estar.</p>
+                <div class="flex items-start justify-between gap-4">
+                    <div>
+                        <h1 class="text-3xl font-bold text-foreground tracking-tight">Descubra Serviços</h1>
+                        <p class="text-sm text-muted-foreground">Encontre os melhores especialistas em beleza e bem-estar.</p>
+                    </div>
+                    <button
+                        onClick={() => navigate("/mapa")}
+                        class="flex shrink-0 items-center gap-2 rounded-xl border border-border bg-card px-4 py-2.5 text-sm font-semibold text-foreground transition-all hover:bg-secondary"
+                    >
+                        <MapPinIcon class="size-4" />
+                        Ver no mapa
+                    </button>
                 </div>
 
                 <div class="flex bg-secondary/50 p-1.5 rounded-xl w-fit border border-border/50">
