@@ -5,7 +5,11 @@ import solidPlugin from 'vite-plugin-solid';
 import devtools from 'solid-devtools/vite';
 
 export default defineConfig({
-  plugins: [devtools(), solidPlugin(), tailwindcss()],
+  plugins: [
+    ...(process.env.VITEST ? [] : [devtools()]),
+    solidPlugin({ hot: !process.env.VITEST }),
+    tailwindcss(),
+  ],
   server: {
     port: 3000,
   },

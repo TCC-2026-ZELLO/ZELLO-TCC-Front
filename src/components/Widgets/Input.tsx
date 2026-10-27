@@ -81,6 +81,7 @@ export function Input(props: InputProps) {
           type={inputType()}
           data-has-icon={!!local.searchIcon}
           data-invalid={!!currentError()}
+          aria-invalid={!!currentError()}
           onBlur={handleBlur}
           onInput={handleInput}
           {...rest}
@@ -92,6 +93,7 @@ export function Input(props: InputProps) {
             onClick={() => setShowPassword(!showPassword())}
             class="absolute right-3 flex cursor-pointer items-center justify-center border-none bg-transparent p-1 text-muted-foreground transition-colors hover:text-foreground"
             title={showPassword() ? "Ocultar senha" : "Mostrar senha"}
+            aria-label={showPassword() ? "Ocultar senha" : "Mostrar senha"}
           >
             {showPassword() ? <EyeOffIcon /> : <EyeIcon />}
           </button>
@@ -99,7 +101,7 @@ export function Input(props: InputProps) {
       </div>
 
       <Show when={currentError()}>
-        <span class="mt-1 block text-xs text-error">{currentError()}</span>
+        <span role="alert" class="mt-1 block text-xs text-error">{currentError()}</span>
       </Show>
     </label>
   );
