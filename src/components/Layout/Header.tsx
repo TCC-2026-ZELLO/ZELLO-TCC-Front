@@ -10,6 +10,9 @@ export function Header() {
         <header class="h-18 bg-card border-b border-border flex items-center justify-between px-8 transition-all duration-200">
             <div class="flex items-center gap-4">
                 <button
+                    type="button"
+                    aria-label="Alternar menu lateral"
+                    title="Alternar menu lateral"
                     onClick={toggleSidebar}
                     class="bg-transparent border-none cursor-pointer text-foreground hover:opacity-70 transition-opacity"
                 >
@@ -37,7 +40,13 @@ export function Header() {
                     {idioma()}
                 </div>
 
-                <button onClick={toggleTheme} class="bg-transparent border border-border rounded-full w-9 h-9 flex items-center justify-center cursor-pointer text-foreground hover:bg-foreground/5 transition-colors">
+                <button
+                    type="button"
+                    aria-label={theme() === "dark" ? "Ativar tema claro" : "Ativar tema escuro"}
+                    title={theme() === "dark" ? "Ativar tema claro" : "Ativar tema escuro"}
+                    onClick={toggleTheme}
+                    class="bg-transparent border border-border rounded-full w-9 h-9 flex items-center justify-center cursor-pointer text-foreground hover:bg-foreground/5 transition-colors"
+                >
                     {theme() === "dark" ? <SunIcon/> : <MoonIcon/>}
                 </button>
 
@@ -48,7 +57,12 @@ export function Header() {
                     </div>
                 </Show>
 
-                <button class="bg-transparent border-none cursor-pointer text-muted-foreground hover:text-foreground transition-colors relative">
+                <button
+                    type="button"
+                    aria-label="Notificações"
+                    title="Notificações"
+                    class="bg-transparent border-none cursor-pointer text-muted-foreground hover:text-foreground transition-colors relative"
+                >
                     <BellIcon/>
                 </button>
             </div>

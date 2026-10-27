@@ -2,7 +2,11 @@ import { For } from "solid-js";
 
 export function Stepper(props: { steps: string[]; currentStep: number }) {
     return (
-        <div class="flex items-center justify-between w-full max-w-[400px] mx-auto">
+        <div
+            role="list"
+            aria-label="Etapas do progresso"
+            class="flex items-center justify-between w-full max-w-[400px] mx-auto"
+        >
             <For each={props.steps}>
                 {(step, index) => {
                     const stepNum = index() + 1;
@@ -10,7 +14,11 @@ export function Stepper(props: { steps: string[]; currentStep: number }) {
                     const isPast = stepNum < props.currentStep;
 
                     return (
-                        <div class="flex flex-col items-center gap-2 relative flex-1">
+                        <div
+                            role="listitem"
+                            aria-current={isActive ? "step" : undefined}
+                            class="flex flex-col items-center gap-2 relative flex-1"
+                        >
 
                             <div
                                 class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold relative z-10 transition-all duration-150"

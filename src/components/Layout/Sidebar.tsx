@@ -62,6 +62,7 @@ export function Sidebar() {
             </div>
 
             <nav
+                aria-label="Navegação principal"
                 class="flex-1 px-4 flex flex-col gap-3 overflow-y-auto overflow-x-hidden"
                 classList={{ "px-2 items-center": isSidebarCollapsed() }}
             >
@@ -109,19 +110,21 @@ export function Sidebar() {
             </nav>
 
             <div class="p-4" classList={{ "px-2": isSidebarCollapsed() }}>
-                <div
+                <button
+                    type="button"
+                    aria-label={t().sidebar.nav.logout}
                     onClick={handleLogout}
-                    class="flex items-center gap-3 p-3 cursor-pointer transition-colors hover:bg-white/5 rounded-xl hover:text-red-400"
+                    class="w-full bg-transparent border-none flex items-center gap-3 p-3 cursor-pointer transition-colors hover:bg-white/5 rounded-xl hover:text-red-400"
                     classList={{ "justify-center": isSidebarCollapsed() }}
                     style={{ color: isDark() ? "var(--color-muted-foreground)" : "#9CA3AF" }}
                 >
-                    <span class="shrink-0"> <LogoutIcon/> </span>
+                    <span class="shrink-0" aria-hidden="true"> <LogoutIcon/> </span>
                     <Show when={!isSidebarCollapsed()}>
                         <span style={{ "font-size": "var(--font-size-sm)", "font-weight": "var(--font-weight-medium)", "white-space": "nowrap" }}>
                             {t().sidebar.nav.logout}
                         </span>
                     </Show>
-                </div>
+                </button>
             </div>
         </aside>
     );
