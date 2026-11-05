@@ -41,6 +41,9 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
         throw new ApiError("Sessão expirada", 401);
     }
 
+    // 204 No Content (ex.: POST /businesses/:id/views) não tem corpo para parsear.
+    if (response.status === 204) return undefined as T;
+
     const data = await response.json();
     if (!response.ok) throw new ApiError(data.message || "Erro na requisição", response.status, data);
 
