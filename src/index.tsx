@@ -10,6 +10,7 @@ import BusinessSettings from "./pages/business_settings";
 import BusinessProfile from "./pages/BusinessProfile";
 import Catalog from "./pages/catalog";
 import Configuracoes from "./pages/configuracoes";
+import Dashboard from "./pages/dashboard";
 import Explore from "./pages/explore";
 import Home from "./pages/Home";
 import LandingPage from "./pages/LandingPage";
@@ -47,6 +48,12 @@ const GuardedTeamSchedule = () => (
     </ProtectedRoute>
 );
 
+const GuardedDashboard = () => (
+    <ProtectedRoute allowedRoles={["estabelecimento"]}>
+        <Dashboard />
+    </ProtectedRoute>
+);
+
 const GuardedCatalog = () => (
     <ProtectedRoute allowedRoles={["estabelecimento"]}>
         <Catalog />
@@ -81,6 +88,7 @@ render(
                 <Route path="/mapa" component={LocationSearch} />
                 <Route path="/configuracoes" component={Configuracoes} />
 
+                <Route path="/dashboard" component={GuardedDashboard} />
                 <Route path="/professional_settings" component={GuardedProfessionalSettings} />
                 <Route path="/team_schedule" component={GuardedTeamSchedule} />
                 <Route path="/catalog" component={GuardedCatalog} />
