@@ -22,6 +22,7 @@ import {
     SettingsIcon,
     LogoutIcon,
     MapPinIcon,
+    ChartIcon,
 } from "../Icons/Icons";
 import { logout } from "../../services/auth.service";
 
@@ -78,6 +79,7 @@ export function Sidebar() {
                     </Show>
 
                     <Show when={accountRole() === "estabelecimento"}>
+                        <NavItem label={t().sidebar.nav.dashboard} icon={<ChartIcon/>} href="/dashboard" />
                         <NavItem label={t().sidebar.nav.team_schedule} icon={<CalendarIcon/>} href="/team_schedule" />
                         <NavItem label={t().sidebar.nav.catalog} icon={<HeartIcon/>} href="/catalog" />
                         <NavItem label={t().sidebar.nav.professionals} icon={<PlusIcon/>} href="/professionals" />

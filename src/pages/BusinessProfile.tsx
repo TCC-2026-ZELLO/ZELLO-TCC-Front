@@ -1,4 +1,4 @@
-import {createSignal, For, Show, createResource, createEffect, createMemo, onCleanup} from "solid-js";
+import {createSignal, For, Show, createResource, createEffect, createMemo, onCleanup, on} from "solid-js";
 import {useParams, useNavigate} from "@solidjs/router";
 import {Card} from "../components/Widgets/Card";
 import {Button} from "../components/Widgets/Button";
@@ -13,6 +13,8 @@ import {ApiError} from "../services/api";
 import {ReviewListWidget} from "../components/Widgets/ReviewListWidget";
 import {brl, combosService} from "../services/combos.service";
 import {ComboBookingModal} from "../components/Layout/ComboBookingModal";
+import {dashboardService} from "../services/dashboard.service";
+import {isAuthenticated} from "../store/appState";
 
 export default function EstablishmentProfile() {
     const params = useParams();
@@ -38,6 +40,11 @@ export default function EstablishmentProfile() {
         () => params.id,
         (id: string) => combosService.list(id)
     );
+
+    // RF30/CA3 - Registra a visualização da página pública (fire-and-forget, 1x por estabelecimento aberto).
+    createEffect(on(() => params.id, (id) => {
+        if (id && isAuthenticated()) dashboardService.registerBusinessView(id);
+    }));
 
     // Modal state
     const [isModalOpen, setIsModalOpen] = createSignal(false);

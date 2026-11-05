@@ -28,6 +28,7 @@ import Home from "./pages/Home";
 import Agendamentos from "./pages/agendamentos";
 import BusinessSettings from "./pages/business_settings";
 import Catalog from "./pages/catalog";
+import Dashboard from "./pages/dashboard";
 import Configuracoes from "./pages/configuracoes";
 import Explore from "./pages/explore";
 import LocationSearch from "./pages/LocationSearch";
@@ -58,6 +59,7 @@ render(
             <Route path="/business_settings" component={BusinessSettings} />
             <Route path="/catalog" component={Catalog} />
             <Route path="/configuracoes" component={Configuracoes} />
+            <Route path="/dashboard" component={Dashboard} />
             <Route path="/explore" component={Explore} />
             <Route path="/mapa" component={LocationSearch} />
             <Route path="/professional_settings" component={ProfessionalSettings} />
