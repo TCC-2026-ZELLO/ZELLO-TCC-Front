@@ -1,13 +1,15 @@
-import { createSignal, createResource, createMemo, For, Show } from "solid-js";
-import { Modal } from "../Widgets/Modal";
-import { Button } from "../Widgets/Button";
-import { Input } from "../Widgets/Input";
+import { createMemo, createResource, createSignal, For, Show } from "solid-js";
+import { formatTime, localizeDomain, t } from "../../core/i18n";
 import { ApiError } from "../../services/api";
 import {
     brl,
+    type ComboSlotUI,
     combosService,
-    ComboSlotUI,
 } from "../../services/combos.service";
+import { toast } from "../../store/toastStore";
+import { Button } from "../Widgets/Button";
+import { Input } from "../Widgets/Input";
+import { Modal } from "../Widgets/Modal";
 
 interface Props {
     comboId: string;
@@ -27,8 +29,11 @@ export function ComboBookingModal(props: Props) {
     const [combo] = createResource(() => props.comboId, combosService.getById);
 
     const [slots, { refetch }] = createResource(
-        () => (props.isOpen && props.comboId ? { id: props.comboId, date: date() } : null),
-        (params) => combosService.availability(params.id, params.date)
+        () =>
+            props.isOpen && props.comboId
+                ? { id: props.comboId, date: date() }
+                : null,
+        (params) => combosService.availability(params.id, params.date),
     );
 
     const savings = createMemo(() => combo()?.discount ?? 0);
@@ -54,15 +59,21 @@ export function ComboBookingModal(props: Props) {
                     professionalId: a.professionalId,
                 })),
             });
+            toast.success(t().combos.bookingModal.successToast);
             props.onBooked?.();
             props.onClose();
         } catch (err: any) {
             if (err instanceof ApiError && err.status === 409) {
                 setSelected(null);
-                setError("Este horário acabou de ser ocupado. Escolha outro na lista.");
+                setError(t().booking.slotTaken);
                 refetch();
             } else {
-                setError(err.message || "Não foi possível enviar a solicitação.");
+                setError(
+                    localizeDomain.apiError(
+                        err?.message,
+                        t().combos.bookingModal.errorToast,
+                    ),
+                );
             }
         } finally {
             setIsBooking(false);
@@ -70,17 +81,25 @@ export function ComboBookingModal(props: Props) {
     };
 
     return (
-        <Modal isOpen={props.isOpen} onClose={props.onClose} title={combo()?.name ?? "Combo"}>
+        <Modal
+            isOpen={props.isOpen}
+            onClose={props.onClose}
+            title={
+                combo()?.name
+                    ? localizeDomain.serviceName(combo()!.name)
+                    : t().combos.bookingModal.title
+            }
+        >
             <div class="flex flex-col gap-5">
                 <Show when={error()}>
-                    <div class="p-3 bg-error/10 border border-error/20 text-error rounded-md text-sm">
+                    <div class="rounded-md border border-error/25 bg-error/10 p-3 text-sm text-error">
                         {error()}
                     </div>
                 </Show>
 
                 <Show when={combo()}>
-                    <div class="rounded-xl border border-border bg-secondary/20 p-4 flex flex-col gap-3">
-                        <div class="flex items-baseline justify-between">
+                    <div class="flex flex-col gap-3 rounded-xl border border-border bg-secondary/20 p-4">
+                        <div class="flex flex-wrap items-baseline justify-between gap-2">
                             <div class="flex items-baseline gap-3">
                                 <span class="text-2xl font-bold text-foreground">
                                     {brl(combo()!.price)}
@@ -89,83 +108,83 @@ export function ComboBookingModal(props: Props) {
                                     {brl(combo()!.originalPrice)}
                                 </span>
                             </div>
-                            <span class="text-xs font-semibold text-emerald-600 bg-emerald-500/10 px-2 py-1 rounded-full">
-                                Economia de {brl(savings())}
+                            <span class="rounded-full bg-success/15 px-2.5 py-1 text-xs font-semibold text-success">
+                                {t().combos.bookingModal.savingsBadge(brl(savings()))}
                             </span>
                         </div>
 
                         <div class="flex flex-col gap-2">
+                            <span class="text-xs font-bold uppercase text-muted-foreground">
+                                {t().combos.bookingModal.includedServices}
+                            </span>
                             <For each={combo()!.stages}>
                                 {(stage) => (
                                     <div class="flex flex-col gap-1">
                                         <For each={stage.services}>
                                             {(svc) => (
-                                                <div class="flex items-center justify-between text-sm">
-                                                    <span class="text-foreground">{svc.name}</span>
+                                                <div class="flex items-center justify-between gap-2 text-sm">
+                                                    <span class="text-foreground">
+                                                        {localizeDomain.serviceName(
+                                                            svc.name,
+                                                        )}
+                                                    </span>
                                                     <span class="text-muted-foreground">
-                                                        {svc.durationMinutes} min · {brl(svc.price)}
+                                                        {svc.durationMinutes}{" "}
+                                                        {t().common.minutesShort} ·{" "}
+                                                        {brl(svc.price)}
                                                     </span>
                                                 </div>
                                             )}
                                         </For>
-                                        <Show when={stage.services.length > 1}>
-                                            <span class="text-xs text-muted-foreground">
-                                                Atendimento simultâneo com profissionais diferentes
-                                            </span>
-                                        </Show>
                                     </div>
                                 )}
                             </For>
                         </div>
-
-                        <span class="text-xs text-muted-foreground">
-                            Duração total: {combo()!.durationMinutes} min
-                        </span>
                     </div>
                 </Show>
 
                 <Input
-                    labelText="Data"
+                    labelText={t().combos.bookingModal.chooseDate}
                     type="date"
                     min={today()}
                     value={date()}
-                    onInput={(e: any) => handleDate(e.target.value)}
+                    onInput={(e) => handleDate(e.currentTarget.value)}
                 />
 
                 <div class="flex flex-col gap-2">
                     <label class="text-sm font-bold text-foreground">
-                        Horários com todos os profissionais livres
+                        {t().combos.bookingModal.availableSlots}
                     </label>
 
                     <Show
                         when={!slots.loading}
                         fallback={
                             <div class="text-sm text-muted-foreground">
-                                Cruzando as agendas da equipe...
+                                {t().combos.bookingModal.loadingSlots}
                             </div>
                         }
                     >
                         <Show
                             when={(slots() ?? []).length > 0}
                             fallback={
-                                <div class="text-sm text-muted-foreground p-4 bg-secondary rounded-md text-center">
-                                    Nesta data a equipe não consegue atender o combo inteiro.
-                                    Tente outro dia.
+                                <div class="rounded-md bg-secondary p-4 text-center text-sm text-muted-foreground">
+                                    {t().combos.bookingModal.noSlots}
                                 </div>
                             }
                         >
-                            <div class="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-40 overflow-y-auto pr-2 custom-scrollbar">
+                            <div class="grid max-h-40 grid-cols-3 gap-2 overflow-y-auto pr-1 sm:grid-cols-4">
                                 <For each={slots()}>
                                     {(slot) => (
                                         <button
-                                            class={`py-2 px-3 text-sm rounded-md border transition-colors ${
+                                            type="button"
+                                            class={`cursor-pointer rounded-md border px-2 py-2 text-sm transition-colors ${
                                                 selected()?.startTime === slot.startTime
-                                                    ? "bg-primary text-primary-foreground border-primary font-bold"
-                                                    : "bg-card text-foreground border-border hover:border-primary/50"
+                                                    ? "border-primary bg-primary font-bold text-primary-foreground"
+                                                    : "border-border bg-card text-foreground hover:border-primary/50"
                                             }`}
                                             onClick={() => setSelected(slot)}
                                         >
-                                            {slot.startTime}
+                                            {formatTime(slot.startTime)}
                                         </button>
                                     )}
                                 </For>
@@ -175,26 +194,26 @@ export function ComboBookingModal(props: Props) {
                 </div>
 
                 <Show when={selected()}>
-                    <div class="rounded-xl border border-border p-4 flex flex-col gap-2">
-                        <span class="text-sm font-bold text-foreground">
-                            Como fica o seu atendimento
-                        </span>
+                    <div class="flex flex-col gap-2 rounded-xl border border-border p-4">
                         <For each={selected()!.assignments}>
                             {(a) => (
-                                <div class="flex items-center justify-between text-sm">
+                                <div class="flex flex-wrap items-center justify-between gap-2 text-sm">
                                     <span class="text-foreground">
-                                        {a.startTime} · {a.serviceName}
+                                        {formatTime(a.startTime)} ·{" "}
+                                        {localizeDomain.serviceName(a.serviceName)}
                                     </span>
-                                    <span class="text-muted-foreground">{a.professionalName}</span>
+                                    <span class="text-muted-foreground">
+                                        {a.professionalName}
+                                    </span>
                                 </div>
                             )}
                         </For>
                     </div>
                 </Show>
 
-                <div class="flex gap-2 pt-4 border-t border-border">
+                <div class="flex gap-2 border-t border-border pt-4">
                     <Button variant="outline" class="flex-1" onClick={props.onClose}>
-                        Voltar
+                        {t().common.back}
                     </Button>
                     <Button
                         variant="primary"
@@ -202,14 +221,11 @@ export function ComboBookingModal(props: Props) {
                         onClick={handleConfirm}
                         disabled={isBooking() || !selected()}
                     >
-                        {isBooking() ? "Enviando..." : "Solicitar combo"}
+                        {isBooking()
+                            ? t().combos.bookingModal.submitting
+                            : t().combos.bookingModal.confirmBooking}
                     </Button>
                 </div>
-
-                <p class="text-xs text-muted-foreground text-center">
-                    O estabelecimento precisa aprovar a solicitação. Você recebe o aviso
-                    assim que houver resposta.
-                </p>
             </div>
         </Modal>
     );

@@ -1,6 +1,11 @@
 import { createSignal, onCleanup } from "solid-js";
+import { t } from "../core/i18n";
 import { geocodingService } from "../services/geocodingService";
-import { searchNearbyServices, setSearchAddressLabel, setEmptyStateReason } from "../store/locationStore";
+import {
+    searchNearbyServices,
+    setEmptyStateReason,
+    setSearchAddressLabel,
+} from "../store/locationStore";
 import { toast } from "../store/toastStore";
 
 const DEBOUNCE_MS = 300;
@@ -12,11 +17,6 @@ export interface UseAddressSearch {
     searchNow: () => void;
 }
 
-/**
- * Campo de busca por endereço/CEP com debounce. A busca de estabelecimentos
- * só é disparada depois que a geocodificação resolve coordenadas — nunca a
- * cada tecla digitada.
- */
 export function useAddressSearch(): UseAddressSearch {
     const [query, setQuery] = createSignal("");
     const [isSearchingAddress, setIsSearchingAddress] = createSignal(false);
@@ -32,14 +32,17 @@ export function useAddressSearch(): UseAddressSearch {
             const result = await geocodingService.searchAddress(trimmedValue);
             if (!result) {
                 setEmptyStateReason("no-results");
-                toast.info("Nenhum endereço encontrado para essa busca.");
+                toast.info(t().location.errAddressNotFound);
                 return;
             }
             setSearchAddressLabel(result.displayName);
-            await searchNearbyServices({ latitude: result.latitude, longitude: result.longitude });
+            await searchNearbyServices({
+                latitude: result.latitude,
+                longitude: result.longitude,
+            });
         } catch {
             setEmptyStateReason("error");
-            toast.error("Erro ao buscar o endereço informado.");
+            toast.error(t().location.errAddressSearch);
         } finally {
             setIsSearchingAddress(false);
         }

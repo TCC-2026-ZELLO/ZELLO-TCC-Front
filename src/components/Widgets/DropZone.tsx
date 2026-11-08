@@ -1,4 +1,5 @@
 import { JSX, splitProps } from "solid-js";
+import { t } from "../../core/i18n";
 
 export function Dropzone(props: JSX.HTMLAttributes<HTMLDivElement>) {
     const [local, rest] = splitProps(props, ["class"]);
@@ -9,9 +10,7 @@ export function Dropzone(props: JSX.HTMLAttributes<HTMLDivElement>) {
             {...rest}
         >
             <div class="text-2xl text-muted-foreground">+</div>
-            <p class="text-sm text-muted-foreground">
-                Arraste ou clique<br/>para adicionar
-            </p>
+            <p class="max-w-[200px] text-sm text-muted-foreground">{t().widgets.dropzone}</p>
         </div>
     );
 }

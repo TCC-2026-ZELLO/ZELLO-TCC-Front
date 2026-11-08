@@ -1,96 +1,94 @@
-import { JSX, createSignal, onMount, Show, createMemo } from "solid-js";
 import { Navigate, useLocation } from "@solidjs/router";
-import {
-  accountRole,
-  isAuthenticated,
-  API,
-  currentUser,
-  isMounted,
-  setAccessToken,
-  setCurrentUser,
-  setAccountRole
-} from "../../store/appState";
+import { createMemo, createSignal, JSX, onMount, Show } from "solid-js";
+import { container } from "../../core/container";
+import type { AccountRole } from "../../core/domain/entities/models";
+import { RoleAccessPolicy } from "../../core/domain/policies/RoleAccessPolicy";
+import { t } from "../../core/i18n";
 import { loadUserContext } from "../../services/auth.service";
+import {
+    accountRole,
+    currentUser,
+    isAuthenticated,
+    isMounted,
+    managedBusinesses,
+    persistAuthSession,
+} from "../../store/appState";
 
 interface ProtectedRouteProps {
-  children: JSX.Element;
-  allowedRoles?: Array<"cliente" | "profissional" | "estabelecimento">;
+    children: JSX.Element;
+    allowedRoles?: readonly AccountRole[];
 }
 
 export function ProtectedRoute(props: ProtectedRouteProps) {
-  const location = useLocation();
+    const location = useLocation();
+    const [isVerifying, setIsVerifying] = createSignal(true);
 
-  const [isVerifying, setIsVerifying] = createSignal(true);
+    onMount(async () => {
+        if (isAuthenticated()) {
+            const user = currentUser();
+            if (user && user.roles.includes("manager") && managedBusinesses().length === 0) {
+                await loadUserContext(user);
+            }
+            setIsVerifying(false);
+            return;
+        }
 
-  onMount(async () => {
-    if (isAuthenticated()) {
-      const user = currentUser();
-      if (user) await loadUserContext(user);
-      setIsVerifying(false);
-      return;
-    }
+        try {
+            const session = await container.authRepo.getCurrentSession();
+            if (session?.user) {
+                persistAuthSession({
+                    user: session.user,
+                    token: "session-cookie-active",
+                    role: RoleAccessPolicy.resolvePrimaryRole(session.user.roles),
+                });
+                await loadUserContext(session.user);
+            }
+        } catch {
+        } finally {
+            setIsVerifying(false);
+        }
+    });
 
-    try {
-      const res = await fetch(`${API}/auth/me`, {
-        credentials: "include"
-      });
+    const canAccess = createMemo(() => {
+        if (!isAuthenticated()) return false;
+        return RoleAccessPolicy.canAccess(accountRole(), props.allowedRoles);
+    });
 
-      if (res.ok) {
-        const data = await res.json();
+    const fallbackRoute = createMemo(
+        () => RoleAccessPolicy.getDescriptor(accountRole()).defaultRoute,
+    );
 
-        setCurrentUser(data.user);
-        setAccessToken("session-cookie-active");
-
-        const role = data.user.roles.includes("manager") ? "estabelecimento" :
-            data.user.roles.includes("professional") ? "profissional" : "cliente";
-        setAccountRole(role);
-
-        await loadUserContext(data.user);
-      }
-    } catch (e) {
-      console.error("[Auth Guard] Session verification failed");
-    } finally {
-      setIsVerifying(false);
-    }
-  });
-
-  const canAccess = createMemo(() => {
-    if (!isAuthenticated()) return false;
-
-    if (props.allowedRoles && !props.allowedRoles.includes(accountRole())) {
-      return false;
-    }
-
-    return true;
-  });
-
-  return (
-      <Show
-          when={isMounted() && !isVerifying()}
-          fallback={
-            <div class="flex h-screen w-full items-center justify-center bg-background">
-              <div class="flex flex-col items-center gap-4">
-                {/* Replace with your actual loading spinner/logo */}
-                <div class="size-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-                <p class="text-sm text-muted-foreground animate-pulse">Verificando acesso...</p>
-              </div>
-            </div>
-          }
-      >
+    return (
         <Show
-            when={canAccess()}
+            when={isMounted() && !isVerifying()}
             fallback={
-              <Show
-                  when={isAuthenticated()}
-                  fallback={<Navigate href={`/login?redirect=${encodeURIComponent(`${location.pathname}${location.search}`)}`} />}
-              >
-                {/* If authenticated but role is wrong, go to explore */}
-                <Navigate href="/explore" />
-              </Show>
+                <div class="flex h-full min-h-[60vh] w-full items-center justify-center bg-background">
+                    <div class="flex flex-col items-center gap-4">
+                        <div class="size-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+                        <p class="animate-pulse text-sm text-muted-foreground">
+                            {t().common.verifyingAccess}
+                        </p>
+                    </div>
+                </div>
             }
         >
-          {props.children}
+            <Show
+                when={canAccess()}
+                fallback={
+                    <Show
+                        when={isAuthenticated()}
+                        fallback={
+                            <Navigate
+                                href={`/login?redirect=${encodeURIComponent(`${location.pathname}${location.search}`)}`}
+                            />
+                        }
+                    >
+                        <Navigate href={fallbackRoute()} />
+                    </Show>
+                }
+            >
+                {props.children}
+            </Show>
         </Show>
-      </Show>
-  );
+    );
 }

@@ -1,12 +1,18 @@
-import { createSignal, createResource, createMemo, For, Show } from "solid-js";
-import { Card } from "../Widgets/Card";
+import { createMemo, createResource, createSignal, For, Show } from "solid-js";
+import {
+    convertMoneyToBrl,
+    formatPercent,
+    localizeDomain,
+    t,
+} from "../../core/i18n";
+import type { CatalogItemUI } from "../../services/catalog.service";
+import { brl, type ComboInput, combosService } from "../../services/combos.service";
+import { toast } from "../../store/toastStore";
+import { PlusIcon, TrashIcon } from "../Icons/Icons";
 import { Button } from "../Widgets/Button";
+import { Card } from "../Widgets/Card";
 import { Input } from "../Widgets/Input";
 import { Modal } from "../Widgets/Modal";
-import { TrashIcon, PlusIcon } from "../Icons/Icons";
-import { toast } from "../../store/toastStore";
-import { brl, combosService, ComboInput } from "../../services/combos.service";
-import { CatalogItemUI } from "../../services/catalog.service";
 
 interface Props {
     businessId: string;
@@ -21,26 +27,31 @@ interface DraftItem {
 export function CombosTab(props: Props) {
     const [combos, { refetch }] = createResource(
         () => props.businessId,
-        (id) => combosService.list(id, true)
+        (id) => combosService.list(id, true),
     );
 
     const [isOpen, setIsOpen] = createSignal(false);
+    const [deleteTargetId, setDeleteTargetId] = createSignal<string | null>(null);
     const [name, setName] = createSignal("");
-    const [price, setPrice] = createSignal(0);
+    const [priceInput, setPriceInput] = createSignal(0);
     const [items, setItems] = createSignal<DraftItem[]>([]);
     const [isSaving, setIsSaving] = createSignal(false);
 
     const serviceById = (id: string) => props.services.find((s) => s.id === id);
 
-    const originalPrice = createMemo(() =>
-        items().reduce((sum, item) => sum + Number(serviceById(item.serviceId)?.price ?? 0), 0)
+    const originalPriceBrl = createMemo(() =>
+        items().reduce(
+            (sum, item) => sum + Number(serviceById(item.serviceId)?.price ?? 0),
+            0,
+        ),
     );
 
-    const discount = createMemo(() => originalPrice() - price());
+    const priceInBrl = createMemo(() => convertMoneyToBrl(priceInput()));
+    const discountBrl = createMemo(() => originalPriceBrl() - priceInBrl());
 
     const openModal = () => {
         setName("");
-        setPrice(0);
+        setPriceInput(0);
         setItems([]);
         setIsOpen(true);
     };
@@ -49,59 +60,66 @@ export function CombosTab(props: Props) {
         setItems((prev) =>
             prev.some((i) => i.serviceId === serviceId)
                 ? prev.filter((i) => i.serviceId !== serviceId)
-                : [...prev, { serviceId, sequence: prev.length }]
+                : [...prev, { serviceId, sequence: prev.length }],
         );
     };
 
     const setSequence = (serviceId: string, sequence: number) => {
         setItems((prev) =>
-            prev.map((i) => (i.serviceId === serviceId ? { ...i, sequence } : i))
+            prev.map((i) => (i.serviceId === serviceId ? { ...i, sequence } : i)),
         );
     };
 
     const canSave = () =>
-        name().trim().length >= 3 && items().length >= 2 && price() > 0 && discount() > 0;
+        name().trim().length >= 3 &&
+        items().length >= 2 &&
+        priceInBrl() > 0 &&
+        discountBrl() > 0;
 
     const handleSave = async () => {
         setIsSaving(true);
         try {
             const payload: ComboInput = {
                 name: name().trim(),
-                price: price(),
+                price: Number(priceInBrl().toFixed(2)),
                 items: items(),
             };
             await combosService.create(props.businessId, payload);
-            toast.success("Combo publicado no catálogo.");
+            toast.success(t().combos.toasts.created);
             setIsOpen(false);
             refetch();
         } catch (e: any) {
-            toast.error(e.message || "Não foi possível salvar o combo.");
+            toast.error(
+                localizeDomain.apiError(e?.message, t().combos.toasts.saveError),
+            );
         } finally {
             setIsSaving(false);
         }
     };
 
-    const handleDelete = async (id: string) => {
-        if (!confirm("Remover este combo do catálogo?")) return;
+    const confirmDelete = async () => {
+        const target = deleteTargetId();
+        if (!target) return;
         try {
-            await combosService.delete(id);
-            toast.success("Combo removido.");
+            await combosService.delete(target);
+            toast.success(t().combos.toasts.deleted);
+            setDeleteTargetId(null);
             refetch();
         } catch {
-            toast.error("Não foi possível remover o combo.");
+            toast.error(t().combos.toasts.deleteError);
         }
     };
 
     return (
         <div class="flex flex-col gap-4">
-            <div class="flex items-center justify-between">
+            <div class="flex flex-wrap items-center justify-between gap-2">
                 <span class="text-xs font-bold uppercase tracking-widest text-muted-foreground">
-                    {combos()?.length ?? 0} combos
+                    {t().combos.countLabel(combos()?.length ?? 0)}
                 </span>
                 <Button variant="primary" size="sm" onClick={openModal}>
                     <div class="flex items-center gap-2">
                         <PlusIcon />
-                        <span>Novo combo</span>
+                        <span>{t().combos.newCombo}</span>
                     </div>
                 </Button>
             </div>
@@ -111,8 +129,7 @@ export function CombosTab(props: Props) {
                 fallback={
                     <Card>
                         <div class="p-8 text-center text-muted-foreground">
-                            Agrupe dois ou mais serviços com um preço promocional para
-                            aumentar o ticket médio.
+                            {t().combos.emptyHint}
                         </div>
                     </Card>
                 }
@@ -120,39 +137,49 @@ export function CombosTab(props: Props) {
                 <div class="flex flex-col gap-3">
                     <For each={combos()}>
                         {(combo) => (
-                            <Card class="p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                            <Card class="flex flex-col justify-between gap-4 p-5 md:flex-row md:items-center">
                                 <div class="flex flex-col gap-1">
-                                    <span class="font-bold text-foreground">{combo.name}</span>
+                                    <span class="font-bold text-foreground">
+                                        {localizeDomain.serviceName(combo.name)}
+                                    </span>
                                     <span class="text-sm text-muted-foreground">
                                         {combo.stages
-                                            .flatMap((s) => s.services.map((svc) => svc.name))
+                                            .flatMap((s) =>
+                                                s.services.map((svc) =>
+                                                    localizeDomain.serviceName(svc.name),
+                                                ),
+                                            )
                                             .join(" + ")}
                                     </span>
                                     <Show when={combo.requiresMultipleProfessionals}>
                                         <span class="text-xs text-muted-foreground">
-                                            Exige profissionais simultâneos · {combo.durationMinutes} min
+                                            {t().combos.simultaneousTag(
+                                                combo.durationMinutes,
+                                            )}
                                         </span>
                                     </Show>
                                 </div>
 
-                                <div class="flex items-center gap-6">
-                                    <div class="flex flex-col items-end">
-                                        <span class="font-bold text-lg text-foreground">
+                                <div class="flex items-center justify-between gap-6 md:justify-end">
+                                    <div class="flex flex-col md:items-end">
+                                        <span class="text-lg font-bold text-foreground">
                                             {brl(combo.price)}
                                         </span>
                                         <span class="text-xs text-muted-foreground line-through">
                                             {brl(combo.originalPrice)}
                                         </span>
-                                        <span class="text-xs text-emerald-600 font-semibold">
-                                            −{combo.discountPercent}%
+                                        <span class="text-xs font-semibold text-success">
+                                            −{formatPercent(combo.discountPercent)}
                                         </span>
                                     </div>
-                                    <div
-                                        onClick={() => handleDelete(combo.id)}
-                                        class="text-muted-foreground hover:text-error transition-colors cursor-pointer p-2"
+                                    <button
+                                        type="button"
+                                        aria-label={t().common.delete}
+                                        onClick={() => setDeleteTargetId(combo.id)}
+                                        class="cursor-pointer rounded-lg p-2 text-muted-foreground transition-colors hover:bg-error/10 hover:text-error"
                                     >
                                         <TrashIcon />
-                                    </div>
+                                    </button>
                                 </div>
                             </Card>
                         )}
@@ -160,93 +187,111 @@ export function CombosTab(props: Props) {
                 </div>
             </Show>
 
-            <Modal isOpen={isOpen()} onClose={() => setIsOpen(false)} title="Novo combo">
+            <Modal
+                isOpen={isOpen()}
+                onClose={() => setIsOpen(false)}
+                title={t().combos.modalTitle}
+            >
                 <div class="flex flex-col gap-5">
                     <Input
-                        labelText="Nome do combo"
-                        placeholder="Ex: Dia da Noiva"
+                        labelText={t().combos.nameLabel}
+                        placeholder={t().combos.namePlaceholder}
                         value={name()}
-                        onInput={(e: any) => setName(e.currentTarget.value)}
+                        onInput={(e) => setName(e.currentTarget.value)}
                     />
 
                     <div class="flex flex-col gap-2">
                         <label class="text-sm font-bold text-foreground">
-                            Serviços incluídos
+                            {t().combos.selectServicesLabel}
                         </label>
-                        <div class="flex flex-col gap-2 max-h-56 overflow-y-auto pr-2 custom-scrollbar">
+                        <div class="flex max-h-56 flex-col gap-2 overflow-y-auto pr-1">
                             <For each={props.services}>
                                 {(svc) => {
-                                    const draft = () => items().find((i) => i.serviceId === svc.id);
+                                    const draft = () =>
+                                        items().find((i) => i.serviceId === svc.id);
                                     return (
-                                        <div class="flex items-center gap-3 p-3 rounded-lg border border-border">
+                                        <div class="flex flex-wrap items-center gap-3 rounded-lg border border-border p-3">
                                             <input
                                                 type="checkbox"
                                                 checked={!!draft()}
                                                 onChange={() => toggleService(svc.id)}
+                                                class="size-4 accent-primary"
                                             />
-                                            <div class="flex flex-col flex-1">
-                                                <span class="text-sm font-medium text-foreground">
-                                                    {svc.name}
+                                            <div class="flex min-w-0 flex-1 flex-col">
+                                                <span class="truncate text-sm font-medium text-foreground">
+                                                    {localizeDomain.serviceName(svc.name)}
                                                 </span>
                                                 <span class="text-xs text-muted-foreground">
-                                                    {svc.durationMinutes} min · {brl(Number(svc.price))}
+                                                    {svc.durationMinutes}{" "}
+                                                    {t().common.minutesShort} ·{" "}
+                                                    {brl(Number(svc.price))}
                                                 </span>
                                             </div>
                                             <Show when={draft()}>
-                                                <label class="text-xs text-muted-foreground flex items-center gap-2">
-                                                    Etapa
-                                                    <input
-                                                        type="number"
-                                                        min="0"
-                                                        class="w-14 h-8 rounded-md border border-input bg-card px-2 text-sm"
-                                                        value={draft()!.sequence}
-                                                        onInput={(e: any) =>
-                                                            setSequence(
-                                                                svc.id,
-                                                                parseInt(e.currentTarget.value) || 0
-                                                            )
-                                                        }
-                                                    />
-                                                </label>
+                                                <select
+                                                    class="h-8 rounded-md border border-border bg-card px-2 text-xs text-foreground"
+                                                    value={draft()!.sequence}
+                                                    onChange={(e) =>
+                                                        setSequence(
+                                                            svc.id,
+                                                            parseInt(
+                                                                e.currentTarget.value,
+                                                                10,
+                                                            ) || 0,
+                                                        )
+                                                    }
+                                                >
+                                                    <For each={[0, 1, 2, 3]}>
+                                                        {(seq) => (
+                                                            <option value={seq}>
+                                                                {t().combos.stageOption(
+                                                                    seq,
+                                                                )}
+                                                            </option>
+                                                        )}
+                                                    </For>
+                                                </select>
                                             </Show>
                                         </div>
                                     );
                                 }}
                             </For>
                         </div>
-                        <p class="text-xs text-muted-foreground">
-                            Serviços na mesma etapa acontecem ao mesmo tempo, com
-                            profissionais diferentes. Etapas maiores entram na sequência.
-                        </p>
                     </div>
 
                     <Input
-                        labelText="Valor promocional (R$)"
+                        labelText={t().combos.promoPriceLabel(t().common.currency)}
                         type="number"
-                        value={price().toString()}
-                        onInput={(e: any) => setPrice(parseFloat(e.currentTarget.value) || 0)}
+                        value={priceInput().toString()}
+                        onInput={(e) =>
+                            setPriceInput(parseFloat(e.currentTarget.value) || 0)
+                        }
                     />
 
-                    <div class="rounded-lg bg-secondary/30 p-3 flex items-center justify-between text-sm">
+                    <div class="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-secondary/30 p-3 text-sm">
                         <span class="text-muted-foreground">
-                            Soma dos serviços: {brl(originalPrice())}
+                            {t().combos.originalPriceLabel} {brl(originalPriceBrl())}
                         </span>
                         <span
                             class={
-                                discount() > 0
-                                    ? "font-semibold text-emerald-600"
+                                discountBrl() > 0
+                                    ? "font-semibold text-success"
                                     : "font-semibold text-error"
                             }
                         >
-                            {discount() > 0
-                                ? `Desconto de ${brl(discount())}`
-                                : "O valor precisa ser menor que a soma"}
+                            {discountBrl() > 0
+                                ? `${t().combos.discountLabel} ${brl(discountBrl())}`
+                                : t().combos.discountWarning}
                         </span>
                     </div>
 
-                    <div class="flex gap-2 pt-4 border-t border-border">
-                        <Button variant="outline" class="flex-1" onClick={() => setIsOpen(false)}>
-                            Cancelar
+                    <div class="flex gap-2 border-t border-border pt-4">
+                        <Button
+                            variant="outline"
+                            class="flex-1"
+                            onClick={() => setIsOpen(false)}
+                        >
+                            {t().common.cancel}
                         </Button>
                         <Button
                             variant="primary"
@@ -254,7 +299,30 @@ export function CombosTab(props: Props) {
                             onClick={handleSave}
                             disabled={isSaving() || !canSave()}
                         >
-                            {isSaving() ? "Salvando..." : "Publicar combo"}
+                            {isSaving() ? t().combos.publishing : t().combos.publishCombo}
+                        </Button>
+                    </div>
+                </div>
+            </Modal>
+
+            <Modal
+                isOpen={!!deleteTargetId()}
+                onClose={() => setDeleteTargetId(null)}
+                title={t().combos.deleteTitle}
+            >
+                <div class="flex flex-col gap-4">
+                    <p class="text-sm text-muted-foreground">
+                        {t().combos.deleteConfirm}
+                    </p>
+                    <div class="flex justify-end gap-2">
+                        <Button
+                            variant="outline"
+                            onClick={() => setDeleteTargetId(null)}
+                        >
+                            {t().common.cancel}
+                        </Button>
+                        <Button variant="danger" onClick={confirmDelete}>
+                            {t().common.delete}
                         </Button>
                     </div>
                 </div>

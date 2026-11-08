@@ -1,21 +1,17 @@
-import { Show } from "solid-js";
 import { useNavigate } from "@solidjs/router";
-import { Modal } from "../Widgets/Modal";
-import { Rating } from "../Widgets/Rating";
+import { Show } from "solid-js";
+import { formatDistance, localizeDomain, t } from "../../core/i18n";
+import type { ServiceLocation } from "../../types/location";
 import { Badge } from "../Widgets/Badge";
 import { Button } from "../Widgets/Button";
-import type { ServiceLocation } from "../../types/location";
+import { Modal } from "../Widgets/Modal";
+import { Rating } from "../Widgets/Rating";
 
 export interface ServicePreviewModalProps {
     service: ServiceLocation | null;
     onClose: () => void;
 }
 
-/**
- * Modal de pré-visualização aberto ao clicar num pin/resultado. O link para
- * o perfil completo usa a rota real do projeto (`/business_profile/:id`) —
- * o mockup da RF13 citava `/profiles/{id}`, que não existe nesta base.
- */
 export function ServicePreviewModal(props: ServicePreviewModalProps) {
     const navigate = useNavigate();
 
@@ -27,18 +23,32 @@ export function ServicePreviewModal(props: ServicePreviewModalProps) {
     return (
         <Show when={props.service}>
             {(service) => (
-                <Modal isOpen={props.service !== null} onClose={props.onClose} title={service().name} size="md">
+                <Modal
+                    isOpen={props.service !== null}
+                    onClose={props.onClose}
+                    title={service().name}
+                    size="md"
+                >
                     <div class="flex flex-col gap-4">
                         <div class="flex items-center justify-between">
                             <Rating value={service().rating} />
-                            <Badge>{service().category}</Badge>
+                            <Badge>
+                                {localizeDomain.category(service().category)}
+                            </Badge>
                         </div>
-                        <p class="text-sm text-muted-foreground">{service().services}</p>
-                        <p class="text-xs font-medium text-muted-foreground">
-                            A {service().distanceKm.toFixed(1)} km da localização buscada
+                        <p class="text-sm text-muted-foreground">
+                            {localizeDomain.serviceList(service().services)}
                         </p>
-                        <Button onClick={() => goToFullProfile(service())} class="w-full justify-center">
-                            Ver perfil completo
+                        <p class="text-xs font-medium text-muted-foreground">
+                            {t().location.distanceAway(
+                                formatDistance(service().distanceKm),
+                            )}
+                        </p>
+                        <Button
+                            onClick={() => goToFullProfile(service())}
+                            class="w-full justify-center"
+                        >
+                            {t().location.viewFullProfile}
                         </Button>
                     </div>
                 </Modal>

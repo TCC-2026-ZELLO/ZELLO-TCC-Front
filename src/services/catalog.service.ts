@@ -1,4 +1,5 @@
-import { http } from "./api";
+import { container } from "../core/container";
+import type { ServiceCatalogItem } from "../core/domain/entities/models";
 
 export interface CatalogItemUI {
     id?: string;
@@ -10,33 +11,19 @@ export interface CatalogItemUI {
     active?: boolean;
 }
 
-export interface CatalogItemPayload {
-    name: string;
-    price: number;
-    durationMinutes: number;
-    cleanupMinutes: number;
-}
-
-const sanitizePayload = (data: CatalogItemUI): CatalogItemPayload => ({
-    name: data.name,
-    price: data.price as number,
-    durationMinutes: data.durationMinutes,
-    cleanupMinutes: data.cleanupMinutes || 0
-});
-
 export const catalogService = {
-    list: (businessId: string) =>
-        http.get<any[]>(`/catalog/business/${businessId}`),
+    list: (businessId: string): Promise<ServiceCatalogItem[]> =>
+        container.catalogRepo.listByBusiness(businessId),
 
     create: (businessId: string, data: CatalogItemUI) =>
-        http.post(`/catalog/business/${businessId}`, sanitizePayload(data)),
+        container.catalogRepo.create(businessId, {
+            ...data,
+            active: data.active ?? true,
+        }),
 
-    update: (id: string, data: CatalogItemUI) =>
-        http.patch(`/catalog/${id}`, sanitizePayload(data)),
+    update: (id: string, data: CatalogItemUI) => container.catalogRepo.update(id, data),
 
-    toggleStatus: (id: string, active: boolean) =>
-        console.warn("Backend não suporta toggle de status ainda."),
+    toggleStatus: (_id: string, _active: boolean) => {},
 
-    delete: (id: string) =>
-        http.delete(`/catalog/${id}`)
+    delete: (id: string) => container.catalogRepo.delete(id),
 };

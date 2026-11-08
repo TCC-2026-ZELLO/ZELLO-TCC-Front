@@ -1,6 +1,9 @@
-import { http } from "./api";
+import { container } from "../core/container";
+import { MAX_RESCHEDULES } from "../core/domain/policies/AppointmentPolicy";
+import type { ListAppointmentsQuery } from "../core/domain/ports";
 import { getActiveBizId } from "../store/appState";
-export const MAX_RESCHEDULES = 2;
+
+export { MAX_RESCHEDULES };
 
 export interface CreateAppointmentDto {
     professionalId?: string;
@@ -16,73 +19,41 @@ export interface RescheduleAppointmentDto {
 }
 
 export const appointmentsService = {
-    create: async (data: CreateAppointmentDto) => {
-        const res = await http.post<any>("/appointments", data);
-        return res.data || res;
+    create: (data: CreateAppointmentDto) => container.appointmentRepo.create(data),
+
+    getMyAppointments: () => container.appointmentRepo.getMyAppointments(),
+
+    cancel: (id: string) => container.appointmentRepo.cancel(id),
+
+    getByBusiness: (businessId: string) => container.appointmentRepo.getByBusiness(businessId),
+
+    updateStatus: (id: string, status: string) =>
+        container.appointmentRepo.updateStatus(id, status),
+
+    getAppointments: (params: ListAppointmentsQuery = {}) => {
+        const merged: ListAppointmentsQuery = {
+            businessId: getActiveBizId(),
+            ...params,
+        };
+        return container.appointmentRepo.list(merged);
     },
 
-    getMyAppointments: async () => {
-        const res = await http.get<any>("/appointments/me");
-        return res.data || res;
-    },
+    reschedule: (id: string, data: RescheduleAppointmentDto) =>
+        container.appointmentRepo.reschedule(id, data),
 
-    cancel: async (id: string) => {
-        const res = await http.patch<any>(`/appointments/${id}/cancel`, {});
-        return res.data || res;
-    },
+    proposeReschedule: (id: string, data: RescheduleAppointmentDto) =>
+        container.appointmentRepo.proposeReschedule(id, data),
 
-    getByBusiness: async (businessId: string) => {
-        const res = await http.get<any>(`/appointments/business/${businessId}`);
-        return res.data || res;
-    },
+    respondToProposal: (id: string, accept: boolean) =>
+        container.appointmentRepo.respondToProposal(id, accept),
 
-    updateStatus: async (id: string, status: string) => {
-        const res = await http.patch<any>(`/appointments/${id}/status`, { status });
-        return res.data || res;
-    },
+    markNoShow: (id: string) => container.appointmentRepo.markNoShow(id),
 
-    getAppointments: async (params: { date?: string; businessId?: string; professionalId?: string }) => {
-        const baseParams = { businessId: getActiveBizId(), ...params };
+    revertNoShow: (id: string) => container.appointmentRepo.revertNoShow(id),
 
-        const cleanParams = Object.fromEntries(Object.entries(baseParams).filter(([_, v]) => v != null));
-        const query = new URLSearchParams(cleanParams as Record<string, string>).toString();
+    cancelJustified: (id: string, reason: string, affectsReputation: boolean) =>
+        container.appointmentRepo.cancelJustified(id, reason, affectsReputation),
 
-        const res = await http.get<any>(`/appointments?${query}`);
-        return res.data || res;
-    },
-
-    reschedule: async (id: string, data: RescheduleAppointmentDto) => {
-        const res = await http.patch<any>(`/appointments/${id}/reschedule`, data);
-        return res.data || res;
-    },
-
-    proposeReschedule: async (id: string, data: RescheduleAppointmentDto) => {
-        const res = await http.post<any>(`/appointments/${id}/reschedule-proposal`, data);
-        return res.data || res;
-    },
-
-    respondToProposal: async (id: string, accept: boolean) => {
-        const res = await http.patch<any>(`/appointments/${id}/reschedule-proposal`, { accept });
-        return res.data || res;
-    },
-
-    markNoShow: async (id: string) => {
-        const res = await http.patch<any>(`/appointments/${id}/no-show`, {});
-        return res.data || res;
-    },
-
-    revertNoShow: async (id: string) => {
-        const res = await http.patch<any>(`/appointments/${id}/revert-no-show`, {});
-        return res.data || res;
-    },
-
-    cancelJustified: async (id: string, reason: string, affectsReputation: boolean) => {
-        const res = await http.patch<any>(`/appointments/${id}/cancel-justified`, { reason, affectsReputation });
-        return res.data || res;
-    },
-
-    getClientReputation: async (clientId: string) => {
-        const res = await http.get<any>(`/appointments/client/${clientId}/reputation`);
-        return res.data || res;
-    },
+    getClientReputation: (clientId: string) =>
+        container.appointmentRepo.getClientReputation(clientId),
 };

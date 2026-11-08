@@ -1,14 +1,15 @@
 import { createSignal, Show } from "solid-js";
-import { Button } from "./Button";
-import { StarIcon, ReplyIcon, EditIcon, TrashIcon } from "../Icons/Icons";
-import { t } from "../../store/appState";
-import { toast } from "../../store/toastStore";
+import { formatDate, localizeDomain, t } from "../../core/i18n";
 import {
-    Review,
-    respondToReview,
-    updateReviewResponse,
     deleteReviewResponse,
+    respondToReview,
+    type Review,
+    updateReviewResponse,
 } from "../../services/reviews.service";
+import { toast } from "../../store/toastStore";
+import { EditIcon, ReplyIcon, StarIcon, TrashIcon } from "../Icons/Icons";
+import { Button } from "./Button";
+import { Modal } from "./Modal";
 
 interface ReviewManageCardProps {
     review: Review;
@@ -17,13 +18,9 @@ interface ReviewManageCardProps {
     onChanged: () => void;
 }
 
-/**
- * RF26 - Responder aos comentários e avaliações dos clientes.
- * Usado nas telas de gestão (Configurações do Profissional / Empresa) para
- * criar, editar e (quando permitido) excluir a resposta a uma avaliação.
- */
 export const ReviewManageCard = (props: ReviewManageCardProps) => {
     const [isEditing, setIsEditing] = createSignal(false);
+    const [confirmDeleteOpen, setConfirmDeleteOpen] = createSignal(false);
     const [text, setText] = createSignal(props.review.responseText || "");
     const [submitting, setSubmitting] = createSignal(false);
 
@@ -32,7 +29,11 @@ export const ReviewManageCard = (props: ReviewManageCardProps) => {
     const StarRating = (p: { val: number }) => (
         <div class="flex gap-1">
             {[1, 2, 3, 4, 5].map((star) => (
-                <span class={`${p.val >= star ? 'text-amber-400' : 'text-muted-foreground/30'}`}>
+                <span
+                    class={`${
+                        p.val >= star ? "text-amber-400" : "text-muted-foreground/30"
+                    }`}
+                >
                     <StarIcon size={16} fill="currentColor" />
                 </span>
             ))}
@@ -67,65 +68,84 @@ export const ReviewManageCard = (props: ReviewManageCardProps) => {
             setIsEditing(false);
             props.onChanged();
         } catch (e: any) {
-            toast.error(e.message || t().reviews.response.error);
+            toast.error(localizeDomain.apiError(e?.message, t().reviews.response.error));
         } finally {
             setSubmitting(false);
         }
     };
 
-    const handleDelete = async () => {
-        if (!confirm(t().reviews.response.deleteConfirm)) return;
-
+    const handleDeleteConfirmed = async () => {
         setSubmitting(true);
         try {
             await deleteReviewResponse(props.review.id);
             toast.success(t().reviews.response.deleteSuccess);
+            setConfirmDeleteOpen(false);
             props.onChanged();
         } catch (e: any) {
-            toast.error(e.message || t().reviews.response.error);
+            toast.error(localizeDomain.apiError(e?.message, t().reviews.response.error));
         } finally {
             setSubmitting(false);
         }
     };
 
     return (
-        <div class="flex flex-col gap-3 p-5 bg-card border border-border rounded-xl">
-            <div class="flex justify-between items-start">
+        <div class="flex flex-col gap-3 rounded-xl border border-border bg-card p-5">
+            <div class="flex flex-wrap items-start justify-between gap-2">
                 <div class="flex items-center gap-3">
                     <img
-                        src={props.review.client?.photoUrl || `https://ui-avatars.com/api/?name=${props.review.client?.name}&background=random`}
-                        class="w-10 h-10 rounded-full border border-border object-cover"
-                        alt="Foto do cliente"
+                        src={
+                            props.review.client?.photoUrl ||
+                            `https://ui-avatars.com/api/?name=${encodeURIComponent(props.review.client?.name || "Z")}&background=random`
+                        }
+                        class="h-10 w-10 rounded-full border border-border object-cover"
+                        alt={t().widgets.clientPhotoAlt}
                     />
                     <div class="flex flex-col">
-                        <span class="font-bold text-sm text-foreground">{props.review.client?.name}</span>
+                        <span class="text-sm font-bold text-foreground">
+                            {props.review.client?.name}
+                        </span>
                         <span class="text-xs text-muted-foreground">
-                            {new Date(props.review.createdAt).toLocaleDateString()}
+                            {formatDate(props.review.createdAt)}
                         </span>
                     </div>
                 </div>
                 <StarRating val={props.review.rating} />
             </div>
 
-            <p class="text-sm text-foreground leading-relaxed">"{props.review.comment}"</p>
+            <p class="text-sm leading-relaxed text-foreground">"{props.review.comment}"</p>
 
             <Show
                 when={!isEditing()}
                 fallback={
-                    <div class="flex flex-col gap-2 mt-1">
+                    <div class="mt-1 flex flex-col gap-2">
                         <textarea
-                            class="w-full bg-secondary/40 border border-border rounded-lg p-3 text-sm text-foreground resize-none focus:outline-none focus:ring-2 focus:ring-primary/50"
+                            class="w-full resize-none rounded-lg border border-border bg-secondary/40 p-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
                             rows="3"
                             placeholder={t().reviews.response.placeholder}
                             value={text()}
                             onInput={(e) => setText(e.currentTarget.value)}
                         />
-                        <div class="flex gap-2 justify-end">
-                            <Button variant="outline" size="sm" onClick={cancelEditing} disabled={submitting()}>
+                        <div class="flex justify-end gap-2">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={cancelEditing}
+                                disabled={submitting()}
+                            >
                                 {t().reviews.response.cancel}
                             </Button>
-                            <Button variant="primary" size="sm" onClick={submit} disabled={submitting() || text().trim().length < 5}>
-                                <Show when={submitting()} fallback={t().reviews.response.save}>{t().common.wait}</Show>
+                            <Button
+                                variant="primary"
+                                size="sm"
+                                onClick={submit}
+                                disabled={submitting() || text().trim().length < 5}
+                            >
+                                <Show
+                                    when={submitting()}
+                                    fallback={t().reviews.response.save}
+                                >
+                                    {t().common.wait}
+                                </Show>
                             </Button>
                         </div>
                     </div>
@@ -134,32 +154,81 @@ export const ReviewManageCard = (props: ReviewManageCardProps) => {
                 <Show
                     when={hasResponse()}
                     fallback={
-                        <Button variant="outline" size="sm" class="self-start" onClick={startEditing}>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            class="self-start"
+                            onClick={startEditing}
+                        >
                             <ReplyIcon size={16} class="mr-1" /> {t().reviews.response.reply}
                         </Button>
                     }
                 >
-                    <div class="mt-1 ml-2 pl-4 border-l-2 border-primary/50 flex flex-col gap-2">
+                    <div class="mt-1 ml-2 flex flex-col gap-2 border-l-2 border-primary/50 pl-4">
                         <span class="text-xs font-bold text-primary">
-                            {props.review.targetType === 'PROFESSIONAL'
+                            {props.review.targetType === "PROFESSIONAL"
                                 ? t().reviews.response.fromProfessional
                                 : t().reviews.response.fromBusiness}
                         </span>
-                        <p class="text-sm text-muted-foreground leading-relaxed">{props.review.responseText}</p>
+                        <p class="text-sm leading-relaxed text-muted-foreground">
+                            {props.review.responseText}
+                        </p>
 
-                        <div class="flex gap-2 mt-1">
-                            <Button variant="ghost" size="sm" onClick={startEditing} disabled={submitting()}>
-                                <EditIcon size={14} class="mr-1" /> {t().reviews.response.edit}
+                        <div class="mt-1 flex flex-wrap gap-2">
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={startEditing}
+                                disabled={submitting()}
+                            >
+                                <EditIcon size={14} class="mr-1" />{" "}
+                                {t().reviews.response.edit}
                             </Button>
                             <Show when={props.canDelete}>
-                                <Button variant="ghost" size="sm" class="text-error" onClick={handleDelete} disabled={submitting()}>
-                                    <TrashIcon size={14} class="mr-1" /> {t().reviews.response.delete}
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    class="text-error"
+                                    onClick={() => setConfirmDeleteOpen(true)}
+                                    disabled={submitting()}
+                                >
+                                    <TrashIcon size={14} class="mr-1" />{" "}
+                                    {t().reviews.response.delete}
                                 </Button>
                             </Show>
                         </div>
                     </div>
                 </Show>
             </Show>
+
+            <Modal
+                isOpen={confirmDeleteOpen()}
+                onClose={() => setConfirmDeleteOpen(false)}
+                title={t().reviews.response.delete}
+                size="md"
+            >
+                <div class="flex flex-col gap-4">
+                    <p class="text-sm text-muted-foreground">
+                        {t().reviews.response.deleteConfirm}
+                    </p>
+                    <div class="flex justify-end gap-2">
+                        <Button
+                            variant="outline"
+                            onClick={() => setConfirmDeleteOpen(false)}
+                            disabled={submitting()}
+                        >
+                            {t().common.cancel}
+                        </Button>
+                        <Button
+                            variant="danger"
+                            onClick={handleDeleteConfirmed}
+                            disabled={submitting()}
+                        >
+                            {submitting() ? t().common.wait : t().common.delete}
+                        </Button>
+                    </div>
+                </div>
+            </Modal>
         </div>
     );
 };

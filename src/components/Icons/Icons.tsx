@@ -553,3 +553,141 @@ export const XIcon = (props: any) => (
         <line x1="6" y1="6" x2="18" y2="18"></line>
     </svg>
 );
+
+export const ContrastIcon = (props: any) => (
+    <svg
+        width={props.size || 18}
+        height={props.size || 18}
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        {...props}
+    >
+        <circle cx="12" cy="12" r="10"></circle>
+        <path d="M12 18a6 6 0 0 0 0-12v12z" fill="currentColor"></path>
+    </svg>
+);
+
+export const UserIcon = (props: any) => (
+    <svg
+        width={props.size || 20}
+        height={props.size || 20}
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        {...props}
+    >
+        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+        <circle cx="12" cy="7" r="4"></circle>
+    </svg>
+);
+
+export const BuildingIcon = (props: any) => (
+    <svg
+        width={props.size || 20}
+        height={props.size || 20}
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        {...props}
+    >
+        <rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect>
+        <path d="M9 22v-4h6v4"></path>
+        <path d="M8 6h.01"></path>
+        <path d="M16 6h.01"></path>
+        <path d="M12 6h.01"></path>
+        <path d="M12 10h.01"></path>
+        <path d="M12 14h.01"></path>
+        <path d="M16 10h.01"></path>
+        <path d="M16 14h.01"></path>
+        <path d="M8 10h.01"></path>
+        <path d="M8 14h.01"></path>
+    </svg>
+);
+
+export const TargetIcon = (props: any) => (
+    <svg
+        width={props.size || 18}
+        height={props.size || 18}
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        {...props}
+    >
+        <circle cx="12" cy="12" r="10"></circle>
+        <circle cx="12" cy="12" r="6"></circle>
+        <circle cx="12" cy="12" r="2"></circle>
+    </svg>
+);
+
+export const DollarIcon = (props: any) => (
+    <svg
+        width={props.size || 18}
+        height={props.size || 18}
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        {...props}
+    >
+        <line x1="12" y1="1" x2="12" y2="23"></line>
+        <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+    </svg>
+);
+
+export const FlagBrIcon = (props: any) => (
+    <svg
+        width={props.size || 24}
+        height={props.size || 16}
+        viewBox="0 0 24 16"
+        fill="none"
+        {...props}
+    >
+        <rect width="24" height="16" rx="2" fill="#009B3A"></rect>
+        <polygon points="12,2 21,8 12,14 3,8" fill="#FEDF00"></polygon>
+        <circle cx="12" cy="8" r="3.2" fill="#002776"></circle>
+    </svg>
+);
+
+export const FlagUsIcon = (props: any) => (
+    <svg
+        width={props.size || 24}
+        height={props.size || 16}
+        viewBox="0 0 24 16"
+        fill="none"
+        {...props}
+    >
+        <rect width="24" height="16" rx="2" fill="#B22234"></rect>
+        <rect y="2.3" width="24" height="2.3" fill="#FFFFFF"></rect>
+        <rect y="6.9" width="24" height="2.3" fill="#FFFFFF"></rect>
+        <rect y="11.5" width="24" height="2.3" fill="#FFFFFF"></rect>
+        <rect width="10.5" height="9.2" rx="1" fill="#3C3B6E"></rect>
+    </svg>
+);
+
+export const FlagEsIcon = (props: any) => (
+    <svg
+        width={props.size || 24}
+        height={props.size || 16}
+        viewBox="0 0 24 16"
+        fill="none"
+        {...props}
+    >
+        <rect width="24" height="16" rx="2" fill="#AA151B"></rect>
+        <rect y="4" width="24" height="8" fill="#F1BF00"></rect>
+    </svg>
+);

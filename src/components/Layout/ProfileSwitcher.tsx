@@ -1,67 +1,81 @@
-import { Show, For } from "solid-js";
-import { Dropdown } from "../Widgets/Dropdown";
-import { Avatar } from "../Widgets/Avatar";
+import { useNavigate } from "@solidjs/router";
+import { For, Show } from "solid-js";
+import type { AccountRole, BusinessContext } from "../../core/domain/entities/models";
+import { RoleAccessPolicy } from "../../core/domain/policies/RoleAccessPolicy";
+import { t } from "../../core/i18n";
 import {
     accountRole,
-    currentUser,
-    setAccountRole,
-    managedBusinesses,
     activeBusiness,
-    setActiveBusiness
+    closeMobileSidebar,
+    currentUser,
+    managedBusinesses,
+    switchActiveBusiness,
+    switchProfileRole,
 } from "../../store/appState";
+import { Avatar } from "../Widgets/Avatar";
+import { Dropdown } from "../Widgets/Dropdown";
 
 interface ProfileSwitcherProps {
     variant: "sidebar" | "header";
     isCollapsed?: boolean;
 }
 
-export function ProfileSwitcher(props: ProfileSwitcherProps) {
+interface ProfileOption {
+    id: string;
+    roleType: AccountRole;
+    name: string;
+    label: string;
+    colorClass: string;
+    businessContext?: BusinessContext;
+}
 
-    const profileOptions = () => {
+export function ProfileSwitcher(props: ProfileSwitcherProps) {
+    const navigate = useNavigate();
+
+    const profileOptions = (): ProfileOption[] => {
         const user = currentUser();
         if (!user) return [];
 
-        let options: any[] = [];
-
-        options.push({
-            id: "client",
-            roleType: "cliente",
-            name: user.name,
-            label: "Cliente",
-            colorClass: "bg-cliente"
-        });
+        const options: ProfileOption[] = [
+            {
+                id: "client",
+                roleType: "cliente",
+                name: user.name,
+                label: t().profileSwitcher.client,
+                colorClass: "bg-cliente",
+            },
+        ];
 
         if (user.roles.includes("professional")) {
             options.push({
                 id: "professional",
                 roleType: "profissional",
                 name: user.name,
-                label: "Profissional",
-                colorClass: "bg-profissional"
+                label: t().profileSwitcher.professional,
+                colorClass: "bg-profissional",
             });
         }
 
         if (user.roles.includes("manager")) {
             const businesses = managedBusinesses();
-
             if (businesses.length > 0) {
-                businesses.forEach(biz => {
+                for (const biz of businesses) {
                     options.push({
                         id: `manager-${biz.businessId}`,
                         roleType: "estabelecimento",
                         name: biz.name,
-                        label: "Gestor",
+                        label: t().profileSwitcher.manager,
                         colorClass: "bg-gestor",
-                        businessContext: biz
+                        businessContext: biz,
                     });
-                });
+                }
             } else {
                 options.push({
                     id: "manager-empty",
                     roleType: "estabelecimento",
-                    name: "Nenhum estabelecimento",
-                    label: "Gestor",
-                    colorClass: "bg-gestor"
+                    name: t().profileSwitcher.noBusiness,
+                    label: t().profileSwitcher.manager,
+                    colorClass: "bg-gestor",
                 });
             }
         }
@@ -75,117 +89,144 @@ export function ProfileSwitcher(props: ProfileSwitcherProps) {
 
         if (currentRole === "estabelecimento") {
             const targetId = activeBusiness()?.businessId;
-            const match = options.find(p => p.id === `manager-${targetId}`);
+            const match = options.find((p) => p.id === `manager-${targetId}`);
             if (match) return match;
 
-            const firstManager = options.find(p => p.roleType === "estabelecimento");
+            const firstManager = options.find((p) => p.roleType === "estabelecimento");
             if (firstManager) return firstManager;
         }
 
-        return options.find(p => p.roleType === currentRole) || options[0];
+        return options.find((p) => p.roleType === currentRole) || options[0];
     };
 
     const getInitials = (name: string) => {
         const parts = name?.trim().split(" ") || ["U"];
-        if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+        if (parts.length >= 2) {
+            return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+        }
         return parts[0].substring(0, 2).toUpperCase();
     };
 
     const isSidebar = () => props.variant === "sidebar";
 
-    const handleSwitch = (profile: any, closeFn: Function) => {
-        setAccountRole(profile.roleType);
+    const handleSwitch = (profile: ProfileOption, closeFn: () => void) => {
+        const previousRole = accountRole();
         if (profile.roleType === "estabelecimento" && profile.businessContext) {
-            setActiveBusiness(profile.businessContext);
+            switchActiveBusiness(profile.businessContext);
+        } else {
+            switchProfileRole(profile.roleType);
         }
         closeFn();
+        closeMobileSidebar();
+        if (previousRole !== profile.roleType) {
+            navigate(RoleAccessPolicy.getDescriptor(profile.roleType).defaultRoute);
+        }
     };
 
     return (
         <Show when={profileOptions().length > 0}>
-            <Show
-                when={!props.isCollapsed}
-                fallback={
-                    <div class="flex justify-center p-2 rounded-xl bg-white/5 hover:bg-white/10 transition-colors cursor-pointer text-white">
-                        <Avatar size="md" fallbackInitials={getInitials(activeProfile()?.name || "User")}/>
-                    </div>
-                }
-            >
-                <Dropdown
-                    align={isSidebar() ? "left" : "right"}
-                    contentClass={isSidebar() ? "bg-[#1E3250] border border-white/10" : "bg-card border border-border"}
-                    trigger={(isOpen) => (
+            <Dropdown
+                align={isSidebar() ? "left" : "right"}
+                contentClass="bg-card border border-border text-foreground shadow-xl min-w-[220px]"
+                trigger={(isOpen) => (
+                    <div
+                        class={`flex cursor-pointer items-center gap-3 rounded-xl p-2 transition-colors ${
+                            props.isCollapsed ? "md:justify-center" : ""
+                        } ${
+                            isSidebar()
+                                ? "bg-white/8 text-sidebar-foreground hover:bg-white/15"
+                                : "border border-border bg-card text-foreground shadow-sm hover:bg-muted"
+                        }`}
+                    >
+                        <Avatar
+                            size="md"
+                            fallbackInitials={getInitials(
+                                activeProfile()?.name || "User",
+                            )}
+                        />
+
                         <div
-                            class="flex items-center gap-3 p-2 rounded-xl cursor-pointer transition-colors"
-                            classList={{
-                                "bg-white/5 hover:bg-white/10 text-white": isSidebar(),
-                                "bg-card hover:bg-muted text-foreground border border-border shadow-sm": !isSidebar()
-                            }}
+                            class={`flex-1 overflow-hidden whitespace-nowrap ${
+                                props.isCollapsed ? "md:hidden" : ""
+                            }`}
                         >
-                            <Avatar size="md" fallbackInitials={getInitials(activeProfile()?.name || "User")}/>
-
-                            <div class="flex-1 overflow-hidden whitespace-nowrap">
-                                <div class="font-semibold text-sm truncate">{activeProfile()?.name}</div>
-                                <div class="text-xs truncate" classList={{"text-gray-400": isSidebar(), "text-muted-foreground": !isSidebar()}}>
-                                    {activeProfile()?.label}
-                                </div>
+                            <div class="truncate text-sm font-semibold">
+                                {activeProfile()?.name}
                             </div>
-
-                            <svg
-                                class={`shrink-0 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
-                                classList={{"text-gray-400": isSidebar(), "text-muted-foreground": !isSidebar()}}
-                                width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                            >
-                                <polyline points="6 9 12 15 18 9"></polyline>
-                            </svg>
-                        </div>
-                    )}
-                >
-                    {(close) => (
-                        <div class="py-1">
                             <div
-                                class="px-4 py-2 text-[10px] font-bold uppercase mb-1 border-b"
-                                classList={{
-                                    "opacity-50 text-white border-white/10": isSidebar(),
-                                    "text-muted-foreground border-border": !isSidebar()
-                                }}
+                                class={`truncate text-xs ${
+                                    isSidebar()
+                                        ? "text-sidebar-foreground/70"
+                                        : "text-muted-foreground"
+                                }`}
                             >
-                                Meus Perfis
+                                {activeProfile()?.label}
                             </div>
-                            <For each={profileOptions()}>
-                                {(profile) => {
-                                    const isSelected = accountRole() === profile.roleType &&
-                                        (profile.roleType !== "estabelecimento" || activeBusiness()?.businessId === profile.businessContext?.businessId);
+                        </div>
 
-                                    return (
+                        <svg
+                            class={`shrink-0 transition-transform duration-200 ${
+                                isOpen ? "rotate-180" : ""
+                            } ${props.isCollapsed ? "md:hidden" : ""} ${
+                                isSidebar()
+                                    ? "text-sidebar-foreground/70"
+                                    : "text-muted-foreground"
+                            }`}
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                        >
+                            <polyline points="6 9 12 15 18 9" />
+                        </svg>
+                    </div>
+                )}
+            >
+                {(close) => (
+                    <div class="py-1">
+                        <div class="mb-1 border-b border-border px-4 py-2 text-[10px] font-bold uppercase text-muted-foreground">
+                            {t().profileSwitcher.title}
+                        </div>
+                        <For each={profileOptions()}>
+                            {(profile) => {
+                                const isSelected = () =>
+                                    accountRole() === profile.roleType &&
+                                    (profile.roleType !== "estabelecimento" ||
+                                        activeBusiness()?.businessId ===
+                                            profile.businessContext?.businessId);
+
+                                return (
+                                    <button
+                                        type="button"
+                                        onClick={() => handleSwitch(profile, close)}
+                                        class={`flex w-full cursor-pointer items-center gap-3 px-4 py-2.5 text-left transition-colors hover:bg-muted ${
+                                            isSelected() ? "bg-muted/60" : ""
+                                        }`}
+                                    >
                                         <div
-                                            onClick={() => handleSwitch(profile, close)}
-                                            class="px-4 py-3 cursor-pointer transition-colors flex items-center gap-3"
-                                            classList={{
-                                                "hover:bg-white/10 text-white": isSidebar(),
-                                                "bg-white/5": isSidebar() && isSelected,
-                                                "hover:bg-muted text-foreground": !isSidebar(),
-                                                "bg-muted/50": !isSidebar() && isSelected,
-                                            }}
+                                            class={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white ${profile.colorClass}`}
                                         >
-                                            <div class={`w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold text-white ${profile.colorClass}`}>
-                                                {getInitials(profile.name)}
+                                            {getInitials(profile.name)}
+                                        </div>
+                                        <div class="min-w-0 flex-1">
+                                            <div class="truncate text-sm font-medium text-foreground">
+                                                {profile.name}
                                             </div>
-                                            <div>
-                                                <div class="text-sm font-medium">{profile.name}</div>
-                                                <div class="text-xs" classList={{ "text-gray-400": isSidebar(), "text-muted-foreground": !isSidebar() }}>
-                                                    {profile.label}
-                                                </div>
+                                            <div class="truncate text-xs text-muted-foreground">
+                                                {profile.label}
                                             </div>
                                         </div>
-                                    );
-                                }}
-                            </For>
-                        </div>
-                    )}
-                </Dropdown>
-            </Show>
+                                    </button>
+                                );
+                            }}
+                        </For>
+                    </div>
+                )}
+            </Dropdown>
         </Show>
     );
 }

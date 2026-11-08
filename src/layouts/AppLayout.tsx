@@ -1,22 +1,18 @@
-import { JSX } from "solid-js";
-import { Sidebar } from "../components/Layout/Sidebar";
+import { RouteSectionProps } from "@solidjs/router";
 import { Header } from "../components/Layout/Header";
-import { HelpIcon } from "../components/Icons/Icons";
-import {RouteSectionProps} from "@solidjs/router";
 import { ProtectedRoute } from "../components/Layout/ProtectedRoute";
+import { Sidebar } from "../components/Layout/Sidebar";
 import { ToastContainer } from "../components/Widgets/Toast";
 
 export default function AppLayout(props: RouteSectionProps) {
     return (
-        <div style={{ display: "flex", height: "100vh", "background-color": "var(--color-background)", color: "var(--color-foreground)", "font-family": "var(--font-family)" }}>
+        <div class="flex h-dvh w-full overflow-hidden bg-background font-sans text-foreground">
             <Sidebar />
 
-            <div style={{ flex: 1, display: "flex", "flex-direction": "column" }}>
+            <div class="flex min-w-0 flex-1 flex-col overflow-hidden">
                 <Header />
-                <main style={{ flex: 1, "overflow-y": "auto", padding: "var(--space-10)", "background-color": "var(--color-background)", transition: "all 0.2s ease" }}>
-                    <ProtectedRoute>
-                        {props.children}
-                    </ProtectedRoute>
+                <main class="flex-1 overflow-y-auto overflow-x-hidden bg-background p-4 sm:p-6 lg:p-8 transition-colors duration-200">
+                    <ProtectedRoute>{props.children}</ProtectedRoute>
                 </main>
             </div>
 

@@ -1,9 +1,15 @@
-import { createSignal, createResource, For, Show } from "solid-js";
-import { Card } from "../Widgets/Card";
-import { Button } from "../Widgets/Button";
-import { Modal } from "../Widgets/Modal";
-import { toast } from "../../store/toastStore";
+import { createResource, createSignal, For, Show } from "solid-js";
+import {
+    formatDate,
+    formatTime,
+    localizeDomain,
+    t,
+} from "../../core/i18n";
 import { brl, combosService } from "../../services/combos.service";
+import { toast } from "../../store/toastStore";
+import { Button } from "../Widgets/Button";
+import { Card } from "../Widgets/Card";
+import { Modal } from "../Widgets/Modal";
 
 interface Props {
     businessId: string;
@@ -12,7 +18,7 @@ interface Props {
 export function ComboRequestsPanel(props: Props) {
     const [requests, { refetch }] = createResource(
         () => props.businessId,
-        (id) => combosService.queue(id, "PENDING")
+        (id) => combosService.queue(id, "PENDING"),
     );
 
     const [rejecting, setRejecting] = createSignal<any>(null);
@@ -23,12 +29,14 @@ export function ComboRequestsPanel(props: Props) {
         setBusy(true);
         try {
             await combosService.approve(group.id);
-            toast.success("Combo confirmado e agendas bloqueadas.");
+            toast.success(t().combos.requestPanel.approvedToast);
             refetch();
         } catch (e: any) {
             toast.error(
-                e.message ||
-                "Um dos profissionais ficou indisponível. Recuse a solicitação para liberar o cliente."
+                localizeDomain.apiError(
+                    e?.message,
+                    t().combos.requestPanel.actionErrorToast,
+                ),
             );
             refetch();
         } finally {
@@ -37,16 +45,24 @@ export function ComboRequestsPanel(props: Props) {
     };
 
     const handleReject = async () => {
-        if (reason().trim().length < 10) return;
+        if (reason().trim().length < 5) {
+            toast.error(t().combos.requestPanel.reasonMinError);
+            return;
+        }
         setBusy(true);
         try {
             await combosService.reject(rejecting().id, reason().trim());
-            toast.success("Solicitação recusada e cliente notificado.");
+            toast.success(t().combos.requestPanel.rejectedToast);
             setRejecting(null);
             setReason("");
             refetch();
         } catch (e: any) {
-            toast.error(e.message || "Não foi possível recusar a solicitação.");
+            toast.error(
+                localizeDomain.apiError(
+                    e?.message,
+                    t().combos.requestPanel.actionErrorToast,
+                ),
+            );
         } finally {
             setBusy(false);
         }
@@ -55,114 +71,163 @@ export function ComboRequestsPanel(props: Props) {
     return (
         <div class="flex flex-col gap-3">
             <Show
-                when={(requests() ?? []).length > 0}
+                when={!requests.loading}
                 fallback={
                     <Card>
-                        <div class="p-8 text-center text-muted-foreground">
-                            Nenhuma solicitação de combo aguardando resposta.
+                        <div class="p-6 text-center text-sm text-muted-foreground">
+                            {t().combos.requestPanel.loading}
                         </div>
                     </Card>
                 }
             >
-                <For each={requests()}>
-                    {(group: any) => (
-                        <Card class="p-5 flex flex-col gap-4">
-                            <div class="flex items-start justify-between gap-4">
-                                <div class="flex flex-col">
-                                    <span class="font-bold text-foreground">{group.comboName}</span>
-                                    <span class="text-sm text-muted-foreground">
-                                        {group.client?.name} · {group.date} às {group.startTime}
-                                    </span>
-                                </div>
-                                <div class="flex flex-col items-end">
-                                    <span class="font-bold text-foreground">
-                                        {brl(group.finalPrice)}
-                                    </span>
-                                    <span class="text-xs text-muted-foreground line-through">
-                                        {brl(group.originalPrice)}
-                                    </span>
-                                </div>
-                            </div>
-
-                            <div class="flex flex-col gap-1 border-t border-border pt-3">
-                                <For each={group.items}>
-                                    {(item: any) => (
-                                        <div class="flex items-center justify-between text-sm">
-                                            <span class="text-foreground">
-                                                {item.startTime}–{item.endTime} · {item.serviceName}
-                                            </span>
-                                            <span class="text-muted-foreground">
-                                                {item.professionalName}
-                                            </span>
-                                        </div>
-                                    )}
-                                </For>
-                            </div>
-
-                            <div class="flex gap-2">
-                                <Button
-                                    variant="outline"
-                                    class="flex-1"
-                                    disabled={busy()}
-                                    onClick={() => {
-                                        setReason("");
-                                        setRejecting(group);
-                                    }}
-                                >
-                                    Recusar
-                                </Button>
-                                <Button
-                                    variant="primary"
-                                    class="flex-1"
-                                    disabled={busy()}
-                                    onClick={() => handleApprove(group)}
-                                >
-                                    Aprovar combo
-                                </Button>
+                <Show
+                    when={(requests() ?? []).length > 0}
+                    fallback={
+                        <Card>
+                            <div class="p-6 text-center text-sm text-muted-foreground">
+                                {t().combos.requestPanel.empty}
                             </div>
                         </Card>
-                    )}
-                </For>
+                    }
+                >
+                    <For each={requests()}>
+                        {(group: any) => {
+                            const comboTitle = () =>
+                                localizeDomain.serviceName(
+                                    group.comboName || group.combo?.name || "Combo",
+                                );
+                            const clientName = () =>
+                                group.client?.name ||
+                                group.client?.user?.name ||
+                                t().teamSchedule.defaultClient;
+                            const finalPrice = () =>
+                                Number(
+                                    group.finalPrice ??
+                                        group.totalPrice ??
+                                        group.price ??
+                                        group.combo?.price ??
+                                        0,
+                                );
+                            const originalPrice = () =>
+                                Number(group.originalPrice ?? 0);
+                            const stageItems = () =>
+                                group.items || group.appointments || [];
+
+                            return (
+                                <Card class="flex flex-col gap-4 p-5">
+                                    <div class="flex flex-wrap items-start justify-between gap-4">
+                                        <div class="flex flex-col">
+                                            <span class="font-bold text-foreground">
+                                                {comboTitle()}
+                                            </span>
+                                            <span class="text-sm text-muted-foreground">
+                                                {clientName()} ·{" "}
+                                                {formatDate(group.date)} ·{" "}
+                                                {formatTime(group.startTime)}
+                                            </span>
+                                        </div>
+                                        <div class="flex flex-col items-end">
+                                            <span class="font-bold text-foreground">
+                                                {brl(finalPrice())}
+                                            </span>
+                                            <Show when={originalPrice() > 0}>
+                                                <span class="text-xs text-muted-foreground line-through">
+                                                    {brl(originalPrice())}
+                                                </span>
+                                            </Show>
+                                        </div>
+                                    </div>
+
+                                    <Show when={stageItems().length > 0}>
+                                        <div class="flex flex-col gap-1 border-t border-border pt-3">
+                                            <For each={stageItems()}>
+                                                {(item: any) => (
+                                                    <div class="flex flex-wrap items-center justify-between gap-2 text-sm">
+                                                        <span class="text-foreground">
+                                                            {formatTime(item.startTime)}
+                                                            {item.endTime
+                                                                ? `–${formatTime(item.endTime)}`
+                                                                : ""}{" "}
+                                                            ·{" "}
+                                                            {localizeDomain.serviceName(
+                                                                item.serviceName ||
+                                                                    item.service?.name,
+                                                            )}
+                                                        </span>
+                                                        <span class="text-muted-foreground">
+                                                            {item.professionalName ||
+                                                                item.professional?.user
+                                                                    ?.name ||
+                                                                item.professional?.name}
+                                                        </span>
+                                                    </div>
+                                                )}
+                                            </For>
+                                        </div>
+                                    </Show>
+
+                                    <div class="flex flex-col gap-2 sm:flex-row">
+                                        <Button
+                                            variant="outline"
+                                            class="flex-1"
+                                            disabled={busy()}
+                                            onClick={() => {
+                                                setReason("");
+                                                setRejecting(group);
+                                            }}
+                                        >
+                                            {t().combos.requestPanel.reject}
+                                        </Button>
+                                        <Button
+                                            variant="primary"
+                                            class="flex-1"
+                                            disabled={busy()}
+                                            onClick={() => handleApprove(group)}
+                                        >
+                                            {t().combos.requestPanel.approve}
+                                        </Button>
+                                    </div>
+                                </Card>
+                            );
+                        }}
+                    </For>
+                </Show>
             </Show>
 
             <Modal
                 isOpen={!!rejecting()}
                 onClose={() => setRejecting(null)}
-                title="Recusar solicitação"
+                title={t().combos.requestPanel.rejectModalTitle}
             >
                 <div class="flex flex-col gap-4">
-                    <p class="text-sm text-muted-foreground">
-                        A recusa cancela o combo inteiro. O cliente é avisado de que precisa
-                        montar um novo agendamento do início.
-                    </p>
-
-                    <div class="flex flex-col gap-1">
+                    <div class="flex flex-col gap-1.5">
                         <label class="text-sm font-bold text-foreground">
-                            Motivo da recusa
+                            {t().combos.requestPanel.rejectReasonLabel}
                         </label>
                         <textarea
                             rows="3"
-                            class="rounded-md border border-input bg-card text-foreground px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
-                            placeholder="Ex: a manicure ficou indisponível neste horário"
+                            class="rounded-md border border-border bg-card px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary"
+                            placeholder={t().combos.requestPanel.rejectPlaceholder}
                             value={reason()}
                             onInput={(e) => setReason(e.currentTarget.value)}
                         />
-                        <span class="text-xs text-muted-foreground">
-                            Mínimo de 10 caracteres.
-                        </span>
                     </div>
 
-                    <div class="flex gap-2 pt-2 border-t border-border">
-                        <Button variant="outline" class="flex-1" onClick={() => setRejecting(null)}>
-                            Voltar
+                    <div class="flex gap-2 border-t border-border pt-3">
+                        <Button
+                            variant="outline"
+                            class="flex-1"
+                            onClick={() => setRejecting(null)}
+                        >
+                            {t().common.cancel}
                         </Button>
                         <Button
-                            variant="primary"
+                            variant="danger"
                             class="flex-1"
-                            disabled={busy() || reason().trim().length < 10}
+                            disabled={busy() || reason().trim().length < 5}
                             onClick={handleReject}
                         >
-                            Recusar e notificar
+                            {t().combos.requestPanel.confirmReject}
                         </Button>
                     </div>
                 </div>

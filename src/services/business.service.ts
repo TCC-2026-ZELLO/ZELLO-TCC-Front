@@ -1,46 +1,26 @@
-import { http } from "./api";
+import { container } from "../core/container";
 
 export const businessService = {
-    getById: async (id: string) => {
-        const res = await http.get<any>(`/businesses/${id}`);
-        return res.data || res;
-    },
+    getById: (id: string) => container.businessRepo.getById(id),
 
-    getTeam: async (id: string) => {
-        const res = await http.get<any>(`/business-professionals/business/${id}`);
-        return res.data || res;
-    },
+    getTeam: (id: string) => container.businessTeamRepo.listByBusiness(id),
 
-    getCatalog: async (id: string) => {
-        const res = await http.get<any>(`/catalog/business/${id}`);
-        return res.data || res;
-    },
+    getCatalog: (id: string) => container.catalogRepo.listByBusiness(id),
 
-    getProfile: (id: string) => http.get<any>(`/businesses/${id}`),
+    getProfile: (id: string) => container.businessRepo.getById(id),
 
-    getGallery: (id: string) => http.get<any[]>(`/businesses/${id}/gallery`),
+    getGallery: (id: string) => container.businessRepo.getGallery(id),
 
-    updateProfile: (id: string, data: any) =>
-        http.patch(`/businesses/${id}/profile`, data),
+    updateProfile: (id: string, data: Record<string, unknown>) =>
+        container.businessRepo.updateProfile(id, data),
 
-    updatePhoto: (id: string, file: File) => {
-        const formData = new FormData();
-        formData.append('file', file);
-        return http.post(`/businesses/${id}/photo`, formData);
-    },
+    updatePhoto: (id: string, file: File) => container.businessRepo.updatePhoto(id, file),
 
-    updateBanner: (id: string, file: File) => {
-        const formData = new FormData();
-        formData.append('file', file);
-        return http.post(`/businesses/${id}/banner`, formData);
-    },
+    updateBanner: (id: string, file: File) => container.businessRepo.updateBanner(id, file),
 
-    addGalleryImage: (id: string, file: File) => {
-        const formData = new FormData();
-        formData.append('file', file);
-        return http.post(`/businesses/${id}/gallery`, formData);
-    },
+    addGalleryImage: (id: string, file: File) =>
+        container.businessRepo.addGalleryImage(id, file),
 
     deleteGalleryImage: (businessId: string, imageId: string) =>
-        http.delete(`/businesses/${businessId}/gallery/${imageId}`),
+        container.businessRepo.deleteGalleryImage(businessId, imageId),
 };

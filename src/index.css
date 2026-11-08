@@ -17,18 +17,22 @@
     --color-muted-foreground: var(--muted-fg);
 
     --color-border: var(--border);
+    --color-input: var(--border);
+    --color-input-background: var(--input-bg);
     --color-overlay: var(--overlay);
 
     /* ─── Cores de Roles (Personas) ────────────────────────────── */
-    --color-cliente: #7C3AED;      /* Roxo */
-    --color-profissional: #0D9488; /* Teal */
-    --color-gestor: #D97706;       /* Amber */
+    --color-cliente: #7C3AED;
+    --color-profissional: #0D9488;
+    --color-gestor: #D97706;
 
     /* ─── Cores de Status (Feedback) ────────────────────────────── */
-    --color-success: #10B981;
-    --color-warning: #D97706;
-    --color-error: #D4183D;
-    --color-info: #3B82F6;
+    --color-success: var(--success);
+    --color-warning: var(--warning);
+    --color-warning-foreground: var(--warning-fg);
+    --color-error: var(--error);
+    --color-error-foreground: var(--error-fg);
+    --color-info: var(--info);
 
     /* ─── Cores para Gráficos (Data Viz) ────────────────────────── */
     --color-chart-1: var(--primary);
@@ -39,7 +43,7 @@
 
     /* ─── Sidebar ──────────────────────────────────────────────── */
     --color-sidebar: var(--sidebar-bg);
-    --color-sidebar-foreground: #FFFFFF;
+    --color-sidebar-foreground: var(--sidebar-fg);
 
     /* ─── Tipografia ───────────────────────────────────────────── */
     --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
@@ -71,54 +75,104 @@
     --spacing-header: 72px;
 }
 
-/* ─── Lógica de Variáveis (Light/Dark) ────────────────────────── */
-
-:root {
+:root,
+[data-theme="light"] {
+    color-scheme: light;
     --bg: #F8F9FB;
     --fg: #1A2B42;
     --card: #FFFFFF;
+    --input-bg: #FFFFFF;
     --primary: #1A2B42;
     --primary-fg: #FFFFFF;
     --secondary: #E8EAED;
     --secondary-fg: #1A2B42;
     --muted: #F3F4F6;
-    --muted-fg: #5F6C7B;
-    --border: rgba(26, 43, 66, 0.1);
+    --muted-fg: #526071;
+    --border: rgba(26, 43, 66, 0.14);
     --sidebar-bg: #1A2B42;
+    --sidebar-fg: #FFFFFF;
     --overlay: rgba(0, 0, 0, 0.5);
+    --success: #059669;
+    --warning: #D97706;
+    --warning-fg: #FFFFFF;
+    --error: #D4183D;
+    --error-fg: #FFFFFF;
+    --info: #2563EB;
 }
 
 [data-theme="dark"] {
+    color-scheme: dark;
     --bg: #0D1B2E;
     --fg: #F0F4F8;
     --card: #132035;
+    --input-bg: #0F1D31;
     --primary: #F0F4F8;
     --primary-fg: #0D1B2E;
     --secondary: #1E3250;
     --secondary-fg: #F0F4F8;
     --muted: #0A1628;
-    --muted-fg: #8CA0BC;
-    --border: rgba(240, 244, 248, 0.1);
+    --muted-fg: #9FB2CC;
+    --border: rgba(240, 244, 248, 0.16);
     --sidebar-bg: #0A1628;
-    --overlay: rgba(0, 0, 0, 0.7);
+    --sidebar-fg: #F0F4F8;
+    --overlay: rgba(0, 0, 0, 0.72);
+    --success: #34D399;
+    --warning: #FBBF24;
+    --warning-fg: #0D1B2E;
+    --error: #FB7185;
+    --error-fg: #0D1B2E;
+    --info: #60A5FA;
 }
 
-/* ─── Estilos Base ───────────────────────────────────────────── */
+[data-theme="high-contrast"] {
+    color-scheme: dark;
+    --bg: #000000;
+    --fg: #FFFFFF;
+    --card: #050505;
+    --input-bg: #000000;
+    --primary: #FFD600;
+    --primary-fg: #000000;
+    --secondary: #1A1A1A;
+    --secondary-fg: #FFFFFF;
+    --muted: #121212;
+    --muted-fg: #FFE866;
+    --border: #FFFFFF;
+    --sidebar-bg: #000000;
+    --sidebar-fg: #FFFFFF;
+    --overlay: rgba(0, 0, 0, 0.88);
+    --success: #00FF87;
+    --warning: #FFD600;
+    --warning-fg: #000000;
+    --error: #FF4D6D;
+    --error-fg: #000000;
+    --info: #4CC9F0;
+}
 
 @layer base {
     html {
         @apply bg-background text-foreground antialiased font-sans;
-        /* Suaviza transições de cores ao trocar o tema */
         transition: background-color 0.2s ease, color 0.2s ease;
     }
 
     body {
-        @apply min-h-screen;
+        @apply min-h-dvh overflow-x-hidden;
     }
 
-    /* Scrollbar customizada para combinar com o Zello */
+    [data-theme="high-contrast"] :focus-visible {
+        outline: 3px solid #FFD600 !important;
+        outline-offset: 2px !important;
+    }
+
+    [data-theme="high-contrast"] button,
+    [data-theme="high-contrast"] input,
+    [data-theme="high-contrast"] select,
+    [data-theme="high-contrast"] textarea {
+        border-width: 2px;
+    }
+
     ::-webkit-scrollbar {
         width: 6px;
+        height: 6px;
     }
 
     ::-webkit-scrollbar-track {
@@ -126,6 +180,17 @@
     }
 
     ::-webkit-scrollbar-thumb {
-        @apply bg-muted-foreground/20 rounded-full hover:bg-muted-foreground/40 transition-colors;
+        @apply bg-muted-foreground/25 rounded-full hover:bg-muted-foreground/45 transition-colors;
     }
+}
+
+.no-scrollbar::-webkit-scrollbar,
+.scrollbar-hide::-webkit-scrollbar {
+    display: none;
+}
+
+.no-scrollbar,
+.scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
 }

@@ -1,20 +1,21 @@
-import { createEffect, on, onCleanup, onMount } from "solid-js";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import type { GeolocationCoordinates, ServiceLocation } from "../../types/location";
+import { createEffect, on, onCleanup, onMount } from "solid-js";
+import { formatDistance, localizeDomain, t } from "../../core/i18n";
 import { SERVICES_SEARCH_RADIUS_KM } from "../../store/locationStore";
+import type { GeolocationCoordinates, ServiceLocation } from "../../types/location";
 
 export interface MapContainerProps {
     center: GeolocationCoordinates;
     services: ServiceLocation[];
     selectedServiceId: string | null;
     onSelectService: (service: ServiceLocation) => void;
+    visible?: boolean;
 }
 
 const RADIUS_METERS = SERVICES_SEARCH_RADIUS_KM * 1000;
 const DEFAULT_ZOOM = 13;
 
-/** Cor do pin por categoria — mesma paleta de `--color-cliente/profissional/gestor` do design system. */
 const CATEGORY_COLORS: Record<string, string> = {
     Cabelo: "#7C3AED",
     Unhas: "#0D9488",
@@ -57,10 +58,11 @@ export function MapContainer(props: MapContainerProps) {
 
         props.services.forEach((service) => {
             const isActive = service.id === props.selectedServiceId;
+            const localizedCat = localizeDomain.category(service.category);
             const marker = L.marker([service.latitude, service.longitude], {
                 icon: buildPinIcon(getCategoryColor(service.category), isActive),
                 keyboard: true,
-                alt: `${service.name}, ${service.category}`,
+                alt: `${service.name}, ${localizedCat}`,
             });
             marker.on("click", () => props.onSelectService(service));
             marker.addTo(map as L.Map);
@@ -71,7 +73,10 @@ export function MapContainer(props: MapContainerProps) {
     const renderCenter = (): void => {
         if (!map) return;
 
-        const centerLatLng: L.LatLngExpression = [props.center.latitude, props.center.longitude];
+        const centerLatLng: L.LatLngExpression = [
+            props.center.latitude,
+            props.center.longitude,
+        ];
         map.setView(centerLatLng, map.getZoom() || DEFAULT_ZOOM);
 
         userMarker?.remove();
@@ -103,7 +108,8 @@ export function MapContainer(props: MapContainerProps) {
         });
 
         L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+            attribution:
+                '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
             maxZoom: 19,
         }).addTo(map);
 
@@ -112,7 +118,24 @@ export function MapContainer(props: MapContainerProps) {
     });
 
     createEffect(on(() => props.center, renderCenter, { defer: true }));
-    createEffect(on(() => [props.services, props.selectedServiceId] as const, renderServiceMarkers, { defer: true }));
+    createEffect(
+        on(
+            () => [props.services, props.selectedServiceId] as const,
+            renderServiceMarkers,
+            { defer: true },
+        ),
+    );
+    createEffect(
+        on(
+            () => props.visible,
+            (visible) => {
+                if (visible && map) {
+                    setTimeout(() => map?.invalidateSize(), 50);
+                }
+            },
+            { defer: true },
+        ),
+    );
 
     onCleanup(() => {
         clearServiceMarkers();
@@ -124,8 +147,10 @@ export function MapContainer(props: MapContainerProps) {
         <div
             ref={mapElement}
             role="application"
-            aria-label="Mapa de estabelecimentos próximos, num raio de 10km"
-            class="h-full w-full rounded-lg border border-border"
+            aria-label={t().location.mapAria(
+                formatDistance(SERVICES_SEARCH_RADIUS_KM, 0),
+            )}
+            class="h-full min-h-[360px] w-full rounded-lg border border-border"
         />
     );
 }

@@ -1,207 +1,220 @@
-import { createSignal, Show } from "solid-js";
 import { A, useNavigate } from "@solidjs/router";
-
-import { Input } from "../components/Widgets/Input";
+import { createSignal, Show } from "solid-js";
+import { GoogleIcon, StarIcon, ZelloIcon } from "../components/Icons/Icons";
 import { Button } from "../components/Widgets/Button";
-
+import { Input } from "../components/Widgets/Input";
+import { LanguageSwitcher } from "../components/Widgets/LanguageSwitcher";
+import { ThemeSwitcher } from "../components/Widgets/ThemeSwitcher";
 import {
-  ZelloIcon,
-  GlobeIcon,
-  MoonIcon,
-  SunIcon,
-  GoogleIcon,
-} from "../components/Icons/Icons";
-import { API, theme, toggleTheme } from "../store/appState";
+    formatDecimal,
+    formatInteger,
+    localizeDomain,
+    t,
+} from "../core/i18n";
 import { login } from "../services/auth.service";
+import { API } from "../store/appState";
 
 export default function Login() {
-  const navigate = useNavigate();
+    const navigate = useNavigate();
 
-  const [email, setEmail] = createSignal("");
-  const [password, setPassword] = createSignal("");
-  const [loading, setLoading] = createSignal(false);
-  const [errorMessage, setErrorMessage] = createSignal("");
+    const [email, setEmail] = createSignal("");
+    const [password, setPassword] = createSignal("");
+    const [loading, setLoading] = createSignal(false);
+    const [errorMessage, setErrorMessage] = createSignal("");
 
-  const handleSubmit = async (e: Event) => {
-    e.preventDefault();
-    setErrorMessage("");
-    setLoading(true);
+    const handleSubmit = async (e: Event) => {
+        e.preventDefault();
+        setErrorMessage("");
+        setLoading(true);
 
-    try {
-      await login({
-        email: email(),
-        password: password(),
-      });
+        try {
+            await login({
+                email: email().trim(),
+                password: password(),
+            });
+            navigate("/explore");
+        } catch (error: any) {
+            setErrorMessage(
+                localizeDomain.apiError(
+                    error?.message,
+                    t().auth.login.invalidCredentials,
+                ),
+            );
+        } finally {
+            setLoading(false);
+        }
+    };
 
-      navigate("/explore");
-    } catch (error: any) {
-      setErrorMessage(error.message || "Erro ao fazer login. Tente novamente.");
-    } finally {
-      setLoading(false);
-    }
-  };
+    return (
+        <main class="min-h-dvh bg-background text-foreground">
+            <div class="flex min-h-dvh flex-col lg:flex-row">
+                {/* LADO ESQUERDO: BANNER */}
+                <div class="relative hidden flex-1 flex-col items-center justify-center overflow-hidden border-r border-border/20 bg-sidebar p-8 lg:flex">
+                    <div class="z-10 flex max-w-md flex-col items-center text-center">
+                        <A
+                            href="/"
+                            class="mb-6 flex size-16 items-center justify-center rounded-xl bg-white/10 text-sidebar-foreground transition-transform hover:scale-105"
+                        >
+                            <ZelloIcon />
+                        </A>
 
-  return (
-    <main class="relative">
-      <div class="flex h-screen bg-background">
-        {/* LADO ESQUERDO: BANNER */}
-        <div class="relative hidden flex-1 flex-col items-center justify-center overflow-hidden border-r border-white/10 bg-sidebar p-8 lg:flex">
-          <div class="absolute inset-0 z-0 overflow-hidden">
-            <div class="absolute -right-[20%] -top-[20%] h-100 w-100 rounded-full bg-white/5" />
-            <div class="absolute -bottom-[15%] -left-[15%] h-87.5 w-87.5 rounded-full bg-white/5" />
-          </div>
+                        <span class="mb-3 rounded-full bg-white/10 px-3 py-1 text-xs font-bold uppercase tracking-wider text-sidebar-foreground">
+                            {t().auth.login.bannerBadge}
+                        </span>
+                        <h1 class="mb-4 text-3xl font-bold text-sidebar-foreground">
+                            {t().auth.login.bannerTitle}
+                        </h1>
+                        <p class="mb-10 text-base leading-relaxed text-sidebar-foreground/80">
+                            {t().auth.login.bannerDesc}
+                        </p>
 
-          <div class="z-10 flex max-w-105 flex-col items-center text-center">
-            <div class="mb-6 flex size-16 items-center justify-center rounded-xl bg-white/10 text-sidebar-foreground">
-              <ZelloIcon />
+                        <div class="grid w-full grid-cols-3 gap-3">
+                            <div class="rounded-xl border border-white/15 bg-white/5 p-4">
+                                <div class="text-xl font-bold text-sidebar-foreground">
+                                    {formatInteger(2400)}+
+                                </div>
+                                <div class="mt-1 text-xs text-sidebar-foreground/75">
+                                    {t().auth.stats.establishmentsLabel}
+                                </div>
+                            </div>
+                            <div class="rounded-xl border border-white/15 bg-white/5 p-4">
+                                <div class="text-xl font-bold text-sidebar-foreground">
+                                    {formatInteger(18000)}+
+                                </div>
+                                <div class="mt-1 text-xs text-sidebar-foreground/75">
+                                    {t().auth.stats.appointmentsLabel}
+                                </div>
+                            </div>
+                            <div class="rounded-xl border border-white/15 bg-white/5 p-4">
+                                <div class="flex items-center justify-center gap-1 text-xl font-bold text-sidebar-foreground">
+                                    {formatDecimal(4.9)}
+                                    <StarIcon class="size-4 text-warning" />
+                                </div>
+                                <div class="mt-1 text-xs text-sidebar-foreground/75">
+                                    {t().auth.stats.ratingLabel}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* LADO DIREITO: FORMULÁRIO */}
+                <div class="flex flex-1 flex-col bg-background px-4 py-6 sm:px-8">
+                    <div class="flex items-center justify-between">
+                        <A
+                            href="/"
+                            class="flex items-center gap-2 font-bold text-foreground lg:invisible"
+                        >
+                            <div class="flex size-8 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                                <ZelloIcon />
+                            </div>
+                            <span>{t().sidebar.brand}</span>
+                        </A>
+                        <div class="flex items-center gap-2">
+                            <LanguageSwitcher compact />
+                            <ThemeSwitcher />
+                        </div>
+                    </div>
+
+                    <div class="my-auto flex w-full justify-center py-8">
+                        <div class="flex w-full max-w-md flex-col gap-6 rounded-2xl border border-border bg-card p-6 shadow-md sm:p-8">
+                            <div>
+                                <h1 class="mb-1.5 text-2xl font-bold text-foreground">
+                                    {t().auth.login.title}
+                                </h1>
+                                <p class="text-sm text-muted-foreground">
+                                    {t().auth.login.subtitle}
+                                </p>
+                            </div>
+
+                            <form class="flex flex-col gap-4" onSubmit={handleSubmit}>
+                                <Input
+                                    labelText={t().auth.login.emailLabel}
+                                    placeholder={t().auth.login.emailPlaceholder}
+                                    type="email"
+                                    value={email()}
+                                    onInput={(e) => setEmail(e.currentTarget.value)}
+                                    disabled={loading()}
+                                    required
+                                />
+
+                                <div class="relative">
+                                    <A
+                                        href="/passwordRecovery"
+                                        class="absolute right-0 top-0 text-xs font-semibold text-primary hover:underline"
+                                    >
+                                        {t().auth.login.forgotPassword}
+                                    </A>
+                                    <Input
+                                        labelText={t().auth.login.passwordLabel}
+                                        placeholder={t().auth.login.passwordPlaceholder}
+                                        type="password"
+                                        value={password()}
+                                        onInput={(e) =>
+                                            setPassword(e.currentTarget.value)
+                                        }
+                                        disabled={loading()}
+                                        required
+                                    />
+                                </div>
+
+                                <Show when={errorMessage()}>
+                                    <div
+                                        role="alert"
+                                        class="rounded-xl border border-error/30 bg-error/10 px-4 py-3 text-sm font-medium text-error"
+                                    >
+                                        {errorMessage()}
+                                    </div>
+                                </Show>
+
+                                <Button
+                                    type="submit"
+                                    variant="primary"
+                                    class="mt-2 w-full justify-center"
+                                    disabled={
+                                        loading() ||
+                                        email().trim().length === 0 ||
+                                        password().length === 0
+                                    }
+                                >
+                                    {loading()
+                                        ? t().auth.login.submitting
+                                        : t().auth.login.submit}
+                                </Button>
+                            </form>
+
+                            <div class="flex items-center gap-3 text-xs text-muted-foreground">
+                                <div class="h-px flex-1 bg-border" />
+                                {t().auth.login.orContinueWith}
+                                <div class="h-px flex-1 bg-border" />
+                            </div>
+
+                            <Button
+                                type="button"
+                                variant="outline"
+                                class="w-full justify-center"
+                                disabled={loading()}
+                                onClick={() => {
+                                    window.location.href = `${API}/auth/google`;
+                                }}
+                            >
+                                <GoogleIcon />
+                                {t().auth.login.googleBtn}
+                            </Button>
+
+                            <div class="text-center text-sm text-muted-foreground">
+                                {t().auth.login.noAccount}{" "}
+                                <A
+                                    href="/register"
+                                    class="font-bold text-primary hover:underline"
+                                >
+                                    {t().auth.login.createAccount}
+                                </A>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
-
-            <h1 class="mb-4 text-3xl font-bold text-sidebar-foreground">
-              Bem-vindo ao Zello
-            </h1>
-            <p class="mb-12 text-base leading-relaxed text-sidebar-foreground/80">
-              A plataforma premium que conecta você aos melhores profissionais
-              de beleza e estética da sua cidade.
-            </p>
-
-            <div class="flex w-full justify-center gap-4">
-              <div class="flex-1 rounded-xl border border-white/10 bg-white/5 p-4 shadow-sm">
-                <div class="text-xl font-bold text-sidebar-foreground">
-                  2.400+
-                </div>
-                <div class="mt-1 text-xs text-sidebar-foreground/70">
-                  Profissionais
-                </div>
-              </div>
-              <div class="flex-1 rounded-xl border border-white/10 bg-white/5 p-4 shadow-sm">
-                <div class="text-xl font-bold text-sidebar-foreground">
-                  18k+
-                </div>
-                <div class="mt-1 text-xs text-sidebar-foreground/70">
-                  Clientes
-                </div>
-              </div>
-              <div class="flex-1 rounded-xl border border-white/10 bg-white/5 p-4 shadow-sm">
-                <div class="text-xl font-bold text-sidebar-foreground">
-                  4.9 ★
-                </div>
-                <div class="mt-1 text-xs text-sidebar-foreground/70">
-                  Avaliação
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* LADO DIREITO: FORMULÁRIO */}
-        <div class="relative flex flex-1 items-center justify-center bg-background px-4">
-          {/* Botões Topo */}
-          <div class="absolute right-6 top-6 flex gap-2">
-            <button class="flex cursor-pointer items-center justify-center gap-1.5 rounded-full border border-border bg-card px-3 py-2 text-foreground transition-colors hover:bg-secondary">
-              <GlobeIcon />
-              <span class="text-xs font-semibold">PT</span>
-            </button>
-            <button
-              class="flex cursor-pointer items-center justify-center rounded-full border border-border bg-card p-2 text-foreground transition-colors hover:bg-secondary"
-              onClick={toggleTheme}
-              title={
-                theme() === "dark"
-                  ? "Mudar para Light Mode"
-                  : "Mudar para Dark Mode"
-              }
-            >
-              {theme() === "dark" ? <SunIcon /> : <MoonIcon />}
-            </button>
-          </div>
-
-          <div class="flex w-full max-w-105 flex-col gap-6 rounded-xl border border-border bg-card p-6 shadow-md md:p-8">
-            <div class="text-left">
-              <h1 class="mb-2 text-2xl font-bold text-foreground">
-                Entrar na sua conta
-              </h1>
-              <p class="text-sm text-muted-foreground">
-                Acesse com suas credenciais para continuar
-              </p>
-            </div>
-
-            <form class="flex flex-col gap-4" onSubmit={handleSubmit}>
-              <Input
-                labelText="E-mail"
-                placeholder="seu@email.com"
-                type="email"
-                value={email()}
-                onInput={(e) => setEmail(e.currentTarget.value)}
-                disabled={loading()}
-                required
-              />
-
-              <div class="relative">
-                <A
-                  href="/passwordRecovery"
-                  class="absolute right-0 top-0 text-xs font-semibold text-primary hover:underline"
-                >
-                  Esqueceu a senha?
-                </A>
-                <Input
-                  labelText="Senha"
-                  placeholder="••••••••"
-                  type="password"
-                  value={password()}
-                  onInput={(e) => setPassword(e.currentTarget.value)}
-                  disabled={loading()}
-                  required
-                />
-              </div>
-
-              {/* Tratamento visual do erro do NestJS */}
-              <Show when={errorMessage()}>
-                <div class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
-                  {errorMessage()}
-                </div>
-              </Show>
-
-              <Button
-                type="submit"
-                variant="primary"
-                class="mt-2 w-full"
-                disabled={
-                  loading() || email().length === 0 || password().length === 0
-                }
-              >
-                {loading() ? "Autenticando..." : "Entrar →"}
-              </Button>
-            </form>
-
-            <div class="flex items-center gap-3 text-xs text-muted-foreground">
-              <div class="h-px flex-1 bg-border" />
-              ou continue com
-              <div class="h-px flex-1 bg-border" />
-            </div>
-
-            <Button
-              variant="outline"
-              class="w-full"
-              disabled={loading()}
-              onClick={() => {
-                window.location.href = `${API}/auth/google`;
-              }}
-            >
-              <GoogleIcon />
-              Entrar com Google
-            </Button>
-
-            <div class="text-center text-sm text-muted-foreground">
-              Não tem uma conta?{" "}
-              <A
-                href="/register"
-                class="font-bold text-primary hover:underline"
-              >
-                Cadastre-se grátis
-              </A>
-            </div>
-          </div>
-        </div>
-      </div>
-    </main>
-  );
+        </main>
+    );
 }

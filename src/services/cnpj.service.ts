@@ -1,23 +1,11 @@
-export interface CnpjResponse {
-  nome: string;
-  fantasia: string;
-  logradouro: string;
-  numero: string;
-  complemento: string;
-  bairro: string;
-  municipio: string;
-  uf: string;
-  cep: string;
-}
+import { container } from "../core/container";
+import type { CnpjCompanyDto } from "../core/infrastructure/gateways/ExternalGateways";
 
-export async function fetchCnpjData(cnpj: string, apiBaseUrl: string): Promise<CnpjResponse | null> {
-  const digits = cnpj.replace(/\D/g, '');
-  if (digits.length !== 14) return null;
-  try {
-    const res = await fetch(`${apiBaseUrl}/lookup/cnpj/${digits}`);
-    if (!res.ok) return null;
-    return await res.json();
-  } catch {
-    return null;
-  }
+export type CnpjResponse = CnpjCompanyDto;
+
+export async function fetchCnpjData(
+    cnpj: string,
+    _apiBaseUrl?: string,
+): Promise<CnpjResponse | null> {
+    return container.cnpjLookupGateway.lookup(cnpj);
 }

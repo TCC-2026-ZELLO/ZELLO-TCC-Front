@@ -1,90 +1,45 @@
-import { http } from "./api";
+import { container } from "../core/container";
 
 export const professionalService = {
-    getPublicProfile: async (id: string) => {
-        const res = await http.get<any>(`/professionals/${id}`);
-        return res.data || res;
-    },
+    getPublicProfile: (id: string) => container.professionalRepo.getPublicProfile(id),
 
-    getServices: async (id: string) => {
-        const res = await http.get<any>(`/professionals/${id}/services`);
-        return res.data || res;
-    },
+    getServices: (id: string) => container.professionalRepo.getServices(id),
 
-    getPortfolio: async (id: string) => {
-        const res = await http.get<any>(`/professionals/${id}/portfolio`);
-        return res.data || res;
-    },
+    getPortfolio: (id: string) => container.professionalRepo.getPortfolio(id),
 
-    updateProfile: async (data: { bio?: string, specialty?: string, visibilityStatus?: boolean }) => {
-        return await http.patch('/professionals/me/profile', data);
-    },
+    updateProfile: (data: { bio?: string; specialty?: string; visibilityStatus?: boolean }) =>
+        container.professionalRepo.updateProfile(data),
 
-    updateAvatar: async (file: File) => {
-        const formData = new FormData();
-        formData.append('file', file);
-        return await http.post('/professionals/me/avatar', formData);
-    },
+    updateAvatar: (file: File) => container.professionalRepo.updateAvatar(file),
 
-    updateBanner: async (file: File) => {
-        const formData = new FormData();
-        formData.append('file', file);
-        return await http.post('/professionals/me/banner', formData);
-    },
+    updateBanner: (file: File) => container.professionalRepo.updateBanner(file),
 
-    uploadPortfolio: async (file: File) => {
-        const formData = new FormData();
-        formData.append('file', file);
-        return await http.post('/professionals/me/portfolio', formData);
-    },
+    uploadPortfolio: (file: File) => container.professionalRepo.uploadPortfolioImage(file),
 
-    deletePortfolioImage: async (id: string) => {
-        return await http.delete(`/professionals/me/portfolio/${id}`);
-    },
+    deletePortfolioImage: (id: string) => container.professionalRepo.deletePortfolioImage(id),
 
+    getQualifications: (id: string) => container.professionalRepo.getQualifications(id),
 
-    getQualifications: async (id: string) => {
-        const res = await http.get<any>(`/professionals/${id}/qualifications`);
-        return res.data || res;
-    },
-
-    addQualification: async (data: {
+    addQualification: (data: {
         file: File;
         title: string;
         institution?: string;
         approvement?: number;
         type?: string;
         year?: number;
-    }) => {
-        const formData = new FormData();
-        formData.append('file', data.file);
-        formData.append('title', data.title);
-        if (data.institution) formData.append('institution', data.institution);
-        if (data.approvement !== undefined) formData.append('approvement', String(data.approvement));
-        if (data.type)        formData.append('type', data.type);
-        if (data.year)        formData.append('year', String(data.year));
-        return await http.post('/professionals/me/qualifications', formData);
-    },
+    }) => container.professionalRepo.addQualification(data),
 
-    updateQualification: async (id: string, data: {
-        file?: File;
-        title?: string;
-        institution?: string;
-        approvement?: number;
-        type?: string;
-        year?: number;
-    }) => {
-        const formData = new FormData();
-        if (data.file)        formData.append('file', data.file);
-        if (data.title)       formData.append('title', data.title);
-        if (data.institution !== undefined) formData.append('institution', data.institution);
-        if (data.approvement !== undefined) formData.append('approvement', String(data.approvement));
-        if (data.type)        formData.append('type', data.type);
-        if (data.year)        formData.append('year', String(data.year));
-        return await http.patch(`/professionals/me/qualifications/${id}`, formData);
-    },
+    updateQualification: (
+        id: string,
+        data: {
+            file?: File;
+            title?: string;
+            institution?: string;
+            approvement?: number;
+            type?: string;
+            year?: number;
+        },
+    ) => container.professionalRepo.updateQualification(id, data),
 
-    deleteQualification: async (id: string) => {
-        return await http.delete(`/professionals/me/qualifications/${id}`);
-    },
+    deleteQualification: (id: string) => container.professionalRepo.deleteQualification(id),
 };

@@ -1,165 +1,238 @@
-import { createSignal, For, Show, createResource } from "solid-js";
 import { useParams } from "@solidjs/router";
-import { Card } from "../components/Widgets/Card";
-import { Button } from "../components/Widgets/Button";
-import { Tabs } from "../components/Widgets/Tabs";
-import { StarIcon, MapPinIcon, CalendarIcon, CheckCircleIcon, RibbonIcon } from "../components/Icons/Icons";
-import { professionalService } from "../services/professional.service";
+import { createResource, createSignal, For, Show } from "solid-js";
+import {
+    CalendarIcon,
+    CheckCircleIcon,
+    MapPinIcon,
+    RibbonIcon,
+    StarIcon,
+} from "../components/Icons/Icons";
 import { BookingModal } from "../components/Widgets/BookingModal";
+import { Button } from "../components/Widgets/Button";
+import { Card } from "../components/Widgets/Card";
 import { ReviewListWidget } from "../components/Widgets/ReviewListWidget";
+import { Tabs } from "../components/Widgets/Tabs";
+import {
+    formatDecimal,
+    formatMoney,
+    formatMoneyHint,
+    localizeDomain,
+    t,
+} from "../core/i18n";
+import { professionalService } from "../services/professional.service";
 
 const TYPE_COLORS: Record<string, string> = {
-    diploma:        "bg-blue-100 text-blue-700",
-    specialization: "bg-purple-100 text-purple-700",
-    course:         "bg-green-100 text-green-700",
-    certification:  "bg-amber-100 text-amber-700",
-};
-
-const TYPE_LABELS: Record<string, string> = {
-    diploma:        "Diploma",
-    specialization: "Especialização",
-    course:         "Curso",
-    certification:  "Certificação",
+    diploma: "bg-primary/15 text-primary",
+    specialization: "bg-secondary text-secondary-foreground",
+    course: "bg-success/15 text-success",
+    certification: "bg-warning/15 text-warning-foreground",
 };
 
 export default function PublicProfile() {
     const params = useParams();
     const [activeTab, setActiveTab] = createSignal("servicos");
-    const [selectedServiceForBooking, setSelectedServiceForBooking] = createSignal<any>(null);
+    const [selectedServiceForBooking, setSelectedServiceForBooking] =
+        createSignal<any>(null);
 
     const [profile] = createResource(
         () => params.id,
-        professionalService.getPublicProfile
+        professionalService.getPublicProfile,
     );
-
     const [services] = createResource(
         () => params.id,
-        professionalService.getServices
+        professionalService.getServices,
     );
-
     const [portfolio] = createResource(
         () => params.id,
-        professionalService.getPortfolio
+        professionalService.getPortfolio,
     );
-
     const [qualifications] = createResource(
         () => params.id,
-        professionalService.getQualifications
+        professionalService.getQualifications,
     );
 
-    return (
-        <Show when={!profile.loading} fallback={
-            <div class="mx-auto max-w-5xl p-8 text-center animate-pulse text-muted-foreground">
-                Carregando perfil do profissional...
-            </div>
-        }>
-            <div class="mx-auto max-w-5xl flex flex-col gap-6 px-4 py-8 pb-20 md:py-8 animate-in fade-in duration-500">
+    const firstBookableService = () => (services() ?? [])[0] ?? null;
 
-                {/* --- HEADER CARD --- */}
-                <Card class="overflow-hidden border-none shadow-sm bg-card relative">
-                    {/* BANNER REAL DO PROFISSIONAL */}
-                    <div class="h-48 w-full bg-muted relative">
+    return (
+        <Show
+            when={!profile.loading}
+            fallback={
+                <div class="mx-auto max-w-5xl animate-pulse p-8 text-center text-muted-foreground">
+                    {t().publicProfile.loading}
+                </div>
+            }
+        >
+            <div class="mx-auto flex max-w-5xl flex-col gap-6 px-4 py-6 pb-20 sm:py-8">
+                {/* HEADER CARD */}
+                <Card class="relative overflow-hidden border border-border bg-card p-0 shadow-sm">
+                    <div class="relative h-44 w-full bg-muted sm:h-48">
                         <Show
                             when={profile()?.bannerUrl}
-                            fallback={<div class="h-full w-full bg-gradient-to-r from-primary/60 to-primary" />}
+                            fallback={
+                                <div class="h-full w-full bg-gradient-to-r from-primary/60 to-primary" />
+                            }
                         >
                             <img
                                 src={profile()?.bannerUrl}
-                                class="w-full h-full object-cover"
-                                alt="Banner de perfil"
+                                class="h-full w-full object-cover"
+                                alt={t().publicProfile.bannerAlt}
                             />
                         </Show>
                     </div>
 
-                    <div class="px-6 pb-6 pt-0 relative sm:px-10 flex flex-col sm:flex-row gap-6 items-center sm:items-end -mt-16 sm:-mt-12">
+                    <div class="relative flex flex-col items-center gap-5 px-6 pb-6 pt-0 sm:flex-row sm:items-center sm:px-10 sm:py-6">
                         <img
-                            src={profile()?.photoUrl || `https://ui-avatars.com/api/?name=${profile()?.user?.name}&background=random`}
-                            alt="Foto de Perfil"
-                            class="size-32 sm:size-40 rounded-2xl object-cover border-4 border-background shadow-md bg-background"
+                            src={
+                                profile()?.photoUrl ||
+                                `https://ui-avatars.com/api/?name=${encodeURIComponent(profile()?.user?.name || profile()?.name || "P")}&background=random`
+                            }
+                            alt={t().publicProfile.avatarAlt}
+                            class="-mt-14 size-28 shrink-0 rounded-2xl border-4 border-background bg-background object-cover shadow-md sm:-mt-16 sm:size-36"
                         />
 
-                        <div class="flex-1 flex flex-col items-center sm:items-start text-center sm:text-left pt-2 pb-2">
-                            <h1 class="text-3xl font-bold text-foreground flex items-center gap-2">
-                                {profile()?.user?.name}
+                        <div class="flex min-w-0 flex-1 flex-col items-center py-2 text-center sm:items-start sm:text-left">
+                            <h1 class="flex flex-wrap items-center justify-center gap-2 text-2xl font-bold text-foreground sm:justify-start sm:text-3xl">
+                                <span>{profile()?.user?.name || profile()?.name}</span>
                                 <Show when={profile()?.visibilityStatus}>
-                                    <span class="text-blue-500" title="Perfil Verificado"> <CheckCircleIcon/> </span>
+                                    <span
+                                        class="inline-flex shrink-0 text-primary"
+                                        title={t().publicProfile.verified}
+                                    >
+                                        <CheckCircleIcon />
+                                    </span>
                                 </Show>
                             </h1>
-                            <p class="text-lg text-muted-foreground font-medium">
-                                {profile()?.specialty || "Especialista"}
+                            <p class="text-base font-medium text-muted-foreground sm:text-lg">
+                                {localizeDomain.specialty(
+                                    profile()?.specialty ||
+                                        t().publicProfile.defaultSpecialty,
+                                )}
                             </p>
 
-                            <div class="flex flex-wrap items-center justify-center sm:justify-start gap-4 mt-3 text-sm">
+                            <div class="mt-3 flex flex-wrap items-center justify-center gap-4 text-sm sm:justify-start">
                                 <div class="flex items-center gap-1 font-semibold text-foreground">
-                                    <span class="text-yellow-500"> <StarIcon/> </span>
-                                    {profile()?.averageRating != null ? Number(profile()?.averageRating).toFixed(1) : "5.0"}
-                                    <span class="text-muted-foreground font-normal ml-1">({profile()?.reviewCount ?? 0} Avaliações)</span>
+                                    <span class="text-warning">
+                                        <StarIcon />
+                                    </span>
+                                    {formatDecimal(
+                                        Number(profile()?.averageRating ?? 5),
+                                    )}
+                                    <span class="ml-1 font-normal text-muted-foreground">
+                                        {t().publicProfile.ratingsCount(
+                                            profile()?.reviewCount ?? 0,
+                                        )}
+                                    </span>
                                 </div>
                                 <div class="flex items-center gap-1 text-muted-foreground">
-                                    <MapPinIcon/> {profile()?.city || "Brasil"}
+                                    <MapPinIcon />{" "}
+                                    {profile()?.city ||
+                                        t().publicProfile.defaultLocation}
                                 </div>
                             </div>
                         </div>
 
                         <div class="w-full sm:w-auto">
-                            <Button variant="primary" class="w-full sm:w-auto py-3 px-8 text-base shadow-lg flex items-center gap-2 justify-center">
-                                <CalendarIcon class="size-5"/> Agendar Agora
+                            <Button
+                                variant="primary"
+                                disabled={!firstBookableService()}
+                                title={
+                                    !firstBookableService()
+                                        ? t().publicProfile.noServicesTooltip
+                                        : undefined
+                                }
+                                onClick={() =>
+                                    firstBookableService() &&
+                                    setSelectedServiceForBooking(
+                                        firstBookableService(),
+                                    )
+                                }
+                                class="flex w-full items-center justify-center gap-2 px-7 py-3 text-base shadow-lg sm:w-auto"
+                            >
+                                <CalendarIcon class="size-5" />{" "}
+                                {t().publicProfile.bookNow}
                             </Button>
                         </div>
                     </div>
                 </Card>
 
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    {/* --- COLUNA LATERAL: SOBRE --- */}
+                <div class="grid grid-cols-1 gap-6 lg:grid-cols-3 lg:gap-8">
+                    {/* COLUNA LATERAL */}
                     <div class="flex flex-col gap-6 lg:col-span-1">
                         <Card class="p-6">
-                            <h3 class="font-bold text-lg text-foreground mb-3">Sobre</h3>
-                            <p class="text-muted-foreground text-sm leading-relaxed whitespace-pre-line">
-                                {profile()?.biography || "Nenhuma biografia disponível."}
+                            <h3 class="mb-3 text-lg font-bold text-foreground">
+                                {t().publicProfile.about}
+                            </h3>
+                            <p class="whitespace-pre-line text-sm leading-relaxed text-muted-foreground">
+                                {profile()?.biography || t().publicProfile.noBio}
                             </p>
                         </Card>
 
                         <Show when={(qualifications() ?? []).length > 0}>
-                            <Card class="p-6 flex flex-col gap-4">
-                                <h3 class="font-bold text-lg text-foreground flex items-center gap-2">
+                            <Card class="flex flex-col gap-4 p-6">
+                                <h3 class="flex items-center gap-2 text-lg font-bold text-foreground">
                                     <RibbonIcon size={18} class="text-primary" />
-                                    Qualificações
+                                    {t().publicProfile.qualifications}
                                 </h3>
 
                                 <div class="flex flex-col gap-3">
-                                    <For each={qualifications()}>
+                                    <For each={qualifications() ?? []}>
                                         {(q) => (
                                             <a
-                                                href={q.certificateUrl}
-                                                target="_blank"
+                                                href={q.certificateUrl || "#"}
+                                                target={
+                                                    q.certificateUrl
+                                                        ? "_blank"
+                                                        : undefined
+                                                }
                                                 rel="noopener noreferrer"
-                                                class="flex items-center gap-3 p-3 rounded-xl border border-border bg-secondary/20 hover:bg-secondary/50 hover:border-primary/40 transition-colors group"
+                                                class="group flex items-center gap-3 rounded-xl border border-border bg-secondary/20 p-3 transition-colors hover:border-primary/40 hover:bg-secondary/50"
                                             >
-                                                {/* Thumbnail ou ícone */}
-                                                <div class="shrink-0 size-12 rounded-lg overflow-hidden border border-border bg-muted flex items-center justify-center">
+                                                <div class="flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-border bg-muted">
                                                     <Show
-                                                        when={q.certificateUrl && !q.certificateUrl.endsWith(".pdf")}
+                                                        when={
+                                                            q.certificateUrl &&
+                                                            !q.certificateUrl.endsWith(
+                                                                ".pdf",
+                                                            )
+                                                        }
                                                         fallback={
-                                                            <span class="text-xs font-bold text-muted-foreground">PDF</span>
+                                                            <span class="text-xs font-bold text-muted-foreground">
+                                                                PDF
+                                                            </span>
                                                         }
                                                     >
-                                                        <img src={q.certificateUrl} class="w-full h-full object-cover" alt={q.title} />
+                                                        <img
+                                                            src={q.certificateUrl}
+                                                            class="h-full w-full object-cover"
+                                                            alt={q.title}
+                                                        />
                                                     </Show>
                                                 </div>
 
-                                                <div class="flex-1 flex flex-col gap-0.5 min-w-0">
-                                                    <span class="text-sm font-semibold text-foreground truncate group-hover:text-primary transition-colors">
+                                                <div class="flex min-w-0 flex-1 flex-col gap-0.5">
+                                                    <span class="truncate text-sm font-semibold text-foreground transition-colors group-hover:text-primary">
                                                         {q.title}
                                                     </span>
                                                     <Show when={q.institution}>
-                                                        <span class="text-xs text-muted-foreground truncate">{q.institution}</span>
+                                                        <span class="truncate text-xs text-muted-foreground">
+                                                            {q.institution}
+                                                        </span>
                                                     </Show>
-                                                    <div class="flex items-center gap-2 mt-1">
-                                                        <span class={`text-xs font-semibold px-2 py-0.5 rounded-full ${TYPE_COLORS[q.type] ?? "bg-secondary text-foreground"}`}>
-                                                            {TYPE_LABELS[q.type] ?? q.type}
+                                                    <div class="mt-1 flex flex-wrap items-center gap-2">
+                                                        <span
+                                                            class={`rounded-full px-2 py-0.5 text-xs font-semibold ${
+                                                                TYPE_COLORS[q.type] ??
+                                                                "bg-secondary text-foreground"
+                                                            }`}
+                                                        >
+                                                            {localizeDomain.qualificationType(
+                                                                q.type,
+                                                            )}
                                                         </span>
                                                         <Show when={q.year}>
-                                                            <span class="text-xs text-muted-foreground">{q.year}</span>
+                                                            <span class="text-xs text-muted-foreground">
+                                                                {q.year}
+                                                            </span>
                                                         </Show>
                                                     </div>
                                                 </div>
@@ -171,60 +244,122 @@ export default function PublicProfile() {
                         </Show>
                     </div>
 
-                    {/* --- COLUNA PRINCIPAL: TABS --- */}
+                    {/* COLUNA PRINCIPAL */}
                     <div class="flex flex-col gap-6 lg:col-span-2">
-                        <div class="border-b border-border">
-                            <Tabs
-                                activeValue={activeTab()}
-                                onChange={(val) => setActiveTab(val as string)}
-                                items={[
-                                    { label: "Serviços", value: "servicos" },
-                                    { label: "Portfólio", value: "portfolio" },
-                                    { label: "Avaliações", value: "avaliacoes" }
-                                ]}
-                            />
-                        </div>
+                        <Tabs
+                            activeValue={activeTab()}
+                            onChange={setActiveTab}
+                            items={[
+                                {
+                                    label: t().publicProfile.tabs.services,
+                                    value: "servicos",
+                                },
+                                {
+                                    label: t().publicProfile.tabs.portfolio,
+                                    value: "portfolio",
+                                },
+                                {
+                                    label: t().publicProfile.tabs.reviews,
+                                    value: "avaliacoes",
+                                },
+                            ]}
+                        />
 
-                        <div class="py-2">
-                            {/* TAB: SERVIÇOS */}
+                        <div class="py-1">
                             <Show when={activeTab() === "servicos"}>
-                                <div class="flex flex-col gap-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                                    <Show when={services()?.length > 0} fallback={<div class="p-8 text-center text-muted-foreground">Nenhum serviço disponível no momento.</div>}>
-                                        <For each={services()}>
-                                            {(svc) => (
-                                                <div class="flex items-center justify-between p-4 rounded-xl border border-border bg-card hover:border-primary/50 transition-colors cursor-pointer group">
-                                                    <div class="flex flex-col">
-                                                        <div class="flex items-center gap-2">
-                                                            <span class="font-bold text-foreground group-hover:text-primary transition-colors">
-                                                                {svc.service?.name || svc.name}
+                                <div class="flex flex-col gap-3">
+                                    <Show
+                                        when={(services() ?? []).length > 0}
+                                        fallback={
+                                            <div class="p-8 text-center text-muted-foreground">
+                                                {t().publicProfile.noServices}
+                                            </div>
+                                        }
+                                    >
+                                        <For each={services() ?? []}>
+                                            {(svc: any) => {
+                                                const svcName =
+                                                    svc.service?.name ||
+                                                    svc.name ||
+                                                    t().publicProfile
+                                                        .defaultServiceName;
+                                                const duration =
+                                                    svc.service?.durationMinutes ||
+                                                    svc.durationMinutes ||
+                                                    svc.duration ||
+                                                    60;
+                                                const priceBrl = Number(
+                                                    svc.service?.price ??
+                                                        svc.price ??
+                                                        0,
+                                                );
+                                                return (
+                                                    <div class="group flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-card p-4 transition-colors hover:border-primary/50">
+                                                        <div class="flex flex-col">
+                                                            <span class="font-bold text-foreground transition-colors group-hover:text-primary">
+                                                                {localizeDomain.serviceName(
+                                                                    svcName,
+                                                                )}
+                                                            </span>
+                                                            <span class="text-sm text-muted-foreground">
+                                                                {duration}{" "}
+                                                                {
+                                                                    t().common
+                                                                        .minutesShort
+                                                                }
                                                             </span>
                                                         </div>
-                                                        <span class="text-sm text-muted-foreground">{svc.service?.durationMinutes || svc.durationMinutes || svc.duration} min</span>
+                                                        <div class="flex items-center gap-4">
+                                                            <span
+                                                                class="font-semibold text-foreground"
+                                                                title={
+                                                                    formatMoneyHint(
+                                                                        priceBrl,
+                                                                    ) ?? undefined
+                                                                }
+                                                            >
+                                                                {formatMoney(priceBrl)}
+                                                            </span>
+                                                            <Button
+                                                                variant="outline"
+                                                                class="rounded-full px-4 text-xs"
+                                                                onClick={() =>
+                                                                    setSelectedServiceForBooking(
+                                                                        svc,
+                                                                    )
+                                                                }
+                                                            >
+                                                                {t().publicProfile.book}
+                                                            </Button>
+                                                        </div>
                                                     </div>
-                                                    <div class="flex items-center gap-4">
-                                                        <span class="font-semibold text-foreground">
-                                                            R$ {svc.service?.price || svc.price}
-                                                        </span>
-                                                        <Button variant="outline" class="rounded-full text-xs px-4" onClick={() => setSelectedServiceForBooking(svc)}>Reservar</Button>
-                                                    </div>
-                                                </div>
-                                            )}
+                                                );
+                                            }}
                                         </For>
                                     </Show>
                                 </div>
                             </Show>
 
-                            {/* TAB: PORTFÓLIO */}
                             <Show when={activeTab() === "portfolio"}>
-                                <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                                    <Show when={portfolio()?.length > 0} fallback={<div class="col-span-full p-8 text-center text-muted-foreground">Nenhuma foto no portfólio ainda.</div>}>
-                                        <For each={portfolio()}>
+                                <div class="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                                    <Show
+                                        when={(portfolio() ?? []).length > 0}
+                                        fallback={
+                                            <div class="col-span-full p-8 text-center text-muted-foreground">
+                                                {t().publicProfile.noPortfolio}
+                                            </div>
+                                        }
+                                    >
+                                        <For each={portfolio() ?? []}>
                                             {(item) => (
-                                                <div class="aspect-square rounded-xl bg-secondary overflow-hidden group cursor-pointer border border-border">
+                                                <div class="group aspect-square overflow-hidden rounded-xl border border-border bg-secondary">
                                                     <img
-                                                        src={item.url || item}
-                                                        alt="Trabalho de portfólio"
-                                                        class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                                                        src={item.url}
+                                                        alt={
+                                                            t().publicProfile
+                                                                .portfolioAlt
+                                                        }
+                                                        class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                                                     />
                                                 </div>
                                             )}
@@ -233,7 +368,6 @@ export default function PublicProfile() {
                                 </div>
                             </Show>
 
-                            {/* TAB: AVALIAÇÕES */}
                             <Show when={activeTab() === "avaliacoes"}>
                                 <ReviewListWidget professionalId={params.id} />
                             </Show>
@@ -241,17 +375,32 @@ export default function PublicProfile() {
                     </div>
                 </div>
             </div>
+
             <Show when={selectedServiceForBooking()}>
-                <BookingModal 
-                    isOpen={!!selectedServiceForBooking()}
-                    onClose={() => setSelectedServiceForBooking(null)}
-                    professionalId={params.id as string}
-                    businessId={selectedServiceForBooking().businessProfessional?.business?.id || ""}
-                    serviceId={selectedServiceForBooking().service?.id}
-                    serviceName={selectedServiceForBooking().service?.name || selectedServiceForBooking().name}
-                    durationMinutes={selectedServiceForBooking().service?.durationMinutes || selectedServiceForBooking().durationMinutes || selectedServiceForBooking().duration || 60}
-                    price={selectedServiceForBooking().service?.price || selectedServiceForBooking().price}
-                />
+                {(svc) => (
+                    <BookingModal
+                        isOpen={true}
+                        onClose={() => setSelectedServiceForBooking(null)}
+                        professionalId={params.id as string}
+                        businessId={
+                            svc().businessProfessional?.business?.id ||
+                            svc().businessId ||
+                            ""
+                        }
+                        serviceId={svc().service?.id || svc().id}
+                        serviceName={svc().service?.name || svc().name}
+                        durationMinutes={
+                            svc().service?.durationMinutes ||
+                            svc().durationMinutes ||
+                            svc().duration ||
+                            60
+                        }
+                        cleanupMinutes={
+                            svc().service?.cleanupMinutes || svc().cleanupMinutes || 0
+                        }
+                        price={svc().service?.price ?? svc().price}
+                    />
+                )}
             </Show>
         </Show>
     );

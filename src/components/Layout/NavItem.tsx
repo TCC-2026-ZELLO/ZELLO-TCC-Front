@@ -1,7 +1,6 @@
-import { JSX, Show } from "solid-js";
 import { A, useLocation } from "@solidjs/router";
-
-import { isSidebarCollapsed } from "../../store/appState";
+import { JSX, Show } from "solid-js";
+import { closeMobileSidebar, isSidebarCollapsed } from "../../store/appState";
 
 interface NavItemProps {
     label: string;
@@ -13,48 +12,52 @@ interface NavItemProps {
 
 export function NavItem(props: NavItemProps) {
     const location = useLocation();
-    const isActive = () => location.pathname === props.href;
+    const isActive = () => props.active ?? location.pathname === props.href;
 
     return (
         <A
             href={props.href || "#"}
-            class="group relative flex items-center no-underline transition-all duration-200 rounded-full"
-            classList={{
-                "justify-between px-3 py-3 w-full": !isSidebarCollapsed(),
-                "justify-center w-11 h-11 shrink-0": isSidebarCollapsed(),
-                "bg-white/15 text-white": isActive(),
-                "bg-transparent text-muted-foreground hover:bg-white/10 hover:text-white": !isActive(),
-            }}
+            onClick={() => closeMobileSidebar()}
+            title={props.label}
+            class={`group relative flex items-center rounded-xl no-underline transition-all duration-200 px-3 py-3 w-full ${
+                isSidebarCollapsed()
+                    ? "md:h-11 md:w-11 md:shrink-0 md:justify-center md:p-0"
+                    : "justify-between"
+            } ${
+                isActive()
+                    ? "bg-white/18 text-sidebar-foreground font-semibold"
+                    : "bg-transparent text-sidebar-foreground/75 hover:bg-white/10 hover:text-sidebar-foreground"
+            }`}
         >
             <Show when={isActive()}>
-                <div class="absolute left-0 top-1/4 h-1/2 w-[3px] rounded-r bg-white" />
+                <div class="absolute top-1/4 left-0 h-1/2 w-[3px] rounded-r bg-primary-foreground md:bg-white" />
             </Show>
 
             <div class="flex items-center gap-3">
                 <span
-                    class="flex w-5 items-center justify-center transition-opacity shrink-0"
-                    classList={{ "opacity-100": isActive(), "opacity-70 group-hover:opacity-100": !isActive() }}
+                    class="flex w-5 shrink-0 items-center justify-center transition-opacity"
+                    classList={{
+                        "opacity-100": isActive(),
+                        "opacity-75 group-hover:opacity-100": !isActive(),
+                    }}
                 >
                     {props.icon}
                 </span>
 
-                <Show when={!isSidebarCollapsed()}>
-                    <span
-                        class="text-sm whitespace-nowrap"
-                        classList={{ "font-semibold": isActive(), "font-medium": !isActive() }}
-                    >
-                        {props.label}
-                    </span>
-                </Show>
+                <span
+                    class={`whitespace-nowrap text-sm ${
+                        isSidebarCollapsed() ? "md:hidden" : ""
+                    }`}
+                >
+                    {props.label}
+                </span>
             </div>
 
-            <Show when={props.badge && !isSidebarCollapsed()}>
+            <Show when={props.badge}>
                 <span
-                    class="rounded-full px-2 py-[2px] text-[11px] font-bold text-white shrink-0"
-                    classList={{
-                        "bg-cliente": isActive(),
-                        "bg-white/10": !isActive()
-                    }}
+                    class={`shrink-0 rounded-full px-2 py-[2px] text-[11px] font-bold text-white ${
+                        isSidebarCollapsed() ? "md:hidden" : ""
+                    } ${isActive() ? "bg-cliente" : "bg-white/15"}`}
                 >
                     {props.badge}
                 </span>

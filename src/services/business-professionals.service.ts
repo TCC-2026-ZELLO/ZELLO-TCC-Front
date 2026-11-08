@@ -1,4 +1,5 @@
-import { http } from "./api";
+import { container } from "../core/container";
+import type { ShiftInterval, TeamMemberLink } from "../core/domain/entities/models";
 
 export interface CreateBusinessProfessionalPayload {
     businessId: string;
@@ -7,25 +8,24 @@ export interface CreateBusinessProfessionalPayload {
 }
 
 export const businessProfessionalsService = {
-    listByBusiness: async (businessId: string) => {
-        const response = await http.get<any>(`/business-professionals/business/${businessId}`);
-        return response.data || [];
-    },
+    listByBusiness: (businessId: string): Promise<TeamMemberLink[]> =>
+        container.businessTeamRepo.listByBusiness(businessId),
 
     create: (data: { businessId: string; email: string; active: boolean }) =>
-        http.post(`/business-professionals`, data),
+        container.businessTeamRepo.linkProfessional(data),
 
-    remove: (id: string) =>
-        http.delete(`/business-professionals/${id}`),
+    remove: (id: string) => container.businessTeamRepo.unlinkProfessional(id),
 
-    update: (id: string, data: any) =>
-        http.patch(`/business-professionals/${id}`, data),
+    update: (id: string, data: Record<string, unknown>) =>
+        container.businessTeamRepo.updateLink(id, data),
 
-    findServices: (id: string) => http.get<any>(`/business-professionals/${id}/services`),
+    findServices: (id: string) => container.businessTeamRepo.getAssignedServices(id),
+
     updateServices: (id: string, serviceIds: string[]) =>
-        http.patch(`/business-professionals/${id}/services`, { serviceIds }),
+        container.businessTeamRepo.updateAssignedServices(id, serviceIds),
 
-    findShifts: (id: string) => http.get<any>(`/business-professionals/${id}/shifts`),
-    updateShifts: (id: string, shifts: any[]) =>
-        http.patch(`/business-professionals/${id}/shifts`, { shifts }),
+    findShifts: (id: string) => container.businessTeamRepo.getShifts(id),
+
+    updateShifts: (id: string, shifts: ShiftInterval[]) =>
+        container.businessTeamRepo.updateShifts(id, shifts),
 };

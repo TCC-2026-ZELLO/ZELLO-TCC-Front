@@ -1,6 +1,11 @@
 import { createSignal } from "solid-js";
+import { localizeDomain, t } from "../core/i18n";
 import { geolocationService } from "../services/geolocationService";
-import { searchNearbyServices, setSearchAddressLabel, setEmptyStateReason } from "../store/locationStore";
+import {
+    searchNearbyServices,
+    setEmptyStateReason,
+    setSearchAddressLabel,
+} from "../store/locationStore";
 import { toast } from "../store/toastStore";
 import type { GeolocationError } from "../types/location";
 
@@ -9,11 +14,6 @@ export interface UseGeolocation {
     locateUser: () => Promise<void>;
 }
 
-/**
- * Aciona a Geolocation API do navegador e, em caso de sucesso, dispara a
- * busca de estabelecimentos próximos. Usado tanto na entrada automática da
- * página quanto no botão "usar minha localização".
- */
 export function useGeolocation(): UseGeolocation {
     const [isLocating, setIsLocating] = createSignal(false);
 
@@ -21,12 +21,24 @@ export function useGeolocation(): UseGeolocation {
         setIsLocating(true);
         try {
             const coordinates = await geolocationService.getCurrentPosition();
-            setSearchAddressLabel("sua localização atual");
+            setSearchAddressLabel(t().location.myCurrentLocation);
             await searchNearbyServices(coordinates);
         } catch (error) {
             const geolocationError = error as GeolocationError;
-            setEmptyStateReason(geolocationError.reason === "permission-denied" ? "no-permission" : "error");
-            toast.error(geolocationError.message ?? "Não foi possível obter sua localização.");
+            setEmptyStateReason(
+                geolocationError.reason === "permission-denied"
+                    ? "no-permission"
+                    : "error",
+            );
+            const fallbackMsg =
+                geolocationError.reason === "permission-denied"
+                    ? t().location.errPermissionDenied
+                    : geolocationError.reason === "timeout"
+                      ? t().location.errTimeout
+                      : geolocationError.reason === "unsupported"
+                        ? t().location.errUnsupported
+                        : t().location.errGeolocationFailed;
+            toast.error(localizeDomain.apiError(geolocationError.message, fallbackMsg));
         } finally {
             setIsLocating(false);
         }

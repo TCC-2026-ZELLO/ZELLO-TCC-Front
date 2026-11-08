@@ -1,7 +1,7 @@
 import { splitProps, JSX } from "solid-js";
 
 export interface ButtonProps extends JSX.ButtonHTMLAttributes<HTMLButtonElement> {
-    variant?: "primary" | "secondary" | "outline" | "destructive" | "ghost";
+    variant?: "primary" | "secondary" | "outline" | "destructive" | "danger" | "ghost";
     size?: "sm" | "md" | "lg";
     pill?: boolean;
 }
@@ -40,8 +40,8 @@ export function Button(props: ButtonProps) {
                 "border-border bg-transparent text-foreground enabled:hover:bg-secondary":
                     variant() === "outline",
 
-                "border-transparent bg-error text-white enabled:hover:bg-error/90":
-                    variant() === "destructive",
+                "border-transparent bg-destructive text-destructive-foreground enabled:hover:bg-destructive/90":
+                    variant() === "destructive" || variant() === "danger",
 
                 "border-transparent bg-transparent text-foreground enabled:hover:bg-secondary":
                     variant() === "ghost",

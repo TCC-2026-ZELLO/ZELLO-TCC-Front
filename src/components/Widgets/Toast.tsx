@@ -1,16 +1,18 @@
 import { For } from "solid-js";
-import { toasts, ToastItem } from "../../store/toastStore";
+import { ToastItem, toasts } from "../../store/toastStore";
 
 const STYLES: Record<ToastItem["type"], string> = {
-    success: "bg-green-600  text-white border-green-700",
-    error:   "bg-red-600    text-white border-red-700",
-    info:    "bg-foreground text-background border-border",
+    success: "bg-success text-white border-border",
+    error: "bg-error text-error-foreground border-border",
+    warning: "bg-warning text-warning-foreground border-border",
+    info: "bg-primary text-primary-foreground border-border",
 };
 
 const ICONS: Record<ToastItem["type"], string> = {
     success: "✓",
-    error:   "✕",
-    info:    "i",
+    error: "✕",
+    warning: "!",
+    info: "i",
 };
 
 export function ToastContainer() {
@@ -18,25 +20,25 @@ export function ToastContainer() {
         <div
             role="region"
             aria-label="Notificações do sistema"
-            class="fixed bottom-6 right-6 z-[100] flex flex-col gap-3 pointer-events-none"
+            class="pointer-events-none fixed right-4 bottom-4 left-4 sm:left-auto sm:right-6 sm:bottom-6 z-[100] flex flex-col items-end gap-3"
         >
             <For each={toasts()}>
-                {(t) => (
+                {(item) => (
                     <div
-                        role={t.type === "error" ? "alert" : "status"}
-                        aria-live={t.type === "error" ? "assertive" : "polite"}
+                        role={item.type === "error" ? "alert" : "status"}
+                        aria-live={item.type === "error" ? "assertive" : "polite"}
                         aria-atomic="true"
-                        class={`flex items-center gap-3 min-w-[260px] max-w-sm px-4 py-3 rounded-xl border shadow-lg text-sm font-medium
+                        class={`pointer-events-auto flex w-full sm:w-auto sm:min-w-[260px] max-w-sm items-center gap-3 rounded-xl border px-4 py-3 text-sm font-medium shadow-lg
                             animate-in slide-in-from-bottom-4 fade-in duration-300
-                            ${STYLES[t.type]}`}
+                            ${STYLES[item.type]}`}
                     >
                         <span
                             aria-hidden="true"
-                            class="shrink-0 size-5 rounded-full bg-white/20 flex items-center justify-center text-xs font-bold"
+                            class="flex size-5 shrink-0 items-center justify-center rounded-full bg-black/15 text-xs font-bold"
                         >
-                            {ICONS[t.type]}
+                            {ICONS[item.type]}
                         </span>
-                        <span class="flex-1">{t.message}</span>
+                        <span class="flex-1">{item.message}</span>
                     </div>
                 )}
             </For>

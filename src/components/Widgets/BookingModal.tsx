@@ -1,33 +1,50 @@
-import { createSignal, createEffect, onCleanup, Show, For } from "solid-js";
+import { createEffect, createSignal, For, onCleanup, Show } from "solid-js";
+import type { BookingMode } from "../../core/application/booking/BookingStrategies";
+import { container } from "../../core/container";
+import type { ServiceCatalogItem, TeamMemberLink } from "../../core/domain/entities/models";
+import {
+    formatMoney,
+    formatMoneyHint,
+    formatTime,
+    localizeDomain,
+    t,
+} from "../../core/i18n";
+import { ApiError } from "../../services/api";
+import {
+    availabilityService,
+    type Bound,
+    type BoundsParams,
+} from "../../services/availability.service";
+import { CalendarIcon, CheckCircleIcon, ClockIcon, XIcon } from "../Icons/Icons";
 import { Button } from "./Button";
 import { Input } from "./Input";
-import { availabilityService, Bound, BoundsParams } from "../../services/availability.service";
-import { appointmentsService } from "../../services/appointments.service";
-import { ApiError } from "../../services/api";
-import { CalendarIcon, ClockIcon, XIcon, CheckCircleIcon } from "../Icons/Icons";
-import { t } from "../../store/appState";
 
 const BOUNDS_POLLING_INTERVAL_MS = 20000;
 
-export type BookingMode = "create" | "reschedule" | "propose";
+export type { BookingMode };
 
-interface BookingModalProps {
+export interface BookingModalProps {
     isOpen: boolean;
     onClose: () => void;
     onSuccess?: () => void;
     mode?: BookingMode;
     appointmentId?: string;
     initialDate?: string;
-    professionalId: string;
+    professionalId?: string;
     businessId: string;
-    serviceId: string;
-    serviceName: string;
-    durationMinutes: number;
+    serviceId?: string;
+    serviceName?: string;
+    durationMinutes?: number;
+    cleanupMinutes?: number;
     price?: number | string;
+    catalogOptions?: ServiceCatalogItem[];
+    teamOptions?: TeamMemberLink[];
 }
 
 export function BookingModal(props: BookingModalProps) {
     const [date, setDate] = createSignal("");
+    const [selectedServiceId, setSelectedServiceId] = createSignal("");
+    const [selectedProId, setSelectedProId] = createSignal("");
     const [bounds, setBounds] = createSignal<Bound[]>([]);
     const [loadingBounds, setLoadingBounds] = createSignal(false);
     const [boundsError, setBoundsError] = createSignal("");
@@ -39,15 +56,45 @@ export function BookingModal(props: BookingModalProps) {
     const mode = (): BookingMode => props.mode ?? "create";
     const copy = () => t().booking.modes[mode()];
     const isBlocked = () => feedback().type === "blocked";
-    const missingContext = () => !props.businessId || !props.serviceId || !props.professionalId;
+
+    const activeService = () => {
+        if (props.catalogOptions && props.catalogOptions.length > 0) {
+            return props.catalogOptions.find((s) => s.id === selectedServiceId());
+        }
+        return undefined;
+    };
+
+    const resolvedServiceId = () => activeService()?.id || props.serviceId || "";
+    const resolvedServiceName = () =>
+        localizeDomain.serviceName(activeService()?.name || props.serviceName || "");
+    const resolvedDuration = () =>
+        Number(activeService()?.durationMinutes ?? props.durationMinutes ?? 30);
+    const resolvedCleanup = () =>
+        Number(activeService()?.cleanupMinutes ?? props.cleanupMinutes ?? 0);
+    const resolvedPrice = () => {
+        const raw = activeService()?.price ?? props.price;
+        return raw !== undefined && raw !== null ? Number(raw) : undefined;
+    };
+    const resolvedProId = () => {
+        if (props.teamOptions) return selectedProId() || undefined;
+        return props.professionalId || undefined;
+    };
+
+    const missingContext = () => !props.businessId || !resolvedServiceId();
+
     const generatedSlots = () =>
-        availabilityService.generateAvailableSlots(bounds(), props.durationMinutes);
+        availabilityService.generateAvailableSlots(
+            bounds(),
+            resolvedDuration(),
+            resolvedDuration(),
+            resolvedCleanup(),
+        );
 
     const currentBoundsParams = (): BoundsParams => ({
         date: date(),
-        professionalId: props.professionalId,
+        professionalId: resolvedProId(),
         businessId: props.businessId,
-        serviceId: props.serviceId,
+        serviceId: resolvedServiceId(),
     });
 
     const fetchBounds = async () => {
@@ -71,12 +118,11 @@ export function BookingModal(props: BookingModalProps) {
             setBounds(fresh);
             setBoundsError("");
         } catch (err: any) {
-            console.error("Erro ao buscar horários", err);
             if (!cached) {
                 setBounds([]);
                 setBoundsError(
                     err instanceof ApiError
-                        ? err.message || t().booking.loadError
+                        ? localizeDomain.apiError(err.message, t().booking.loadError)
                         : t().booking.loadError,
                 );
             }
@@ -89,6 +135,10 @@ export function BookingModal(props: BookingModalProps) {
         if (!props.isOpen) return;
 
         setDate(props.initialDate ?? "");
+        setSelectedServiceId(
+            props.serviceId || props.catalogOptions?.[0]?.id || "",
+        );
+        setSelectedProId(props.professionalId ?? "");
         setSelectedTime("");
         setBoundsError("");
         setFeedback({ type: "", message: "" });
@@ -96,40 +146,27 @@ export function BookingModal(props: BookingModalProps) {
     });
 
     createEffect(() => {
-        if (!date() || !props.isOpen) {
+        const currentDate = date();
+        const svcId = resolvedServiceId();
+        void resolvedProId();
+        if (!currentDate || !svcId || !props.isOpen) {
             setBounds([]);
             setSelectedTime("");
             return;
         }
 
         setSelectedTime("");
-        fetchBounds();
+        void fetchBounds();
     });
 
-   createEffect(() => {
-        if (!date() || !props.isOpen) return;
+    createEffect(() => {
+        if (!date() || !resolvedServiceId() || !props.isOpen) return;
 
-        const interval = setInterval(fetchBounds, BOUNDS_POLLING_INTERVAL_MS);
+        const interval = setInterval(() => {
+            void fetchBounds();
+        }, BOUNDS_POLLING_INTERVAL_MS);
         onCleanup(() => clearInterval(interval));
     });
-
-    const submit = async () => {
-        const payload = { date: date(), startTime: selectedTime() };
-
-        switch (mode()) {
-            case "reschedule":
-                return appointmentsService.reschedule(props.appointmentId!, payload);
-            case "propose":
-                return appointmentsService.proposeReschedule(props.appointmentId!, payload);
-            default:
-                return appointmentsService.create({
-                    professionalId: props.professionalId,
-                    businessId: props.businessId,
-                    serviceId: props.serviceId,
-                    ...payload,
-                });
-        }
-    };
 
     const handleConfirm = async () => {
         if (!date() || !selectedTime()) {
@@ -141,25 +178,42 @@ export function BookingModal(props: BookingModalProps) {
         setFeedback({ type: "", message: "" });
 
         try {
-            const response = await submit();
+            await container.submitBookingUseCase.execute(mode(), {
+                appointmentId: props.appointmentId,
+                businessId: props.businessId,
+                serviceId: resolvedServiceId(),
+                professionalId: resolvedProId(),
+                date: date(),
+                startTime: selectedTime(),
+            });
 
+            container.availabilityRepo.invalidateBounds();
             setIsSuccess(true);
             setFeedback({
                 type: "success",
-                message: response?.message || copy().success,
+                message: copy().success,
             });
             props.onSuccess?.();
 
-            setTimeout(() => handleClose(), 3000);
+            setTimeout(() => handleClose(), 2200);
         } catch (err: any) {
             if (err instanceof ApiError && err.status === 409) {
                 setSelectedTime("");
-                setFeedback({ type: "error", message: err.message || t().booking.slotTaken });
-                fetchBounds();
+                setFeedback({
+                    type: "error",
+                    message: localizeDomain.apiError(err.message, t().booking.slotTaken),
+                });
+                void fetchBounds();
             } else if (err instanceof ApiError && err.status === 422) {
-                setFeedback({ type: "blocked", message: err.message || t().booking.limitReached });
+                setFeedback({
+                    type: "blocked",
+                    message: localizeDomain.apiError(err.message, t().booking.limitReached),
+                });
             } else {
-                setFeedback({ type: "error", message: err.message || t().common.genericError });
+                setFeedback({
+                    type: "error",
+                    message: localizeDomain.apiError(err?.message, t().common.genericError),
+                });
             }
         } finally {
             setLoadingSubmit(false);
@@ -177,47 +231,123 @@ export function BookingModal(props: BookingModalProps) {
 
     return (
         <Show when={props.isOpen}>
-            <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-                <div class="bg-card w-full max-w-md rounded-2xl shadow-xl overflow-hidden flex flex-col border border-border animate-in zoom-in-95 duration-200">
-                    <header class="flex items-center justify-between p-4 border-b border-border bg-muted/20">
+            <div class="fixed inset-0 z-50 flex items-center justify-center bg-overlay p-4 backdrop-blur-xs animate-in fade-in duration-200">
+                <div class="flex max-h-[90dvh] w-full max-w-md flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-xl animate-in zoom-in-95 duration-200">
+                    <header class="flex items-center justify-between border-b border-border bg-muted/20 p-4">
                         <h2 class="text-lg font-bold text-foreground">{copy().title}</h2>
-                        <button onClick={handleClose} class="text-muted-foreground hover:text-foreground transition-colors p-1 rounded-md hover:bg-secondary">
+                        <button
+                            type="button"
+                            aria-label={t().common.close}
+                            onClick={handleClose}
+                            class="cursor-pointer rounded-md p-1 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+                        >
                             <XIcon size={20} />
                         </button>
                     </header>
 
-                    <div class="p-5 flex flex-col gap-6 overflow-y-auto max-h-[75vh]">
+                    <div class="flex flex-1 flex-col gap-5 overflow-y-auto p-5">
                         <Show when={isSuccess()}>
-                            <div class="flex flex-col items-center justify-center py-8 text-center gap-4">
-                                <div class="size-16 bg-emerald-500/20 text-emerald-500 rounded-full flex items-center justify-center animate-bounce">
+                            <div class="flex flex-col items-center justify-center gap-4 py-8 text-center">
+                                <div class="flex size-16 items-center justify-center rounded-full bg-success/20 text-success animate-bounce">
                                     <CheckCircleIcon size={32} />
                                 </div>
-                                <h3 class="text-xl font-bold text-foreground">{t().booking.successTitle}</h3>
+                                <h3 class="text-xl font-bold text-foreground">
+                                    {t().booking.successTitle}
+                                </h3>
                                 <p class="text-muted-foreground">{feedback().message}</p>
                             </div>
                         </Show>
 
                         <Show when={!isSuccess()}>
-                            <div class="flex flex-col gap-1 p-4 rounded-xl bg-primary/5 border border-primary/20">
-                                <span class="font-bold text-primary">{props.serviceName}</span>
-                                <div class="flex items-center gap-4 text-sm text-muted-foreground mt-1">
-                                    <span class="flex items-center gap-1">
-                                        <ClockIcon size={14}/> {props.durationMinutes} {t().common.minutesShort}
-                                    </span>
-                                    <Show when={props.price !== undefined && props.price !== null}>
-                                        <span class="font-bold text-foreground">{t().common.currency} {props.price}</span>
-                                    </Show>
+                            <Show
+                                when={props.catalogOptions && props.catalogOptions.length > 0}
+                                fallback={
+                                    <div class="flex flex-col gap-1 rounded-xl border border-primary/20 bg-primary/5 p-4">
+                                        <span class="font-bold text-primary">
+                                            {resolvedServiceName()}
+                                        </span>
+                                        <div class="mt-1 flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
+                                            <span class="flex items-center gap-1">
+                                                <ClockIcon size={14} /> {resolvedDuration()}{" "}
+                                                {t().common.minutesShort}
+                                            </span>
+                                            <Show when={resolvedPrice() !== undefined}>
+                                                <span
+                                                    class="font-bold text-foreground"
+                                                    title={
+                                                        formatMoneyHint(resolvedPrice()!) ??
+                                                        undefined
+                                                    }
+                                                >
+                                                    {formatMoney(resolvedPrice()!)}
+                                                </span>
+                                            </Show>
+                                        </div>
+                                    </div>
+                                }
+                            >
+                                <div class="flex flex-col gap-2">
+                                    <label class="text-xs font-semibold uppercase text-muted-foreground">
+                                        {t().booking.selectServiceLabel}
+                                    </label>
+                                    <select
+                                        value={selectedServiceId()}
+                                        onChange={(e) =>
+                                            setSelectedServiceId(e.currentTarget.value)
+                                        }
+                                        class="h-11 w-full rounded-lg border border-border bg-card px-3 text-sm text-foreground outline-none focus:border-primary"
+                                    >
+                                        <For each={props.catalogOptions}>
+                                            {(svc) => (
+                                                <option value={svc.id}>
+                                                    {localizeDomain.serviceName(svc.name)} —{" "}
+                                                    {formatMoney(svc.price)} (
+                                                    {svc.durationMinutes}{" "}
+                                                    {t().common.minutesShort})
+                                                </option>
+                                            )}
+                                        </For>
+                                    </select>
                                 </div>
-                            </div>
+                            </Show>
+
+                            <Show when={props.teamOptions && props.teamOptions.length > 0}>
+                                <div class="flex flex-col gap-2">
+                                    <label class="text-xs font-semibold uppercase text-muted-foreground">
+                                        {t().booking.selectProfessionalLabel}
+                                    </label>
+                                    <select
+                                        value={selectedProId()}
+                                        onChange={(e) =>
+                                            setSelectedProId(e.currentTarget.value)
+                                        }
+                                        class="h-11 w-full rounded-lg border border-border bg-card px-3 text-sm text-foreground outline-none focus:border-primary"
+                                    >
+                                        <option value="">
+                                            {t().booking.anyProfessionalOption}
+                                        </option>
+                                        <For each={props.teamOptions}>
+                                            {(member) => (
+                                                <option value={member.professional?.id || member.professionalId || ""}>
+                                                    {member.professional.user?.name ||
+                                                        t().teamSchedule.defaultProfessional}
+                                                </option>
+                                            )}
+                                        </For>
+                                    </select>
+                                </div>
+                            </Show>
 
                             <Show when={mode() === "propose"}>
-                                <p class="text-sm text-muted-foreground">{t().booking.proposeHint}</p>
+                                <p class="text-sm text-muted-foreground">
+                                    {t().booking.proposeHint}
+                                </p>
                             </Show>
 
                             <Show when={!isBlocked()}>
                                 <div class="flex flex-col gap-2">
-                                    <label class="text-sm font-semibold text-foreground flex items-center gap-2">
-                                        <CalendarIcon size={16}/> {t().booking.dateLabel}
+                                    <label class="flex items-center gap-2 text-sm font-semibold text-foreground">
+                                        <CalendarIcon size={16} /> {t().booking.dateLabel}
                                     </label>
                                     <Input
                                         type="date"
@@ -229,19 +359,22 @@ export function BookingModal(props: BookingModalProps) {
 
                                 <Show when={date()}>
                                     <div class="flex flex-col gap-3">
-                                        <label class="text-sm font-semibold text-foreground flex items-center gap-2">
-                                            <ClockIcon size={16}/> {t().booking.timeLabel}
+                                        <label class="flex items-center gap-2 text-sm font-semibold text-foreground">
+                                            <ClockIcon size={16} /> {t().booking.timeLabel}
                                         </label>
 
                                         <Show when={loadingBounds()}>
-                                            <div class="text-sm text-muted-foreground animate-pulse">{t().booking.loadingSlots}</div>
+                                            <div class="animate-pulse text-sm text-muted-foreground">
+                                                {t().booking.loadingSlots}
+                                            </div>
                                         </Show>
 
                                         <Show when={!loadingBounds() && boundsError()}>
-                                            <div class="flex flex-col gap-2 text-sm text-red-500 bg-red-500/10 p-3 rounded-lg border border-red-500/20 text-center">
+                                            <div class="flex flex-col gap-2 rounded-lg border border-error/30 bg-error/10 p-3 text-center text-sm text-error">
                                                 <span>{boundsError()}</span>
                                                 <button
-                                                    class="text-xs font-semibold underline text-red-500 hover:text-red-600"
+                                                    type="button"
+                                                    class="cursor-pointer text-xs font-semibold underline"
                                                     onClick={() => fetchBounds()}
                                                 >
                                                     {t().common.retry}
@@ -249,27 +382,42 @@ export function BookingModal(props: BookingModalProps) {
                                             </div>
                                         </Show>
 
-                                        <Show when={!loadingBounds() && !boundsError() && generatedSlots().length > 0}>
-                                            <div class="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                                        <Show
+                                            when={
+                                                !loadingBounds() &&
+                                                !boundsError() &&
+                                                generatedSlots().length > 0
+                                            }
+                                        >
+                                            <div class="grid grid-cols-3 gap-2 sm:grid-cols-4">
                                                 <For each={generatedSlots()}>
                                                     {(slot) => (
                                                         <button
-                                                            class={`py-2 px-1 rounded-lg text-sm font-medium border transition-colors ${
+                                                            type="button"
+                                                            class={`cursor-pointer rounded-lg border px-1 py-2 text-sm font-medium transition-colors ${
                                                                 selectedTime() === slot
-                                                                    ? "bg-primary text-primary-foreground border-primary"
-                                                                    : "bg-card text-foreground border-border hover:border-primary/50"
+                                                                    ? "border-primary bg-primary text-primary-foreground"
+                                                                    : "border-border bg-card text-foreground hover:border-primary/50"
                                                             }`}
-                                                            onClick={() => setSelectedTime(slot)}
+                                                            onClick={() =>
+                                                                setSelectedTime(slot)
+                                                            }
                                                         >
-                                                            {slot}
+                                                            {formatTime(slot)}
                                                         </button>
                                                     )}
                                                 </For>
                                             </div>
                                         </Show>
 
-                                        <Show when={!loadingBounds() && !boundsError() && generatedSlots().length === 0}>
-                                            <div class="text-sm text-amber-600 bg-amber-500/10 p-3 rounded-lg border border-amber-500/20 text-center">
+                                        <Show
+                                            when={
+                                                !loadingBounds() &&
+                                                !boundsError() &&
+                                                generatedSlots().length === 0
+                                            }
+                                        >
+                                            <div class="rounded-lg border border-warning/30 bg-warning/10 p-3 text-center text-sm text-warning">
                                                 {t().booking.noSlots}
                                             </div>
                                         </Show>
@@ -278,11 +426,13 @@ export function BookingModal(props: BookingModalProps) {
                             </Show>
 
                             <Show when={feedback().message && !isSuccess()}>
-                                <div class={`text-sm p-3 rounded-lg border text-center ${
-                                    isBlocked()
-                                        ? "text-amber-600 bg-amber-500/10 border-amber-500/20 font-medium"
-                                        : "text-red-500 bg-red-500/10 border-red-500/20"
-                                }`}>
+                                <div
+                                    class={`rounded-lg border p-3 text-center text-sm ${
+                                        isBlocked()
+                                            ? "border-warning/30 bg-warning/10 font-medium text-warning"
+                                            : "border-error/30 bg-error/10 text-error"
+                                    }`}
+                                >
                                     {feedback().message}
                                 </div>
                             </Show>
@@ -290,7 +440,7 @@ export function BookingModal(props: BookingModalProps) {
                     </div>
 
                     <Show when={!isSuccess()}>
-                        <footer class="p-4 border-t border-border bg-muted/20 flex justify-end gap-3">
+                        <footer class="flex justify-end gap-3 border-t border-border bg-muted/20 p-4">
                             <Button variant="outline" onClick={handleClose}>
                                 {isBlocked() ? t().common.close : t().common.cancel}
                             </Button>
@@ -298,7 +448,12 @@ export function BookingModal(props: BookingModalProps) {
                                 <Button
                                     variant="primary"
                                     onClick={handleConfirm}
-                                    disabled={!date() || !selectedTime() || loadingSubmit()}
+                                    disabled={
+                                        !date() ||
+                                        !selectedTime() ||
+                                        !resolvedServiceId() ||
+                                        loadingSubmit()
+                                    }
                                 >
                                     {loadingSubmit() ? copy().submitting : copy().submit}
                                 </Button>

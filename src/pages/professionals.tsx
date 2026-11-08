@@ -1,95 +1,113 @@
-import { createSignal, createResource, For, Show, createEffect, batch } from "solid-js";
-import { Portal } from "solid-js/web";
-import { Card } from "../components/Widgets/Card";
-import { Button } from "../components/Widgets/Button";
-import { Input } from "../components/Widgets/Input";
-import { Switch } from "../components/Widgets/Switch";
-import { activeBusiness } from "../store/appState";
-import { businessProfessionalsService } from "../services/business-professionals.service";
-import { professionalService } from "../services/professional.service";
-import { catalogService } from "../services/catalog.service";
-import { toast } from "../store/toastStore";
-import { ToastContainer } from "../components/Widgets/Toast";
+import { batch, createResource, createSignal, For, Show } from "solid-js";
 import {
-    CheckCircleIcon,
-    PlusIcon,
-    StarIcon,
-    SaveIcon,
     BriefcaseIcon,
-    ClockIcon, TrashIcon
+    ClockIcon,
+    PlusIcon,
+    SaveIcon,
+    TrashIcon,
 } from "../components/Icons/Icons";
+import { Button } from "../components/Widgets/Button";
+import { Card } from "../components/Widgets/Card";
+import { Input } from "../components/Widgets/Input";
+import { Modal } from "../components/Widgets/Modal";
+import type { TeamMemberLink } from "../core/domain/entities/models";
+import {
+    formatInteger,
+    formatMoney,
+    formatMoneyHint,
+    localizeDomain,
+    t,
+} from "../core/i18n";
+import { businessProfessionalsService } from "../services/business-professionals.service";
+import { catalogService } from "../services/catalog.service";
+import { professionalService } from "../services/professional.service";
+import { activeBusiness } from "../store/appState";
+import { toast } from "../store/toastStore";
+
+const WEEKDAY_ORDER = [1, 2, 3, 4, 5, 6, 0] as const;
 
 export default function ProfessionalsPage() {
     const businessId = () => activeBusiness()?.businessId;
 
     const [professionals, { refetch }] = createResource(businessId, async (id) => {
         if (!id) return [];
-        const res = await businessProfessionalsService.listByBusiness(id);
-        return res.data || res;
+        return await businessProfessionalsService.listByBusiness(id);
     });
 
     const [businessCatalog] = createResource(businessId, async (id) => {
-        if (!id) return []
+        if (!id) return [];
         return await catalogService.list(id);
     });
 
     const [isAddModalOpen, setIsAddModalOpen] = createSignal(false);
     const [isEditModalOpen, setIsEditModalOpen] = createSignal(false);
-    const [selectedBP, setSelectedBP] = createSignal<any>(null);
+    const [selectedBP, setSelectedBP] = createSignal<TeamMemberLink | null>(null);
+    const [unlinkTarget, setUnlinkTarget] = createSignal<TeamMemberLink | null>(null);
     const [selectedServiceIds, setSelectedServiceIds] = createSignal<string[]>([]);
     const [newProfEmail, setNewProfEmail] = createSignal("");
     const [isSaving, setIsSaving] = createSignal(false);
 
-    const diasSemana = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"];
-    const [diasAtivos, setDiasAtivos] = createSignal<string[]>(["Seg", "Ter", "Qua", "Qui", "Sex"]);
+    const [activeDays, setActiveDays] = createSignal<number[]>([1, 2, 3, 4, 5]);
     const [horaInicio, setHoraInicio] = createSignal("09:00");
     const [horaFim, setHoraFim] = createSignal("18:00");
 
-
-    const handleOpenEdit = async (bp: any) => {
+    const handleOpenEdit = async (bp: TeamMemberLink) => {
         setSelectedBP(bp);
 
         try {
-            const serviceRes = await professionalService.getServices(bp.professional.id);
-            const serviceIds = (serviceRes.data || serviceRes).map((item: any) => item.service.id);
+            const profId = bp.professional?.id || bp.professionalId;
+            const [servicesList, shifts] = await Promise.all([
+                profId ? professionalService.getServices(profId) : Promise.resolve([]),
+                businessProfessionalsService.findShifts(bp.id),
+            ]);
 
-            const shiftRes = await businessProfessionalsService.findShifts(bp.id);
-            const shifts = shiftRes.data || [];
+            const serviceIds = (servicesList || [])
+                .map((item: any) => item?.service?.id ?? item?.id)
+                .filter(Boolean);
 
-            const dayMap = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
-            const activeDays = shifts.map(s => dayMap[s.dayOfWeek]);
+            const shiftDays = (shifts || []).map((s) => Number(s.dayOfWeek));
 
             batch(() => {
                 setSelectedServiceIds(serviceIds);
-                setDiasAtivos(activeDays);
-                if (shifts.length > 0) {
+                setActiveDays(shiftDays.length > 0 ? shiftDays : [1, 2, 3, 4, 5]);
+                if (shifts && shifts.length > 0) {
                     setHoraInicio(shifts[0].startTime.substring(0, 5));
                     setHoraFim(shifts[0].endTime.substring(0, 5));
+                } else {
+                    setHoraInicio("09:00");
+                    setHoraFim("18:00");
                 }
                 setIsEditModalOpen(true);
             });
-        } catch (e) {
-            console.error("Erro ao carregar dados", e);
+        } catch {
             setIsEditModalOpen(true);
         }
     };
 
     const toggleService = (id: string) => {
-        setSelectedServiceIds(prev =>
-            prev.includes(id) ? prev.filter(s => s !== id) : [...prev, id]
+        setSelectedServiceIds((prev) =>
+            prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id],
         );
     };
 
-    const handleRemoveProfessional = async (bpId: string, name: string) => {
-        if (!confirm(`Tem certeza que deseja remover ${name} da equipe?`)) return;
+    const toggleDay = (dayId: number) => {
+        setActiveDays((prev) =>
+            prev.includes(dayId) ? prev.filter((d) => d !== dayId) : [...prev, dayId],
+        );
+    };
+
+    const confirmRemoveProfessional = async () => {
+        const target = unlinkTarget();
+        if (!target) return;
 
         setIsSaving(true);
         try {
-            await businessProfessionalsService.remove(bpId);
-            refetch();
-            toast.success("Profissional removido da equipe com sucesso.");
-        } catch (e) {
-            toast.error("Erro ao remover o profissional.");
+            await businessProfessionalsService.remove(target.id);
+            setUnlinkTarget(null);
+            await refetch();
+            toast.success(t().professionals.toasts.unlinked);
+        } catch {
+            toast.error(t().professionals.toasts.unlinkError);
         } finally {
             setIsSaving(false);
         }
@@ -103,24 +121,19 @@ export default function ProfessionalsPage() {
         try {
             await businessProfessionalsService.updateServices(bp.id, selectedServiceIds());
 
-            const dayMap: Record<string, number> = {
-                "Dom": 0, "Seg": 1, "Ter": 2, "Qua": 3, "Qui": 4, "Sex": 5, "Sáb": 6
-            };
-
-            const shiftPayload = diasAtivos().map(dayLabel => ({
-                dayOfWeek: dayMap[dayLabel],
+            const shiftPayload = activeDays().map((dayOfWeek) => ({
+                dayOfWeek,
                 startTime: horaInicio(),
-                endTime: horaFim()
+                endTime: horaFim(),
             }));
 
             await businessProfessionalsService.updateShifts(bp.id, shiftPayload);
 
             setIsEditModalOpen(false);
-            refetch();
-            toast.success("Configurações e jornada salvas com sucesso!");
-        } catch (e) {
-            console.error(e);
-            toast.error("Erro ao salvar as configurações da escala.");
+            await refetch();
+            toast.success(t().professionals.toasts.saved);
+        } catch {
+            toast.error(t().professionals.toasts.saveError);
         } finally {
             setIsSaving(false);
         }
@@ -128,197 +141,354 @@ export default function ProfessionalsPage() {
 
     const handleAddProfessional = async () => {
         const bId = businessId();
-        if (!bId || !newProfEmail()) return;
+        if (!bId || !newProfEmail().trim()) return;
 
         setIsSaving(true);
         try {
             await businessProfessionalsService.create({
                 businessId: bId,
-                email: newProfEmail(),
+                email: newProfEmail().trim(),
                 active: true,
             });
             batch(() => {
                 setIsAddModalOpen(false);
                 setNewProfEmail("");
             });
-            refetch();
-            toast.success("Profissional vinculado com sucesso!");
-        } catch (e: any) {
-            toast.error("Não foi possível localizar um profissional com este e-mail.");
+            await refetch();
+            toast.success(t().professionals.toasts.invited);
+        } catch {
+            toast.error(t().professionals.toasts.inviteError);
         } finally {
             setIsSaving(false);
         }
     };
 
     return (
-        <div class="mx-auto flex w-full flex-col gap-8 p-8 animate-in fade-in duration-500">
+        <div class="mx-auto flex w-full flex-col gap-6 sm:gap-8 p-4 sm:p-6 md:p-8 animate-in fade-in duration-300">
             {/* --- HEADER --- */}
             <header class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                    <h1 class="text-3xl font-bold text-foreground font-display tracking-tight">Equipe Zello</h1>
-                    <p class="text-sm text-muted-foreground">
-                        Gerencie o time de <span class="font-bold text-foreground">{activeBusiness()?.name}</span>
+                    <h1 class="text-2xl sm:text-3xl font-bold text-foreground font-display tracking-tight">
+                        {t().professionals.title}
+                    </h1>
+                    <p class="text-sm text-muted-foreground mt-1">
+                        {t().professionals.subtitle}
                     </p>
                 </div>
-                <Button variant="primary" onClick={() => setIsAddModalOpen(true)}>
-                    <PlusIcon class="mr-2"/> Vincular Profissional
+                <Button
+                    variant="primary"
+                    onClick={() => setIsAddModalOpen(true)}
+                    disabled={!businessId()}
+                    class="w-full sm:w-auto"
+                >
+                    <PlusIcon class="mr-2" /> {t().professionals.inviteButton}
                 </Button>
             </header>
 
             {/* --- LISTAGEM --- */}
-            <Show when={!professionals.loading} fallback={<div class="p-12 text-center animate-pulse text-muted-foreground">Carregando time...</div>}>
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <For each={professionals()}>
-                        {(item) => (
-                            <div class="group relative">
-                                <Card
-                                    onClick={() => handleOpenEdit(item)}
-                                    class="flex flex-col p-6 gap-6 cursor-pointer group-hover:border-primary/50 transition-all hover:shadow-md"
-                                >
-                                    <div class="flex items-start justify-between">
-                                        <div class="flex items-center gap-4">
-                                            <img
-                                                src={item.professional?.photoUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(item.professional?.user?.name)}`}
-                                                class="size-14 rounded-2xl object-cover border-2 border-background shadow-sm"
-                                            />
-                                            <div class="flex flex-col">
-                                                <div class="flex items-center gap-1.5 font-bold text-foreground text-lg">
-                                                    {item.professional?.user?.name}
-                                                </div>
-                                                <span class="text-xs text-muted-foreground">{item.professional?.user?.email}</span>
-                                                <div class="mt-2 flex gap-2">
-                                                    <span class="text-[10px] uppercase font-black text-emerald-600 bg-emerald-500/10 px-2 py-0.5 rounded-md">
-                                                        {item.professional?.specialty || 'Especialista'}
+            <Show
+                when={!professionals.loading}
+                fallback={
+                    <div class="p-12 text-center animate-pulse text-muted-foreground">
+                        {t().common.loading}
+                    </div>
+                }
+            >
+                <Show
+                    when={(professionals() ?? []).length > 0}
+                    fallback={
+                        <Card class="p-10 text-center flex flex-col items-center gap-3 border-dashed">
+                            <div class="size-12 rounded-2xl bg-secondary flex items-center justify-center text-muted-foreground">
+                                <BriefcaseIcon size={24} />
+                            </div>
+                            <h2 class="text-lg font-bold text-foreground">
+                                {t().professionals.emptyTitle}
+                            </h2>
+                            <p class="text-sm text-muted-foreground max-w-md">
+                                {t().professionals.emptyDesc}
+                            </p>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                class="mt-2"
+                                onClick={() => setIsAddModalOpen(true)}
+                            >
+                                <PlusIcon class="mr-1.5" size={16} />
+                                {t().professionals.inviteButton}
+                            </Button>
+                        </Card>
+                    }
+                >
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+                        <For each={professionals()}>
+                            {(item) => {
+                                const profName =
+                                    item.professional?.user?.name || "Profissional";
+                                return (
+                                    <Card
+                                        onClick={() => handleOpenEdit(item)}
+                                        class="flex flex-col p-5 sm:p-6 gap-4 cursor-pointer hover:border-primary/50 transition-all hover:shadow-md"
+                                    >
+                                        <div class="flex items-start justify-between gap-3">
+                                            <div class="flex items-center gap-4 min-w-0">
+                                                <img
+                                                    src={
+                                                        item.professional?.photoUrl ||
+                                                        `https://ui-avatars.com/api/?name=${encodeURIComponent(profName)}`
+                                                    }
+                                                    alt={profName}
+                                                    class="size-14 shrink-0 rounded-2xl object-cover border-2 border-background shadow-sm bg-muted"
+                                                />
+                                                <div class="flex flex-col min-w-0">
+                                                    <div class="font-bold text-foreground text-base sm:text-lg truncate">
+                                                        {profName}
+                                                    </div>
+                                                    <span class="text-xs text-muted-foreground truncate">
+                                                        {item.professional?.user?.email}
                                                     </span>
+                                                    <div class="mt-2 flex flex-wrap gap-2">
+                                                        <span class="text-[10px] uppercase font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-md">
+                                                            {localizeDomain.specialty(
+                                                                item.professional?.specialty ||
+                                                                    "Especialista",
+                                                            )}
+                                                        </span>
+                                                        <span class="text-[10px] uppercase font-semibold text-primary bg-primary/10 px-2.5 py-0.5 rounded-md">
+                                                            {t().professionals.editShiftsServices}
+                                                        </span>
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
 
-                                        <button
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                handleRemoveProfessional(item.id, item.professional?.user?.name);
-                                            }}
-                                            class="p-2 text-muted-foreground hover:text-red-500 hover:bg-red-50 transition-colors rounded-lg"
-                                        >
-                                            <TrashIcon size={18}/>
-                                        </button>
-                                    </div>
-                                </Card>
-                            </div>
-                        )}
-                    </For>
-                </div>
-            </Show>
-            {/* --- MODAL: VINCULAR --- */}
-            <Show when={isAddModalOpen()}>
-                <Portal>
-                    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-                        <Card class="w-full max-w-md p-6 flex flex-col gap-6 animate-in zoom-in-95">
-                            <h2 class="text-xl font-bold">Vincular Novo Membro</h2>
-                            <Input
-                                labelText="E-mail do Profissional"
-                                placeholder="exemplo@email.com"
-                                value={newProfEmail()}
-                                onInput={e => setNewProfEmail(e.currentTarget.value)}
-                            />
-                            <div class="flex justify-end gap-3">
-                                <Button variant="ghost" onClick={() => setIsAddModalOpen(false)}>Cancelar</Button>
-                                <Button variant="primary" onClick={handleAddProfessional} disabled={isSaving()}>
-                                    {isSaving() ? "Vinculando..." : "Confirmar Vínculo"}
-                                </Button>
-                            </div>
-                        </Card>
-                    </div>
-                </Portal>
-            </Show>
-
-            {/* --- MODAL: CONFIGURAÇÕES --- */}
-            <Show when={isEditModalOpen()}>
-                <Portal>
-                    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-                        <Card class="w-full max-w-2xl p-8 flex flex-col gap-8 animate-in zoom-in-95 max-h-[90vh] overflow-y-auto">
-
-                            <header class="flex justify-between items-center border-b pb-4">
-                                <div class="flex items-center gap-4">
-                                    <img src={selectedBP()?.professional?.photoUrl || `https://ui-avatars.com/api/?name=${selectedBP()?.professional?.user?.name}`}
-                                         class="size-12 rounded-xl object-cover bg-muted" />
-                                    <div>
-                                        <h2 class="text-xl font-bold">{selectedBP()?.professional?.user?.name}</h2>
-                                        <p class="text-xs text-muted-foreground">Gestão de competências e horários</p>
-                                    </div>
-                                </div>
-                                <button onClick={() => setIsEditModalOpen(false)} class="text-xl hover:text-primary">✕</button>
-                            </header>
-
-                            {/* JORNADA */}
-                            <div class="flex flex-col gap-4">
-                                <div class="flex items-center gap-2 text-primary">
-                                    <ClockIcon size={18}/>
-                                    <h3 class="font-bold uppercase tracking-widest text-[10px]">Escala de Atendimento</h3>
-                                </div>
-                                <div class="flex flex-wrap gap-2">
-                                    <For each={diasSemana}>
-                                        {(dia) => (
                                             <button
-                                                onClick={() => setDiasAtivos(p => p.includes(dia) ? p.filter(d => d !== dia) : [...p, dia])}
-                                                class={`px-4 py-2 rounded-xl text-xs font-bold border transition-all ${
-                                                    diasAtivos().includes(dia) ? 'bg-primary text-white border-primary shadow-sm' : 'border-border text-muted-foreground'
-                                                }`}
+                                                type="button"
+                                                aria-label={t().professionals.unlinkTitle}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setUnlinkTarget(item);
+                                                }}
+                                                class="p-2 shrink-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors rounded-lg cursor-pointer"
                                             >
-                                                {dia}
+                                                <TrashIcon size={18} />
                                             </button>
-                                        )}
-                                    </For>
-                                </div>
-                            </div>
+                                        </div>
+                                    </Card>
+                                );
+                            }}
+                        </For>
+                    </div>
+                </Show>
+            </Show>
 
-                            {/* COMPETÊNCIAS */}
-                            <div class="flex flex-col gap-4 border-t pt-6">
-                                <div class="flex items-center gap-2 text-primary">
-                                    <BriefcaseIcon size={18}/>
-                                    <h3 class="font-bold uppercase tracking-widest text-[10px]">Serviços Habilitados</h3>
-                                </div>
-                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                    <For each={businessCatalog()}>
-                                        {(service) => (
-                                            <div
+            {/* --- MODAL: VINCULAR --- */}
+            <Modal
+                isOpen={isAddModalOpen()}
+                onClose={() => setIsAddModalOpen(false)}
+                title={t().professionals.inviteModalTitle}
+                size="md"
+            >
+                <div class="flex flex-col gap-5">
+                    <Input
+                        labelText={t().professionals.inviteEmailLabel}
+                        type="email"
+                        placeholder={t().professionals.inviteEmailPlaceholder}
+                        value={newProfEmail()}
+                        onInput={(e) => setNewProfEmail(e.currentTarget.value)}
+                    />
+                    <div class="flex flex-col-reverse sm:flex-row justify-end gap-3">
+                        <Button variant="ghost" onClick={() => setIsAddModalOpen(false)}>
+                            {t().common.cancel}
+                        </Button>
+                        <Button
+                            variant="primary"
+                            onClick={handleAddProfessional}
+                            disabled={isSaving() || !newProfEmail().trim()}
+                        >
+                            {isSaving()
+                                ? t().professionals.sending
+                                : t().professionals.sendInvite}
+                        </Button>
+                    </div>
+                </div>
+            </Modal>
+
+            <Modal
+                isOpen={isEditModalOpen()}
+                onClose={() => setIsEditModalOpen(false)}
+                title={t().professionals.configModalTitle(
+                    selectedBP()?.professional?.user?.name || "",
+                )}
+                size="xl"
+            >
+                <div class="flex flex-col gap-6">
+                    {/* JORNADA */}
+                    <div class="flex flex-col gap-4">
+                        <div class="flex items-center gap-2 text-primary">
+                            <ClockIcon size={18} />
+                            <h3 class="font-bold uppercase tracking-widest text-xs">
+                                {t().professionals.shiftsTitle}
+                            </h3>
+                        </div>
+
+                        <div class="flex flex-wrap gap-2">
+                            <For each={WEEKDAY_ORDER}>
+                                {(dayId) => {
+                                    const isActive = () => activeDays().includes(dayId);
+                                    return (
+                                        <button
+                                            type="button"
+                                            onClick={() => toggleDay(dayId)}
+                                            class={`px-3.5 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                                                isActive()
+                                                    ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                                                    : "border-border text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                                            }`}
+                                        >
+                                            {localizeDomain.dayShort(dayId)}
+                                        </button>
+                                    );
+                                }}
+                            </For>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <Input
+                                labelText={t().professionals.startLabel}
+                                type="time"
+                                value={horaInicio()}
+                                onInput={(e) => setHoraInicio(e.currentTarget.value)}
+                            />
+                            <Input
+                                labelText={t().professionals.endLabel}
+                                type="time"
+                                value={horaFim()}
+                                onInput={(e) => setHoraFim(e.currentTarget.value)}
+                            />
+                        </div>
+                    </div>
+
+                    {/* COMPETÊNCIAS */}
+                    <div class="flex flex-col gap-4 border-t border-border pt-6">
+                        <div class="flex items-center gap-2 text-primary">
+                            <BriefcaseIcon size={18} />
+                            <h3 class="font-bold uppercase tracking-widest text-xs">
+                                {t().professionals.servicesTitle}
+                            </h3>
+                        </div>
+
+                        <Show
+                            when={(businessCatalog() ?? []).length > 0}
+                            fallback={
+                                <p class="text-sm text-muted-foreground py-4">
+                                    {t().professionals.noCatalogServices}
+                                </p>
+                            }
+                        >
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <For each={businessCatalog()}>
+                                    {(service) => {
+                                        const isSelected = () =>
+                                            selectedServiceIds().includes(service.id);
+                                        return (
+                                            <button
+                                                type="button"
                                                 onClick={() => toggleService(service.id)}
-                                                class={`p-4 rounded-2xl border cursor-pointer transition-all ${
-                                                    selectedServiceIds().includes(service.id) ? 'border-primary bg-primary/5 ring-1 ring-primary/20' : 'border-border hover:bg-muted/50'
+                                                class={`p-4 rounded-2xl border text-left cursor-pointer transition-all ${
+                                                    isSelected()
+                                                        ? "border-primary bg-primary/5 ring-1 ring-primary/20"
+                                                        : "border-border hover:bg-muted/50"
                                                 }`}
                                             >
-                                                <div class="flex justify-between items-center">
-                                                    <div>
-                                                        <p class="text-sm font-bold">{service.name}</p>
-                                                        <p class="text-[10px] text-muted-foreground">{service.durationMinutes} min · R$ {service.price}</p>
+                                                <div class="flex justify-between items-center gap-3">
+                                                    <div class="min-w-0">
+                                                        <p class="text-sm font-bold text-foreground truncate">
+                                                            {localizeDomain.serviceName(
+                                                                service.name,
+                                                            )}
+                                                        </p>
+                                                        <p
+                                                            class="text-xs text-muted-foreground"
+                                                            title={
+                                                                formatMoneyHint(service.price) ??
+                                                                undefined
+                                                            }
+                                                        >
+                                                            {formatInteger(
+                                                                service.durationMinutes,
+                                                            )}{" "}
+                                                            {t().common.minutesShort} ·{" "}
+                                                            {formatMoney(service.price)}
+                                                        </p>
                                                     </div>
-                                                    <div class={`size-5 rounded-full border-2 flex items-center justify-center ${
-                                                        selectedServiceIds().includes(service.id) ? 'bg-primary border-primary' : 'border-border'
-                                                    }`}>
-                                                        <Show when={selectedServiceIds().includes(service.id)}>
-                                                            <div class="size-1.5 bg-white rounded-full"></div>
+                                                    <div
+                                                        class={`size-5 shrink-0 rounded-full border-2 flex items-center justify-center ${
+                                                            isSelected()
+                                                                ? "bg-primary border-primary"
+                                                                : "border-border"
+                                                        }`}
+                                                    >
+                                                        <Show when={isSelected()}>
+                                                            <div class="size-2 bg-primary-foreground rounded-full" />
                                                         </Show>
                                                     </div>
                                                 </div>
-                                            </div>
-                                        )}
-                                    </For>
-                                </div>
+                                            </button>
+                                        );
+                                    }}
+                                </For>
                             </div>
-
-                            <footer class="flex gap-4 pt-6 border-t mt-auto">
-                                <Button variant="ghost" class="flex-1" onClick={() => setIsEditModalOpen(false)}>Cancelar</Button>
-                                <Button variant="primary" class="flex-1" onClick={handleSaveEverything} disabled={isSaving()}>
-                                    <SaveIcon class="mr-2"/> {isSaving() ? "Salvando..." : "Salvar Configurações"}
-                                </Button>
-                            </footer>
-                        </Card>
+                        </Show>
                     </div>
-                </Portal>
-            </Show>
 
-            <ToastContainer />
+                    <footer class="flex flex-col-reverse sm:flex-row gap-3 pt-4 border-t border-border">
+                        <Button
+                            variant="ghost"
+                            class="flex-1"
+                            onClick={() => setIsEditModalOpen(false)}
+                        >
+                            {t().common.cancel}
+                        </Button>
+                        <Button
+                            variant="primary"
+                            class="flex-1"
+                            onClick={handleSaveEverything}
+                            disabled={isSaving()}
+                        >
+                            <SaveIcon class="mr-2" />{" "}
+                            {isSaving() ? t().common.saving : t().professionals.saveConfig}
+                        </Button>
+                    </footer>
+                </div>
+            </Modal>
+
+            <Modal
+                isOpen={!!unlinkTarget()}
+                onClose={() => setUnlinkTarget(null)}
+                title={t().professionals.unlinkTitle}
+                size="sm"
+            >
+                <div class="flex flex-col gap-5">
+                    <p class="text-sm text-muted-foreground">
+                        {t().professionals.unlinkConfirm}
+                    </p>
+                    <div class="flex justify-end gap-3">
+                        <Button
+                            variant="ghost"
+                            onClick={() => setUnlinkTarget(null)}
+                            disabled={isSaving()}
+                        >
+                            {t().common.cancel}
+                        </Button>
+                        <Button
+                            variant="destructive"
+                            onClick={confirmRemoveProfessional}
+                            disabled={isSaving()}
+                        >
+                            {isSaving() ? t().common.wait : t().common.confirm}
+                        </Button>
+                    </div>
+                </div>
+            </Modal>
         </div>
     );
 }
