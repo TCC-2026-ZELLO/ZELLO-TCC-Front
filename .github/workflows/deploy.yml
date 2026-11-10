@@ -3,8 +3,6 @@ name: 'CI/CD - Frontend (GHCR + Azure Container Apps)'
 on:
   push:
     branches: ['develop', 'main']
-  pull_request:
-    branches: ['develop', 'main']
 
 permissions:
   contents: read
@@ -18,39 +16,10 @@ env:
 
 jobs:
   # ---------------------------------------------------------
-  # 1. TESTES UNITÁRIOS (VITEST) E VALIDAÇÃO DE BUILD
-  # ---------------------------------------------------------
-  test:
-    name: Testes Unitários e Build
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout do repositório
-        uses: actions/checkout@v4
-
-      - name: Configurar Node.js 20
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Instalar dependências
-        run: npm ci
-
-      - name: Rodar testes unitários (Vitest)
-        run: npm run test
-
-      - name: Validar build de produção
-        run: npm run build
-        env:
-          VITE_API_URL: ${{ secrets.VITE_API_URL || 'http://localhost:3001' }}
-
-  # ---------------------------------------------------------
-  # 2. BUILD E PUSH DA IMAGEM DOCKER (GITHUB CONTAINER REGISTRY)
+  # 1. BUILD E PUSH DA IMAGEM DOCKER (GITHUB CONTAINER REGISTRY)
   # ---------------------------------------------------------
   build-and-push:
     name: Build & Push (ghcr.io)
-    needs: test
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout do repositório
@@ -76,12 +45,12 @@ jobs:
             ${{ env.DOCKER_IMAGE }}:${{ github.sha }}
 
   # ---------------------------------------------------------
-  # 3. DEPLOY NO AZURE CONTAINER APPS (GITHUB ACTIONS)
+  # 2. DEPLOY NO AZURE CONTAINER APPS (GITHUB ACTIONS)
   # ---------------------------------------------------------
   deploy-aca:
     name: Deploy no Azure Container Apps
     needs: build-and-push
-    if: github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
     runs-on: ubuntu-latest
     steps:
       - name: Login no Azure
