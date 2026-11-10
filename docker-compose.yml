@@ -1,0 +1,7 @@
+services:
+  zello-frontend:
+    image: ghcr.io/tcc-2026-zello/zello-tcc-front:latest
+    container_name: zello_frontend
+    ports:
+      - '8080:80'
+    restart: always

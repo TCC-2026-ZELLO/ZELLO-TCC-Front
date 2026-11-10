@@ -1,34 +1,79 @@
-import { Badge } from "~/components/Widgets/Badge/Badge";
-import { Button } from "~/components/Widgets/Button/Button";
-import { accountRole, idioma, theme, toggleRole, toggleTheme, t } from "~/store/appState";
-import { MenuIcon, GlobeIcon, SunIcon, MoonIcon, ChevronDownIcon, BellIcon } from "~/components/Icons/Icons";
+import { Show } from "solid-js";
+import { t } from "../../core/i18n";
+import {
+    accountRole,
+    currentUser,
+    toggleMobileSidebar,
+    toggleSidebar,
+} from "../../store/appState";
+import { BellIcon, MenuIcon } from "../Icons/Icons";
+import { Badge } from "../Widgets/Badge";
+import { LanguageSwitcher } from "../Widgets/LanguageSwitcher";
+import { ThemeSwitcher } from "../Widgets/ThemeSwitcher";
+import { ProfileSwitcher } from "./ProfileSwitcher";
 
 export function Header() {
+    const roleBadgeLabel = () => {
+        const firstName =
+            currentUser()?.name?.split(" ")[0] || t().header.visitor;
+        const role = accountRole();
+        const roleText =
+            role === "estabelecimento"
+                ? t().header.badgeManager
+                : role === "profissional"
+                  ? t().header.badgeProf
+                  : t().header.badgeClient;
+        return `${roleText} · ${firstName}`;
+    };
+
+    const handleMenuToggle = () => {
+        if (typeof window !== "undefined" && window.innerWidth < 768) {
+            toggleMobileSidebar();
+        } else {
+            toggleSidebar();
+        }
+    };
+
     return (
-        <header style={{ height: "72px", "background-color": "var(--color-card)", "border-bottom": "1px solid var(--color-border)", display: "flex", "align-items": "center", "justify-content": "space-between", padding: "0 var(--space-8)", transition: "all 0.2s ease" }}>
-            <div style={{ display: "flex", "align-items": "center", gap: "var(--space-4)" }}>
-                <button style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-muted-foreground)" }}>{MenuIcon}</button>
-                <span style={{ "font-weight": "var(--font-weight-semibold)", "font-size": "var(--font-size-base)", color: "var(--color-foreground)" }}>{t().header.home}</span>
-                <Badge variant="default" style={{ "background-color": "var(--color-muted)", color: "var(--color-cliente)" }}>
-                    {accountRole() === "cliente" ? `${t().header.badgeClient} • ${t().sidebar.clientName}` : `${t().header.badgeProf} • ${t().sidebar.profName}`}
-                </Badge>
-            </div>
-
-            <div style={{ display: "flex", "align-items": "center", gap: "var(--space-4)" }}>
-                <div style={{ display: "flex", "align-items": "center", gap: "var(--space-2)", padding: "6px 12px", border: "1px solid var(--color-border)", "border-radius": "20px", "font-size": "var(--font-size-sm)", color: "var(--color-foreground)" }}>
-                    {GlobeIcon} {idioma()}
-                </div>
-
-                <button onClick={toggleTheme} style={{ background: "none", border: "1px solid var(--color-border)", "border-radius": "50%", width: "36px", height: "36px", display: "flex", "align-items": "center", "justify-content": "center", cursor: "pointer", color: "var(--color-foreground)", transition: "all 0.2s ease" }}>
-                    {theme() === "dark" ? SunIcon : MoonIcon}
+        <header class="flex h-16 sm:h-18 shrink-0 items-center justify-between gap-2 border-b border-border bg-card px-4 sm:px-6 lg:px-8 transition-colors duration-200">
+            <div class="flex min-w-0 items-center gap-3">
+                <button
+                    type="button"
+                    aria-label={t().header.menuAria}
+                    title={t().header.menuAria}
+                    onClick={handleMenuToggle}
+                    class="cursor-pointer rounded-lg border-none bg-transparent p-2 text-foreground transition-colors hover:bg-secondary"
+                >
+                    <MenuIcon />
                 </button>
 
-                <Button variant="primary" onClick={toggleRole} style={{ "background-color": "var(--color-cliente)", color: "white", "border-radius": "20px", padding: "6px 16px", display: "flex", gap: "6px", "align-items": "center" }}>
-                    Demo: {accountRole() === "cliente" ? t().header.badgeClient : t().header.badgeProf} {ChevronDownIcon}
-                </Button>
+                <div class="flex min-w-0 flex-col justify-center">
+                    <span class="hidden sm:inline truncate text-sm font-bold leading-tight text-foreground">
+                        {t().header.home}
+                    </span>
+                    <div class="sm:mt-0.5">
+                        <Badge variant="success">{roleBadgeLabel()}</Badge>
+                    </div>
+                </div>
+            </div>
 
-                <button style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-muted-foreground)" }}>
-                    {BellIcon}
+            <div class="flex shrink-0 items-center gap-2 sm:gap-3">
+                <LanguageSwitcher />
+                <ThemeSwitcher showLabel />
+
+                <Show when={(currentUser()?.roles?.length || 0) > 0}>
+                    <div class="hidden lg:block min-w-[190px]">
+                        <ProfileSwitcher variant="header" />
+                    </div>
+                </Show>
+
+                <button
+                    type="button"
+                    aria-label={t().header.notificationsAria}
+                    title={t().header.notificationsAria}
+                    class="relative hidden sm:inline-flex cursor-pointer items-center justify-center rounded-lg border-none bg-transparent p-2 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+                >
+                    <BellIcon />
                 </button>
             </div>
         </header>
