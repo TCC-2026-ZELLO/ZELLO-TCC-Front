@@ -149,6 +149,7 @@ export default function Login() {
                                         labelText={t().auth.login.passwordLabel}
                                         placeholder={t().auth.login.passwordPlaceholder}
                                         type="password"
+                                        autocomplete="current-password"
                                         value={password()}
                                         onInput={(e) =>
                                             setPassword(e.currentTarget.value)

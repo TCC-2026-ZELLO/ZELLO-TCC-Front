@@ -20,6 +20,7 @@ import { professionalService } from "../services/professional.service";
 import { getMyReceivedReviews } from "../services/reviews.service";
 import { getProId } from "../store/appState";
 import { toast } from "../store/toastStore";
+import { safeUrl } from "../utils/safeUrl";
 
 const QUALIFICATION_TYPE_KEYS = [
     "certification",
@@ -984,7 +985,7 @@ export default function ProfessionalSettings() {
                                     title={t().professionalSettings.viewCertificate}
                                 />
                                 <a
-                                    href={previewUrl()!}
+                                    href={safeUrl(previewUrl())}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     class="text-center text-sm text-primary underline"
@@ -1002,7 +1003,7 @@ export default function ProfessionalSettings() {
                                 alt={t().professionalSettings.viewCertificate}
                             />
                             <a
-                                href={previewUrl()!}
+                                href={safeUrl(previewUrl())}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 class="text-sm text-primary underline"

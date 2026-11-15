@@ -39,7 +39,7 @@ jobs:
           context: .
           push: true
           build-args: |
-            VITE_API_URL=${{ secrets.VITE_API_URL }}
+            VITE_API_URL=/api
             VITE_NOMINATIM_EMAIL=${{ secrets.VITE_NOMINATIM_EMAIL }}
           tags: |
             ${{ env.DOCKER_IMAGE }}:latest

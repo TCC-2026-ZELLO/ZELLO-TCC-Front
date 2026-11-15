@@ -318,6 +318,13 @@ export class HttpBusinessTeamRepository implements IBusinessTeamRepository {
         return BusinessMapper.toTeamList(raw);
     }
 
+    async listTeamForManager(businessId: string): Promise<TeamMemberLink[]> {
+        const raw = await this.http.get<any>(
+            `/business-professionals/business/${encodeURIComponent(businessId)}/team`,
+        );
+        return BusinessMapper.toTeamList(raw);
+    }
+
     linkProfessional(data: {
         businessId: string;
         email: string;

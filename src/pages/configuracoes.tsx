@@ -622,6 +622,7 @@ export default function Settings() {
                             <Input
                                 labelText={t().settings.security.currentPassword}
                                 type="password"
+                                autocomplete="current-password"
                                 value={senhaAtual()}
                                 onInput={(e) => setSenhaAtual(e.currentTarget.value)}
                                 required
@@ -630,6 +631,7 @@ export default function Settings() {
                                 <Input
                                     labelText={t().settings.security.newPassword}
                                     type="password"
+                                    autocomplete="new-password"
                                     value={novaSenha()}
                                     onInput={(e) => setNovaSenha(e.currentTarget.value)}
                                     required
@@ -637,6 +639,7 @@ export default function Settings() {
                                 <Input
                                     labelText={t().settings.security.confirmPassword}
                                     type="password"
+                                    autocomplete="new-password"
                                     value={confirmarSenha()}
                                     onInput={(e) =>
                                         setConfirmarSenha(e.currentTarget.value)

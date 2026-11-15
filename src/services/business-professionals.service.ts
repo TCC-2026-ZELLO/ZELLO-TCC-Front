@@ -9,7 +9,7 @@ export interface CreateBusinessProfessionalPayload {
 
 export const businessProfessionalsService = {
     listByBusiness: (businessId: string): Promise<TeamMemberLink[]> =>
-        container.businessTeamRepo.listByBusiness(businessId),
+        container.businessTeamRepo.listTeamForManager(businessId),
 
     create: (data: { businessId: string; email: string; active: boolean }) =>
         container.businessTeamRepo.linkProfessional(data),

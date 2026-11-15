@@ -31,6 +31,14 @@ Your app is ready to be deployed!
 
 ## Deployment
 
-You can deploy the `dist` folder to any static host provider (netlify, surge, now, etc.)
+A imagem Docker serve o `dist` com nginx e encaminha `/api` para o backend (mesmo site, cookies `SameSite=Strict`).
+
+| Variável | Momento | Valor em produção |
+| :--- | :--- | :--- |
+| `VITE_API_URL` | Build | `/api` |
+| `API_UPSTREAM` | Execução (nginx) | URL HTTPS do backend |
+| `CSP_CONNECT_EXTRA` | Execução (nginx) | Origens extras em `connect-src` da CSP (opcional) |
+
+Cabeçalhos de segurança (CSP, HSTS, `nosniff`, `Referrer-Policy`), allowlist de extensões e bloqueio de arquivos ocultos ficam em `nginx/`. Detalhes e matriz de conformidade OWASP ASVS v5.0.0: `zello-tcc-back/docs/security`.
 
 ## This project was created with the [Solid CLI](https://github.com/solidjs-community/solid-cli)
