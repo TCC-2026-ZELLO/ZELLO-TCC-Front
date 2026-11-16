@@ -92,7 +92,7 @@ export const es: TranslationDictionary = {
         invalidPhone: "Teléfono inválido",
         invalidCep: "Código postal inválido",
         invalidEmail: "Introduce un correo electrónico válido",
-        weakPassword: "Mín. 8 caracteres, mayúscula, minúscula, número y símbolo",
+        weakPassword: "Usa al menos 8 caracteres (recomendamos 15 o más, como una frase). Evita contraseñas comunes.",
         passwordMismatch: "Las contraseñas no coinciden",
         requiredField: "Completa este campo obligatorio",
         minLength: "No se alcanzó la longitud mínima de caracteres",

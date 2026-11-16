@@ -1,5 +1,5 @@
 import { A, useSearchParams } from "@solidjs/router";
-import { createSignal, Show } from "solid-js";
+import { createSignal, onMount, Show } from "solid-js";
 import { LockIcon, ZelloIcon } from "../components/Icons/Icons";
 import { Button } from "../components/Widgets/Button";
 import { Input } from "../components/Widgets/Input";
@@ -11,10 +11,26 @@ import { localizeDomain, t } from "../core/i18n";
 
 export default function RedefinirSenha() {
     const [searchParams] = useSearchParams();
-    const token = () => {
+
+    // v5.0.0-14.2.1: o token chega no fragmento da URL (#token=...), que o
+    // navegador não envia ao servidor nem inclui no cabeçalho Referer. Ele é
+    // lido uma vez, mantido em memória e removido da barra de endereços.
+    const readToken = (): string | undefined => {
+        if (typeof window !== "undefined") {
+            const fromHash = new URLSearchParams(window.location.hash.slice(1)).get("token");
+            if (fromHash) return fromHash;
+        }
         const raw = searchParams.token;
         return Array.isArray(raw) ? raw[0] : raw;
     };
+    const [resetToken] = createSignal<string | undefined>(readToken());
+    const token = () => resetToken();
+
+    onMount(() => {
+        if (typeof window !== "undefined" && (window.location.hash || window.location.search)) {
+            window.history.replaceState(null, "", window.location.pathname);
+        }
+    });
 
     const [password, setPassword] = createSignal("");
     const [confirmPassword, setConfirmPassword] = createSignal("");
@@ -124,6 +140,7 @@ export default function RedefinirSenha() {
                                                     t().auth.reset.newPasswordLabel
                                                 }
                                                 type="password"
+                                                autocomplete="new-password"
                                                 placeholder="••••••••"
                                                 value={password()}
                                                 onInput={(e) =>
@@ -138,6 +155,7 @@ export default function RedefinirSenha() {
                                                     t().auth.reset.confirmPasswordLabel
                                                 }
                                                 type="password"
+                                                autocomplete="new-password"
                                                 placeholder="••••••••"
                                                 value={confirmPassword()}
                                                 onInput={(e) =>

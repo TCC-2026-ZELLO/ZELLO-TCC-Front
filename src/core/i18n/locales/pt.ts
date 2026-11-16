@@ -90,7 +90,7 @@ export const pt = {
         invalidPhone: "Telefone inválido",
         invalidCep: "CEP inválido",
         invalidEmail: "Informe um e-mail válido",
-        weakPassword: "Mín. 8 caracteres, maiúscula, minúscula, número e símbolo",
+        weakPassword: "Use no mínimo 8 caracteres (recomendamos 15 ou mais, como uma frase). Não use senhas comuns.",
         passwordMismatch: "As senhas não coincidem",
         requiredField: "Preencha este campo obrigatório",
         minLength: "Quantidade mínima de caracteres não atingida",

@@ -166,6 +166,8 @@ export interface IBusinessMediaRepository {
 
 export interface IBusinessTeamRepository {
     listByBusiness(businessId: string): Promise<TeamMemberLink[]>;
+    /** Equipe com contatos, restrita ao gestor do estabelecimento (v5.0.0-8.4.1). */
+    listTeamForManager(businessId: string): Promise<TeamMemberLink[]>;
     linkProfessional(data: { businessId: string; email: string; active: boolean }): Promise<unknown>;
     unlinkProfessional(linkId: string): Promise<unknown>;
     updateLink(linkId: string, data: Record<string, unknown>): Promise<unknown>;

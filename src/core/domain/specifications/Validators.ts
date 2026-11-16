@@ -94,17 +94,23 @@ export class EmailSpecification implements ValidationSpecification {
     }
 }
 
+/**
+ * Política de senhas alinhada ao OWASP ASVS v5.0.0 (6.2.1, 6.2.5, 6.2.8):
+ * mínimo de 8 caracteres (15+ recomendado), sem regras de composição e no
+ * máximo 72 bytes (limite do bcrypt). A lista de senhas comuns (6.2.4) é
+ * aplicada no backend, que é a camada confiável.
+ */
+export const PASSWORD_MIN_LENGTH = 8;
+export const PASSWORD_MAX_BYTES = 72;
+
 export class StrongPasswordSpecification implements ValidationSpecification {
     readonly errorKey = "weakPassword" as const;
 
     isSatisfiedBy(value: string): boolean {
-        return (
-            value.length >= 8 &&
-            /[A-Z]/.test(value) &&
-            /[a-z]/.test(value) &&
-            /\d/.test(value) &&
-            /[^A-Za-z0-9]/.test(value)
-        );
+        if (typeof value !== "string") return false;
+        const length = Array.from(value).length;
+        const bytes = new TextEncoder().encode(value).length;
+        return length >= PASSWORD_MIN_LENGTH && bytes <= PASSWORD_MAX_BYTES;
     }
 }
 

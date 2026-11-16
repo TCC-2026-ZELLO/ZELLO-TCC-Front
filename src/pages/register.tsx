@@ -463,6 +463,7 @@ export default function Register() {
                                         <Input
                                             labelText={t().auth.register.fields.password}
                                             type="password"
+                                            autocomplete="new-password"
                                             value={password()}
                                             onInput={(e) =>
                                                 setPassword(e.currentTarget.value)
@@ -482,6 +483,7 @@ export default function Register() {
                                                 t().auth.register.fields.confirmPassword
                                             }
                                             type="password"
+                                            autocomplete="new-password"
                                             value={confirmPassword()}
                                             onInput={(e) =>
                                                 setConfirmPassword(
