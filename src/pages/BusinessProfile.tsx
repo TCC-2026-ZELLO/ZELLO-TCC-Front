@@ -1,5 +1,5 @@
 import { useNavigate, useParams } from "@solidjs/router";
-import { createResource, createSignal, For, Show } from "solid-js";
+import { createEffect, createResource, createSignal, For, on, Show } from "solid-js";
 import {
     CalendarIcon,
     CheckCircleIcon,
@@ -22,6 +22,8 @@ import {
 } from "../core/i18n";
 import { businessService } from "../services/business.service";
 import { brl, combosService } from "../services/combos.service";
+import { dashboardService } from "../services/dashboard.service";
+import { isAuthenticated } from "../store/appState";
 
 export default function EstablishmentProfile() {
     const params = useParams();
@@ -34,6 +36,17 @@ export default function EstablishmentProfile() {
     const [combos] = createResource(
         () => params.id,
         (id: string) => combosService.list(id),
+    );
+
+    createEffect(
+        on(
+            () => params.id,
+            (id) => {
+                if (id && isAuthenticated()) {
+                    dashboardService.registerBusinessView(id);
+                }
+            },
+        ),
     );
 
     const [bookingServiceId, setBookingServiceId] = createSignal<string | null>(

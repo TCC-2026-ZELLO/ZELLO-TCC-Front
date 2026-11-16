@@ -20,6 +20,7 @@ import {
     t,
 } from "../core/i18n";
 import { professionalService } from "../services/professional.service";
+import { safeUrl } from "../utils/safeUrl";
 
 const TYPE_COLORS: Record<string, string> = {
     diploma: "bg-primary/15 text-primary",
@@ -178,7 +179,7 @@ export default function PublicProfile() {
                                     <For each={qualifications() ?? []}>
                                         {(q) => (
                                             <a
-                                                href={q.certificateUrl || "#"}
+                                                href={safeUrl(q.certificateUrl)}
                                                 target={
                                                     q.certificateUrl
                                                         ? "_blank"

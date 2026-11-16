@@ -23,7 +23,7 @@ import {
 export type { AccountRole, AccountType, BusinessContext, LanguageCode, ThemeMode, User };
 export type Language = LanguageCode;
 
-export const API = import.meta.env.VITE_API_URL || "http://localhost:3001";
+export const API = import.meta.env.VITE_API_URL || "/api";
 
 export const DICTIONARIES: Record<LanguageCode, TranslationDictionary> = {
     PT: pt,

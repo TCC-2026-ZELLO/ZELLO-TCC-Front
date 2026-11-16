@@ -11,6 +11,7 @@ import {
 } from "../../store/appState";
 import {
     CalendarIcon,
+    ChartIcon,
     HeartIcon,
     HomeIcon,
     LogoutIcon,
@@ -128,6 +129,11 @@ export function Sidebar() {
                         </Show>
 
                         <Show when={accountRole() === "estabelecimento"}>
+                            <NavItem
+                                label={t().sidebar.nav.dashboard}
+                                icon={<ChartIcon />}
+                                href="/dashboard"
+                            />
                             <NavItem
                                 label={t().sidebar.nav.team_schedule}
                                 icon={<CalendarIcon />}

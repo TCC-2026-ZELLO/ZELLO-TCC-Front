@@ -20,7 +20,8 @@ describe("ServicePin", () => {
         render(() => <ServicePin service={service} isActive={false} onSelect={onSelect} />);
 
         expect(screen.getByText("Studio Bella")).toBeInTheDocument();
-        expect(screen.getByText("2.3 km")).toBeInTheDocument();
+        // O separador decimal depende do idioma ativo (pt: "2,3 km"; en: "2.3 km").
+        expect(screen.getByText(/^2[.,]3 km$/)).toBeInTheDocument();
 
         fireEvent.click(screen.getByRole("button"));
         expect(onSelect).toHaveBeenCalledWith(service);

@@ -90,6 +90,33 @@ export class FetchHttpClient implements IHttpClient {
         private readonly fetchImpl: typeof fetch = (...args) => fetch(...args),
     ) {}
 
+    private refreshInFlight: Promise<boolean> | null = null;
+
+    /**
+     * Renova a sessão com o refresh token (cookie HttpOnly, rotativo).
+     * Requisições concorrentes que recebem 401 compartilham uma única
+     * renovação, para não consumir o mesmo refresh token duas vezes (o backend
+     * trata reuso como roubo de token e encerra todas as sessões).
+     */
+    private refreshSession(): Promise<boolean> {
+        if (!this.refreshInFlight) {
+            this.refreshInFlight = this.fetchImpl(`${this.baseUrl}/auth/refresh`, {
+                method: "POST",
+                credentials: "include",
+            })
+                .then((response) => response.ok)
+                .catch(() => false)
+                .finally(() => {
+                    this.refreshInFlight = null;
+                });
+        }
+        return this.refreshInFlight;
+    }
+
+    private static canRefreshFor(path: string): boolean {
+        return !path.startsWith("/auth/");
+    }
+
     private serializeBody(body: unknown): BodyInit | undefined {
         if (body === undefined) return undefined;
         if (typeof FormData !== "undefined" && body instanceof FormData) return body;
@@ -97,7 +124,7 @@ export class FetchHttpClient implements IHttpClient {
         return JSON.stringify(body);
     }
 
-    async request<T>(path: string, options: RequestInit = {}): Promise<T> {
+    async request<T>(path: string, options: RequestInit = {}, isRetry = false): Promise<T> {
         const headers = new Headers(options.headers);
         let ctx: HttpRequestContext = {
             path,
@@ -116,6 +143,15 @@ export class FetchHttpClient implements IHttpClient {
             ...ctx.init,
             headers: ctx.headers,
         });
+
+        // Token de acesso expirado (vida curta, 15 min): renova uma vez e
+        // repete a requisição original. Se a renovação falhar, o 401 segue para
+        // os interceptadores e a sessão local é encerrada.
+        if (response.status === 401 && !isRetry && FetchHttpClient.canRefreshFor(path)) {
+            if (await this.refreshSession()) {
+                return this.request<T>(path, options, true);
+            }
+        }
 
         for (const interceptor of this.interceptors) {
             if (interceptor.onResponse) {

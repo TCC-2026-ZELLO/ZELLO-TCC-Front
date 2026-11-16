@@ -26,3 +26,22 @@ gitignore
 # System Files
 .DS_Store
 Thumbs.db
+
+
+# v5.0.0-13.3.1 / 15.2.3: segredos, logs e artefatos locais nunca são versionados
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+.npmrc
+*.log
+npm-debug.log*
+/coverage
+.vite/
+*.tsbuildinfo
+/.vscode/*
+!/.vscode/extensions.json
+~$*

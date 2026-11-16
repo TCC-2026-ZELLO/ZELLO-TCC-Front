@@ -1,0 +1,10 @@
+# Cabeçalhos de segurança aplicados a todas as respostas do frontend
+# (OWASP ASVS v5.0.0 3.4.1 a 3.4.6). Incluído em cada `location`, porque o nginx
+# não herda add_header quando a location declara os seus próprios.
+add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+add_header X-Content-Type-Options "nosniff" always;
+add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+add_header X-Frame-Options "DENY" always;
+add_header Cross-Origin-Opener-Policy "same-origin" always;
+add_header Permissions-Policy "geolocation=(self), camera=(), microphone=(), payment=(), usb=()" always;
+add_header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.blob.core.windows.net https://ui-avatars.com https://*.tile.openstreetmap.org; font-src 'self' data:; connect-src 'self' https://viacep.com.br https://nominatim.openstreetmap.org https://open.er-api.com ${CSP_CONNECT_EXTRA}; frame-src 'self' blob: https://*.blob.core.windows.net; worker-src 'self' blob:; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests" always;
