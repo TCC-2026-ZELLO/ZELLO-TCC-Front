@@ -1,7 +1,7 @@
 # ---------------------------------------------------------
 # ESTÁGIO 1: Build (Node.js 20 Alpine)
 # ---------------------------------------------------------
-FROM node:20-alpine AS builder
+FROM node:25-alpine AS builder
 
 WORKDIR /app
 
