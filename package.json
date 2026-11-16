@@ -23,7 +23,7 @@
     "solid-devtools": "^0.34.3",
     "tailwindcss": "^4.1.13",
     "typescript": "^5.9.2",
-    "vite": "^7.3.8",
+    "vite": "^8.3.6",
     "vite-plugin-solid": "^2.11.8",
     "vitest": "^4.1.11"
   },
